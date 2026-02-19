@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parasite Arena</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; background: #0d0d1a; }
+    canvas { display: block; }
+    #ui {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      color: #fff;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 13px;
+      background: rgba(0,0,0,0.7);
+      padding: 12px 16px;
+      border-radius: 8px;
+      z-index: 100;
+      user-select: none;
+    }
+    #ui div { margin: 4px 0; }
+    #exitTimer {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ff6b6b;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 28px;
+      font-weight: bold;
+      text-shadow: 0 0 10px rgba(255,107,107,0.8);
+      display: none;
+      z-index: 100;
+      pointer-events: none;
+    }
+    #status {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      color: #888;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 11px;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="ui">
+    <div><strong>PARASITE ARENA</strong></div>
+    <div>━━━━━━━━━━━━━━━━</div>
+    <div>WASD — Move</div>
+    <div>SPACE — Infect</div>
+    <div>━━━━━━━━━━━━━━━━</div>
+    <div>Players: <span id="playerCount" style="color:#4ff">0</span></div>
+    <div>Ping: <span id="ping">--</span>ms</div>
+  </div>
+  <div id="exitTimer">FREE IN <span id="timerValue">5.0</span>s</div>
+  <div id="status">Disconnected</div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const playerCountEl = document.getElementById('playerCount');
+    const pingEl = document.getElementById('ping');
+    const exitTimerEl = document.getElementById('exitTimer');
+    const timerValueEl = document.getElementById('timerValue');
+    const statusEl = document.getElementById('status');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const WS_URL = 'ws://localhost:8080';
+    const PLAYER_RADIUS = 10;
+    const INFECT_DURATION = 5000;
+
+    let ws = null;
+    let players = new Map();
+    let myId = null;
+    let myUuid = null;
+    let keys = {};
+    let lastServerTime = 0;
+    let connectionState = 'disconnected';
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 5;
+
+    const keysDown = {};
+
+    document.addEventListener('keydown', (e) => {
+      if (['KeyW','KeyA','KeyS','KeyD','Space'].includes(e.code)) {
+        e.preventDefault();
+      }
+      keysDown[e.code] = true;
+      
+      if (e.code === 'Space') {
+        tryInfect();
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      keysDown[e.code] = false;
+    });
+
+    function connect() {
+      if (ws) {
+        ws.close();
+      }
+
+      statusEl.textContent = 'Connecting...';
+      statusEl.style.color = '#ffa500';
+
+      ws = new WebSocket(WS_URL);
+
+      ws.onopen = () => {
+        connectionState = 'connected';
+        statusEl.textContent = 'Connected';
+        statusEl.style.color = '#4f4';
+        reconnectAttempts = 0;
+        console.log('[CLIENT] Connected to server');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'welcome') {
+            myId = data.playerId;
+            myUuid = data.playerUuid;
+            console.log('[CLIENT] My ID:', myId);
+          } else if (data.type === 'state') {
+            lastServerTime = data.t;
+            updatePlayers(data.p);
+          }
+        } catch (e) {
+          console.error('[CLIENT] Parse error:', e);
+        }
+      };
+
+      ws.onclose = () => {
+        connectionState = 'disconnected';
+        statusEl.textContent = 'Disconnected';
+        statusEl.style.color = '#f44';
+        
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          reconnectAttempts++;
+          statusEl.textContent = `Reconnecting (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`;
+          setTimeout(connect, 2000);
+        }
+      };
+
+      ws.onerror = (err) => {
+        console.error('[CLIENT] WebSocket error:', err);
+        statusEl.textContent = 'Error';
+        statusEl.style.color = '#f44';
+      };
+    }
+
+    function updatePlayers(playerData) {
+      const newPlayers = new Map();
+      
+      for (const p of playerData) {
+        const [id, x, y, radius, hostId, infectedAt] = p;
+        const existing = players.get(id);
+        
+        if (existing) {
+          existing.x = x;
+          existing.y = y;
+          existing.radius = radius;
+          existing.hostId = hostId;
+          existing.infectedAt = infectedAt;
+          newPlayers.set(id, existing);
+        } else {
+          newPlayers.set(id, {
+            id, x, y, radius, hostId, infectedAt,
+            displayX: x,
+            displayY: y
+          });
+        }
+      }
+      
+      players = newPlayers;
+      playerCountEl.textContent = players.size;
+    }
+
+    function getMyPlayer() {
+      return players.get(myId);
+    }
+
+    function tryInfect() {
+      if (connectionState !== 'connected') return;
+      
+      const myPlayer = getMyPlayer();
+      if (!myPlayer || myPlayer.hostId !== null) return;
+
+      let closest = null;
+      let closestDist = Infinity;
+
+      for (const [id, p] of players) {
+        if (id === myPlayer.id || p.hostId !== null) continue;
+        const dist = Math.hypot(p.x - myPlayer.x, p.y - myPlayer.y);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = p;
+        }
+      }
+
+      if (closest && closestDist < PLAYER_RADIUS * 3) {
+        ws.send(JSON.stringify({
+          type: 'infect',
+          targetId: closest.id
+        }));
+      }
+    }
+
+    function sendMovement() {
+      if (connectionState !== 'connected') return;
+      
+      const myPlayer = getMyPlayer();
+      if (!myPlayer || myPlayer.hostId !== null) return;
+
+      let dx = 0, dy = 0;
+      if (keysDown['KeyW']) dy = -1;
+      if (keysDown['KeyS']) dy = 1;
+      if (keysDown['KeyA']) dx = -1;
+      if (keysDown['KeyD']) dx = 1;
+
+      if (dx !== 0 || dy !== 0) {
+        ws.send(JSON.stringify({ type: 'move', dx, dy }));
+      }
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function draw() {
+      ctx.fillStyle = '#0d0d1a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const myPlayer = getMyPlayer();
+      
+      let camX = 0, camY = 0;
+      if (myPlayer) {
+        camX = myPlayer.x - canvas.width / 2;
+        camY = myPlayer.y - canvas.height / 2;
+        
+        myPlayer.displayX = lerp(myPlayer.displayX, myPlayer.x, 0.2);
+        myPlayer.displayY = lerp(myPlayer.displayY, myPlayer.y, 0.2);
+      }
+
+      ctx.save();
+      ctx.translate(-camX, -camY);
+
+      const gridSize = 50;
+      const startX = Math.floor(camX / gridSize) * gridSize;
+      const startY = Math.floor(camY / gridSize) * gridSize;
+      const endX = startX + canvas.width + gridSize;
+      const endY = startY + canvas.height + gridSize;
+
+      ctx.strokeStyle = '#1a1a3e';
+      ctx.lineWidth = 1;
+      for (let x = startX; x < endX; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, startY);
+        ctx.lineTo(x, endY);
+        ctx.stroke();
+      }
+      for (let y = startY; y < endY; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        ctx.lineTo(endX, y);
+        ctx.stroke();
+      }
+
+      const hosts = [];
+      const parasites = [];
+
+      for (const [id, player] of players) {
+        if (player.hostId !== null) {
+          parasites.push(player);
+        } else {
+          hosts.push(player);
+        }
+      }
+
+      for (const player of hosts) {
+        const isMine = player.id === myId;
+        
+        const displayX = player.id === myId ? player.displayX : player.x;
+        const displayY = player.id === myId ? player.displayY : player.y;
+
+        ctx.beginPath();
+        ctx.arc(displayX, displayY, player.radius, 0, Math.PI * 2);
+        ctx.fillStyle = isMine ? '#4488ff' : '#ff6b44';
+        ctx.fill();
+        
+        ctx.strokeStyle = isMine ? '#88ccff' : '#ffaa88';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(displayX - 4, displayY - 3, 4, 0, Math.PI * 2);
+        ctx.arc(displayX + 4, displayY - 3, 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(displayX - 3, displayY - 3, 2, 0, Math.PI * 2);
+        ctx.arc(displayX + 5, displayY - 3, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (isMine) {
+          ctx.strokeStyle = '#00ff00';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(displayX, displayY, player.radius + 6, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      for (const parasite of parasites) {
+        const host = players.get(parasite.hostId);
+        if (!host) continue;
+
+        const isMine = parasite.id === myId;
+        const parasiteRadius = player.radius * 0.5;
+        
+        const offsetX = (parasite.id % 3 - 1) * 12;
+        const offsetY = (Math.floor(parasite.id / 3) % 3 - 1) * 12;
+        
+        const px = host.x + offsetX;
+        const py = host.y + offsetY;
+
+        ctx.beginPath();
+        ctx.arc(px, py, parasiteRadius, 0, Math.PI * 2);
+        ctx.fillStyle = isMine ? '#44ff44' : '#ff4444';
+        ctx.fill();
+        
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(px - 2, py - 1, 2, 0, Math.PI * 2);
+        ctx.arc(px + 2, py - 1, 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(px - 1.5, py - 1, 1, 0, Math.PI * 2);
+        ctx.arc(px + 2.5, py - 1, 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+
+      updateExitTimer();
+      updatePing();
+
+      requestAnimationFrame(draw);
+    }
+
+    function updateExitTimer() {
+      const myPlayer = getMyPlayer();
+      if (myPlayer && myPlayer.hostId !== null && myPlayer.infectedAt) {
+        exitTimerEl.style.display = 'block';
+        const elapsed = Date.now() - myPlayer.infectedAt;
+        const remaining = Math.max(0, (INFECT_DURATION - elapsed) / 1000);
+        timerValueEl.textContent = remaining.toFixed(1);
+      } else {
+        exitTimerEl.style.display = 'none';
+      }
+    }
+
+    function updatePing() {
+      if (lastServerTime > 0) {
+        const ping = Date.now() - lastServerTime;
+        pingEl.textContent = ping;
+        pingEl.style.color = ping < 100 ? '#4f4' : ping < 200 ? '#ff4' : '#f44';
+      }
+    }
+
+    setInterval(sendMovement, 1000 / 30);
+
+    draw();
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    connect();
+
+    console.log('[CLIENT] Parasite Arena initialized');
+  </script>
+</body>
+</html>
