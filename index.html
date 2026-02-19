@@ -8,12 +8,12 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', sans-serif; }
     canvas { display: block; }
-    
+
     /* Базовый UI */
     #ui { position: fixed; top: 10px; left: 10px; color: #fff; z-index: 100; pointer-events: none; }
     #ui h1 { font-size: 24px; color: #e74c3c; text-shadow: 0 0 10px rgba(231,76,60,0.5); margin-bottom: 5px; }
     #ui p { font-size: 12px; color: #888; }
-    
+
     #stats { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.7); padding: 10px 15px; border-radius: 8px; color: #fff; z-index: 100; }
     #stats div { margin: 3px 0; font-size: 13px; }
     .stat-label { color: #888; }
@@ -28,25 +28,26 @@
     .lb-kills { color: #e74c3c; }
     .lb-team-radiant { color: #2ecc71; }
     .lb-team-dire { color: #e74c3c; }
-    
+
     #hookIndicator { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 8px 20px; border-radius: 20px; color: #fff; font-size: 14px; z-index: 100; transition: all 0.2s; }
     #hookIndicator.ready { border: 2px solid #2ecc71; box-shadow: 0 0 10px rgba(46,204,113,0.5); }
     #hookIndicator.cooldown { border: 2px solid #e74c3c; opacity: 0.7; }
     #hookCooldownBar { position: fixed; bottom: 55px; left: 50%; transform: translateX(-50%); width: 150px; height: 6px; background: rgba(0,0,0,0.7); border-radius: 3px; overflow: hidden; z-index: 100; display: none; }
     #hookCooldownFill { height: 100%; background: linear-gradient(90deg, #e74c3c, #f39c12); width: 100%; transition: width 0.05s linear; }
     
-    #startScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
-    #startScreen.hidden { display: none; }
-    #startScreen h1 { font-size: 48px; color: #e74c3c; margin-bottom: 20px; text-shadow: 0 0 30px rgba(231,76,60,0.6); }
-    #startScreen p { color: #aaa; margin-bottom: 30px; font-size: 14px; }
-    #startScreen input { padding: 12px 20px; font-size: 16px; background: rgba(40,20,20,0.8); border: 2px solid #633; border-radius: 8px; color: #fff; margin-bottom: 15px; text-align: center; }
-    #startScreen input:focus { outline: none; border-color: #e74c3c; }
-    #startScreen input::placeholder { color: #644; }
-    #startBtn { padding: 15px 40px; font-size: 18px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #e74c3c, #c0392b); border: none; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
-    #startBtn:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(231,76,60,0.5); }
+    /* Панель прокачки */
+    #upgrades { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 2px solid #e74c3c; border-radius: 12px; padding: 10px 15px; z-index: 100; display: flex; gap: 10px; align-items: center; }
+    #upgrades h3 { color: #e74c3c; font-size: 12px; margin: 0 10px 0 0; text-transform: uppercase; }
+    .upgrade-item { background: rgba(40,20,20,0.8); border: 1px solid #633; border-radius: 6px; padding: 6px 10px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; min-width: 50px; }
+    .upgrade-item:hover { background: rgba(60,30,30,0.9); border-color: #e74c3c; transform: translateY(-2px); }
+    .upgrade-item.maxed { opacity: 0.5; cursor: default; border-color: #444; }
+    .upg-icon { font-size: 16px; }
+    .upg-name { color: #aaa; font-size: 9px; text-transform: uppercase; }
+    .upg-level { color: #e74c3c; font-size: 14px; font-weight: bold; }
     
-    #controls { position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; color: #888; font-size: 11px; z-index: 100; }
-    #controls kbd { background: #333; padding: 2px 6px; border-radius: 3px; color: #fff; }
+    /* Индикаторы врагов */
+    .enemy-arrow { position: fixed; width: 0; height: 0; pointer-events: none; z-index: 90; }
+    .enemy-arrow::after { content: ''; position: absolute; width: 20px; height: 20px; border: 3px solid #e74c3c; border-radius: 50%; border-left-color: transparent; border-top-color: transparent; transform: rotate(-45deg); }
     
     /* Уведомления */
     #notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; font-weight: bold; text-align: center; z-index: 1000; pointer-events: none; text-shadow: 0 0 30px rgba(0,0,0,0.8); animation: notifyPop 0.5s ease-out forwards; }
@@ -63,19 +64,18 @@
     #soundToggle { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); border: 2px solid #444; border-radius: 8px; padding: 8px 12px; color: #fff; cursor: pointer; z-index: 100; font-size: 18px; }
     #soundToggle:hover { border-color: #e74c3c; }
     
-    /* Панель прокачки */
-    #upgrades { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 2px solid #e74c3c; border-radius: 12px; padding: 10px 15px; z-index: 100; display: flex; gap: 10px; align-items: center; }
-    #upgrades h3 { color: #e74c3c; font-size: 12px; margin: 0 10px 0 0; text-transform: uppercase; }
-    .upgrade-item { background: rgba(40,20,20,0.8); border: 1px solid #633; border-radius: 6px; padding: 6px 10px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; min-width: 50px; }
-    .upgrade-item:hover { background: rgba(60,30,30,0.9); border-color: #e74c3c; transform: translateY(-2px); }
-    .upgrade-item.maxed { opacity: 0.5; cursor: default; border-color: #444; }
-    .upg-icon { font-size: 16px; }
-    .upg-name { color: #aaa; font-size: 9px; text-transform: uppercase; }
-    .upg-level { color: #e74c3c; font-size: 14px; font-weight: bold; }
+    #startScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
+    #startScreen.hidden { display: none; }
+    #startScreen h1 { font-size: 48px; color: #e74c3c; margin-bottom: 20px; text-shadow: 0 0 30px rgba(231,76,60,0.6); }
+    #startScreen p { color: #aaa; margin-bottom: 30px; font-size: 14px; }
+    #startScreen input { padding: 12px 20px; font-size: 16px; background: rgba(40,20,20,0.8); border: 2px solid #633; border-radius: 8px; color: #fff; margin-bottom: 15px; text-align: center; }
+    #startScreen input:focus { outline: none; border-color: #e74c3c; }
+    #startScreen input::placeholder { color: #644; }
+    #startBtn { padding: 15px 40px; font-size: 18px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #e74c3c, #c0392b); border: none; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
+    #startBtn:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(231,76,60,0.5); }
     
-    /* Индикаторы врагов */
-    .enemy-arrow { position: fixed; width: 0; height: 0; pointer-events: none; z-index: 90; }
-    .enemy-arrow::after { content: ''; position: absolute; width: 20px; height: 20px; border: 3px solid #e74c3c; border-radius: 50%; border-left-color: transparent; border-top-color: transparent; transform: rotate(-45deg); }
+    #controls { position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; color: #888; font-size: 11px; z-index: 100; }
+    #controls kbd { background: #333; padding: 2px 6px; border-radius: 3px; color: #fff; }
   </style>
 </head>
 <body>
@@ -133,7 +133,7 @@
   <div id="controls">
     <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;|&nbsp; <kbd>MOUSE</kbd> Aim &nbsp;|&nbsp; <kbd>CLICK</kbd> Hook
   </div>
-  
+
   <div id="startScreen">
     <h1>🥩 PUDGE WARS</h1>
     <p>Hook enemies • Pull allies • Dominate the river</p>
@@ -167,12 +167,12 @@
     // ==========================================
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
-    
+
     let ws = null;
     let myId = null;
     let gameRunning = false;
     let lastTime = 0;
-    
+
     // Состояние игры
     const state = {
       players: new Map(),
@@ -190,7 +190,7 @@
       damage: { level: 1, max: 5, base: 300, step: 50, cost: 200 },
       cooldown: { level: 1, max: 5, base: 3000, step: -300, cost: 250 }
     };
-    
+
     // Ввод
     const input = {
       keys: {},
@@ -207,9 +207,6 @@
     
     // Система частиц
     const particles = [];
-    
-    // Уведомления
-    const notifications = [];
     
     // Индикаторы врагов
     const enemyArrows = new Map();
@@ -362,7 +359,6 @@
       }
       
       update(dt) {
-        // Плавный поворот к позиции
         if (this.id === myId) {
           const targetAngle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2);
           this.angle = targetAngle;
@@ -395,7 +391,7 @@
         ctx.strokeStyle = this.id === myId ? '#f1c40f' : '#333';
         ctx.stroke();
         
-        // Внутренний круг для детализации
+        // Внутренний круг
         ctx.beginPath();
         ctx.arc(screenX, screenY, CONFIG.PLAYER_RADIUS * 0.6, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -412,7 +408,7 @@
         ctx.lineWidth = 2;
         ctx.stroke();
         
-        // Индикатор над головой для своего игрока
+        // Индикатор "YOU"
         if (this.id === myId) {
           ctx.fillStyle = '#f1c40f';
           ctx.font = '12px Arial';
@@ -429,7 +425,7 @@
         ctx.fillRect(screenX - hpBarWidth/2, screenY + CONFIG.PLAYER_RADIUS + 5, hpBarWidth * hpPercent, 4);
       }
     }
-    
+
     /**
      * Крюк (Meat Hook)
      */
@@ -441,11 +437,10 @@
         this.targetX = data[3];
         this.targetY = data[4];
         this.ownerId = data[5];
-        this.state = 'flying'; // flying, returning, pulling
+        this.state = 'flying';
         this.targetId = null;
-        this.trail = []; // След для визуального эффекта
+        this.trail = [];
 
-        // Вычисляем вектор движения
         const dx = this.targetX - this.x;
         const dy = this.targetY - this.y;
         const dist = Math.hypot(dx, dy);
@@ -455,17 +450,12 @@
       }
 
       update(dt) {
-        // Добавляем позицию в след
         if (this.state === 'flying') {
           this.trail.push({ x: this.x, y: this.y, life: 10 });
-        }
-      
-        if (this.state === 'flying') {
           this.x += this.vx;
           this.y += this.vy;
           this.traveled += CONFIG.HOOK_SPEED;
 
-          // Достиг максимума - возвращается
           if (this.traveled >= CONFIG.HOOK_RANGE) {
             this.state = 'returning';
           }
@@ -482,7 +472,6 @@
               this.x += (dx / dist) * CONFIG.HOOK_PULL_SPEED;
               this.y += (dy / dist) * CONFIG.HOOK_PULL_SPEED;
 
-              // Если тащим цель
               if (this.state === 'pulling' && this.targetId !== null) {
                 const target = state.players.get(this.targetId);
                 if (target) {
@@ -496,7 +485,6 @@
           }
         }
         
-        // Обновляем след
         for (let i = this.trail.length - 1; i >= 0; i--) {
           this.trail[i].life--;
           if (this.trail[i].life <= 0) {
@@ -515,7 +503,7 @@
         const ownerScreenX = owner.x - cameraX;
         const ownerScreenY = owner.y - cameraY;
         
-        // Рисуем след
+        // След
         for (const point of this.trail) {
           const alpha = point.life / 10;
           ctx.globalAlpha = alpha;
@@ -526,7 +514,7 @@
         }
         ctx.globalAlpha = 1;
 
-        // Цепь/веревка
+        // Цепь
         ctx.beginPath();
         ctx.moveTo(ownerScreenX, ownerScreenY);
         ctx.lineTo(screenX, screenY);
@@ -536,7 +524,7 @@
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Сам крюк
+        // Крюк
         ctx.beginPath();
         ctx.arc(screenX, screenY, CONFIG.HOOK_RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = this.state === 'pulling' ? '#f39c12' : '#e74c3c';
@@ -545,7 +533,7 @@
         ctx.lineWidth = 2;
         ctx.stroke();
         
-        // Блеск на крюке
+        // Блеск
         ctx.beginPath();
         ctx.arc(screenX - 2, screenY - 2, CONFIG.HOOK_RADIUS * 0.3, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(255,255,255,0.6)';
@@ -563,35 +551,28 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // Запуск предзагрузки текстур
-    assetManager.preload().then(() => {
-      console.log('[ASSETS] All textures loaded.');
-    }).catch(err => {
-      console.error('[ASSETS] Failed to load:', err);
-    });
-
     // ==========================================
     // УПРАВЛЕНИЕ
     // ==========================================
     document.addEventListener('keydown', (e) => {
       input.keys[e.code] = true;
     });
-    
+
     document.addEventListener('keyup', (e) => {
       input.keys[e.code] = false;
     });
-    
+
     document.addEventListener('mousemove', (e) => {
       input.mouseX = e.clientX;
       input.mouseY = e.clientY;
     });
-    
+
     document.addEventListener('mousedown', (e) => {
       if (e.button === 0 && gameRunning) {
         input.hookRequested = true;
       }
     });
-    
+
     document.getElementById('startBtn').addEventListener('click', () => {
       const nameInput = document.getElementById('playerNameInput');
       const playerName = nameInput.value.trim() || `Pudge_${Math.floor(Math.random() * 1000)}`;
@@ -601,7 +582,6 @@
       initAudio();
       connect();
       
-      // Отправляем имя после подключения
       setTimeout(() => {
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'setName', name: playerName }));
@@ -609,21 +589,16 @@
       }, 100);
     });
     
-    // Переключение звука
     document.getElementById('soundToggle').addEventListener('click', () => {
       audioEnabled = !audioEnabled;
       document.getElementById('soundToggle').textContent = audioEnabled ? '🔊' : '🔇';
     });
     
-    // Обработка кликов по апгрейдам
     document.getElementById('upgRange').addEventListener('click', () => buyUpgrade('range'));
     document.getElementById('upgSpeed').addEventListener('click', () => buyUpgrade('speed'));
     document.getElementById('upgDamage').addEventListener('click', () => buyUpgrade('damage'));
     document.getElementById('upgCooldown').addEventListener('click', () => buyUpgrade('cooldown'));
     
-    /**
-     * Покупка апгрейда
-     */
     function buyUpgrade(type) {
       const upg = hookUpgrades[type];
       if (upg.level >= upg.max) return;
@@ -633,7 +608,6 @@
       upg.level++;
       upg.cost = Math.floor(upg.cost * 1.5);
       
-      // Отправляем на сервер новые характеристики
       ws.send(JSON.stringify({
         type: 'upgrade',
         upgradeType: type,
@@ -644,17 +618,11 @@
       playSaveSound();
     }
     
-    /**
-     * Получение значения апгрейда
-     */
     function getUpgradeValue(type) {
       const upg = hookUpgrades[type];
       return upg.base + (upg.step * (upg.level - 1));
     }
     
-    /**
-     * Обновление UI прокачки
-     */
     function updateUpgradesUI() {
       for (const [type, upg] of Object.entries(hookUpgrades)) {
         const el = document.getElementById(`upg${type.charAt(0).toUpperCase() + type.slice(1)}`);
@@ -669,29 +637,23 @@
         }
       }
       
-      // Обновляем конфиг с учётом апгрейдов
       CONFIG.HOOK_RANGE = getUpgradeValue('range');
       CONFIG.HOOK_SPEED = getUpgradeValue('speed');
       CONFIG.HOOK_DAMAGE = getUpgradeValue('damage');
       CONFIG.HOOK_COOLDOWN = getUpgradeValue('cooldown');
     }
     
-    /**
-     * Обновление лидерборда
-     */
     function updateLeaderboard(players) {
       const lbList = document.getElementById('lbList');
       if (!players || players.length === 0) return;
       
-      // Сортируем по убийствам
       const sorted = [...players].sort((a, b) => b[8] - a[8]);
       
       let html = '';
       for (let i = 0; i < Math.min(sorted.length, 10); i++) {
         const p = sorted[i];
-        const [id, x, y, team, health, maxHealth, gold, level, kills, deaths, isDead, runeEffect, rotActive, hookCooldown, name] = p;
+        const [id, x, y, team, health, maxHealth, gold, level, kills, deaths, isDead, name] = p;
         const isMe = id === myId ? 'me' : '';
-        const teamClass = team === 'radiant' ? 'lb-team-radiant' : 'lb-team-dire';
         const teamIcon = team === 'radiant' ? '🟢' : '🔴';
         
         html += `<div class="lb-row ${isMe}">
@@ -703,9 +665,6 @@
       lbList.innerHTML = html;
     }
     
-    /**
-     * Обновление индикаторов врагов за пределами экрана
-     */
     function updateEnemyArrows(cameraX, cameraY) {
       const player = state.players.get(myId);
       if (!player) return;
@@ -714,28 +673,23 @@
       const screenCY = canvas.height / 2;
       const edgeDist = 80;
       
-      // Очищаем старые стрелки
       document.querySelectorAll('.enemy-arrow').forEach(el => el.remove());
       enemyArrows.clear();
       
-      // Для каждого врага
       for (const [id, p] of state.players) {
         if (id === myId || p.team === player.team || p.isDead) continue;
         
         const screenX = p.x - cameraX;
         const screenY = p.y - cameraY;
         
-        // Если враг на экране - не показываем стрелку
         if (screenX > 0 && screenX < canvas.width && screenY > 0 && screenY < canvas.height) {
           continue;
         }
         
-        // Вычисляем направление
         const dx = screenX - screenCX;
         const dy = screenY - screenCY;
         const angle = Math.atan2(dy, dx);
         
-        // Позиция стрелки на краю экрана
         let arrowX, arrowY;
         const absDx = Math.abs(dx);
         const absDy = Math.abs(dy);
@@ -750,7 +704,6 @@
           arrowX = Math.max(edgeDist, Math.min(canvas.width - edgeDist, arrowX));
         }
         
-        // Создаём стрелку
         const arrow = document.createElement('div');
         arrow.className = 'enemy-arrow';
         arrow.style.left = (arrowX - 10) + 'px';
@@ -768,40 +721,37 @@
     function connect() {
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
       ws = new WebSocket(`${protocol}//${location.host}`);
-      
+
       ws.onopen = () => {
         document.getElementById('connectionStatus').textContent = 'Connected';
         document.getElementById('connectionStatus').style.color = '#2ecc71';
       };
-      
+
       ws.onmessage = (e) => {
         const data = JSON.parse(e.data);
         handleServerMessage(data);
       };
-      
+
       ws.onclose = () => {
         document.getElementById('connectionStatus').textContent = 'Disconnected';
         document.getElementById('connectionStatus').style.color = '#e74c3c';
         gameRunning = false;
       };
     }
-    
+
     function handleServerMessage(data) {
       switch(data.type) {
         case 'welcome':
           myId = data.playerId;
           myTeam = data.team;
           state.myTeam = data.team;
-          // Инициализация игроков
           for (const p of data.players) {
             state.players.set(p[0], new Player(p));
           }
           break;
-          
+
         case 'state':
-          // Обновление состояния игроков
           const newPlayers = new Map();
-          const playersArray = [];
           for (const p of data.players) {
             const existing = state.players.get(p[0]);
             if (existing) {
@@ -814,14 +764,10 @@
             } else {
               newPlayers.set(p[0], new Player(p));
             }
-            playersArray.push(p);
           }
           state.players = newPlayers;
-          
-          // Обновление крюков
           state.hooks = data.hooks.map(h => new Hook(h));
           
-          // Обновление статистики
           if (data.stats && myId) {
             const myStats = data.stats.find(s => s[0] === myId);
             if (myStats) {
@@ -830,47 +776,39 @@
             }
           }
           
-          // Обновление лидерборда
           updateLeaderboard(data.players);
           break;
           
         case 'event':
-          // Обработка событий
           if (data.event.type === 'hookFire' && data.event.playerId === myId) {
             startHookCooldown();
             playHookSound();
           }
-          // Попадание хука
           if (data.event.type === 'hookHit') {
             const target = state.players.get(data.event.targetId);
             if (target) {
               createHitEffect(target.x, target.y, '#e74c3c');
               playHitSound();
-              // Если попали в меня
               if (target.id === myId) {
                 showNotification('HIT!', 'notify-hit');
               }
             }
           }
-          // Убийство
           if (data.event.type === 'playerKill') {
             const victim = state.players.get(data.event.victimId);
             if (victim) {
               createDeathEffect(victim.x, victim.y);
               playKillSound();
-              // Если я убил — получаю золото
               if (data.event.killerId === myId) {
                 state.gold += 150;
                 showNotification('KILL! +150💰', 'notify-kill');
               }
-              // Если я ассистировал — тоже золото
               if (data.event.assistIds?.includes(myId)) {
                 state.gold += 50;
                 showNotification('ASSIST! +50💰', 'notify-save');
               }
             }
           }
-          // Спасение союзника
           if (data.event.type === 'allySaved') {
             const ally = state.players.get(data.event.allyId);
             if (ally && ally.team === myTeam) {
@@ -882,10 +820,7 @@
           break;
       }
     }
-    
-    /**
-     * Запуск кулдауна хука
-     */
+
     function startHookCooldown() {
       hookCooldownState.onCooldown = true;
       hookCooldownState.cooldownEnd = Date.now() + CONFIG.HOOK_COOLDOWN;
@@ -898,9 +833,6 @@
       bar.style.display = 'block';
     }
     
-    /**
-     * Обновление состояния кулдауна
-     */
     function updateHookCooldown() {
       const now = Date.now();
       const indicator = document.getElementById('hookIndicator');
@@ -911,49 +843,38 @@
         const remaining = hookCooldownState.cooldownEnd - now;
         
         if (remaining <= 0) {
-          // Кулдаун закончился
           hookCooldownState.onCooldown = false;
           indicator.textContent = '🪝 HOOK READY';
           indicator.className = 'ready';
           bar.style.display = 'none';
           fill.style.width = '100%';
         } else {
-          // Обновляем полоску
           const percent = (remaining / CONFIG.HOOK_COOLDOWN) * 100;
           fill.style.width = percent + '%';
         }
       }
     }
-    
+
     function sendInput() {
       if (!ws || ws.readyState !== WebSocket.OPEN) return;
-      
-      // Движение
+
       let dx = 0, dy = 0;
       if (input.keys['KeyW']) dy -= 1;
       if (input.keys['KeyS']) dy += 1;
       if (input.keys['KeyA']) dx -= 1;
       if (input.keys['KeyD']) dx += 1;
-      
-      // Нормализация диагоналей
+
       if (dx !== 0 || dy !== 0) {
         const len = Math.hypot(dx, dy);
         dx /= len;
         dy /= len;
       }
-      
-      ws.send(JSON.stringify({
-        type: 'move',
-        dx, dy
-      }));
-      
-      // Выстрел крюком
+
+      ws.send(JSON.stringify({ type: 'move', dx, dy }));
+
       if (input.hookRequested) {
         const angle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2);
-        ws.send(JSON.stringify({
-          type: 'hook',
-          angle
-        }));
+        ws.send(JSON.stringify({ type: 'hook', angle }));
         input.hookRequested = false;
       }
     }
@@ -965,7 +886,6 @@
       const player = state.players.get(myId);
       if (!player) return { x: 0, y: 0 };
       
-      // Камера центрирована на игроке
       return {
         x: player.x - canvas.width / 2,
         y: player.y - canvas.height / 2
@@ -976,17 +896,15 @@
     // ОТРИСОВКА
     // ==========================================
     function drawMap(cameraX, cameraY) {
-      // Фон
       ctx.fillStyle = '#1a1a2e';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Сетка
+
       ctx.strokeStyle = 'rgba(255,255,255,0.05)';
       ctx.lineWidth = 1;
       const gridSize = 100;
       const offsetX = -cameraX % gridSize;
       const offsetY = -cameraY % gridSize;
-      
+
       for (let x = offsetX; x < canvas.width; x += gridSize) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
@@ -999,229 +917,76 @@
         ctx.lineTo(canvas.width, y);
         ctx.stroke();
       }
+
+      // Река с градиентом
+      const riverScreenY = CONFIG.RIVER_Y - cameraY;
+      const riverGradient = ctx.createLinearGradient(0, riverScreenY - CONFIG.RIVER_WIDTH/2, 0, riverScreenY + CONFIG.RIVER_WIDTH/2);
+      riverGradient.addColorStop(0, 'rgba(52,152,219,0.2)');
+      riverGradient.addColorStop(0.5, 'rgba(52,152,219,0.4)');
+      riverGradient.addColorStop(1, 'rgba(52,152,219,0.2)');
+      ctx.fillStyle = riverGradient;
+      ctx.fillRect(0, riverScreenY - CONFIG.RIVER_WIDTH/2, canvas.width, CONFIG.RIVER_WIDTH);
       
-      // ==========================================
-      // МЕНЕДЖЕР АССЕТОВ
-      // ==========================================
-      class AssetManager {
-        constructor() {
-          this.textures = {};
-          this.loadingCount = 0;
-          this.totalCount = 0;
-          this.onReady = null;
-          this.isReady = false;
+      // Анимация волн
+      const time = Date.now() / 1000;
+      ctx.strokeStyle = 'rgba(100,200,255,0.3)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 5; i++) {
+        const waveY = riverScreenY - CONFIG.RIVER_WIDTH/4 + i * (CONFIG.RIVER_WIDTH / 4);
+        ctx.beginPath();
+        for (let x = 0; x < canvas.width; x += 20) {
+          const waveX = x + Math.sin(time * 2 + i) * 10;
+          if (x === 0) ctx.moveTo(waveX, waveY);
+          else ctx.lineTo(waveX, waveY);
         }
-
-        loadTexture(name, url) {
-          this.loadingCount++;
-          this.totalCount++;
-
-          return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => {
-              this.textures[name] = img;
-              this.loadingCount--;
-              if (this.loadingCount === 0) {
-                this.isReady = true;
-                if (this.onReady) this.onReady();
-              }
-              resolve(img);
-            };
-            img.onerror = () => {
-              console.error(`Failed to load texture: ${url}`);
-              this.loadingCount--;
-              reject(new Error(`Failed to load ${name}`));
-            };
-            img.src = url;
-          });
-        }
-
-        async preload() {
-          await Promise.all([
-            this.loadTexture('ground', 'assets/ground_texture.png'),
-            this.loadTexture('water', 'assets/water_texture.png'),
-            this.loadTexture('wall', 'assets/wall_texture.png')
-          ]);
-        }
-
-        get(name) {
-          return this.textures[name] || null;
-        }
-
-        ready(callback) {
-          if (this.isReady) {
-            callback();
-          } else {
-            this.onReady = callback;
-          }
-        }
+        ctx.stroke();
       }
 
-      const assetManager = new AssetManager();
+      ctx.strokeStyle = 'rgba(52,152,219,0.6)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, riverScreenY - CONFIG.RIVER_WIDTH/2);
+      ctx.lineTo(canvas.width, riverScreenY - CONFIG.RIVER_WIDTH/2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, riverScreenY + CONFIG.RIVER_WIDTH/2);
+      ctx.lineTo(canvas.width, riverScreenY + CONFIG.RIVER_WIDTH/2);
+      ctx.stroke();
 
-      // ==========================================
-      // ОТРИСОВКА КАРТЫ (Pudge Wars Style)
-      // ==========================================
-      let waterOffset = 0;
-      const TILE_SIZE = 64;
-
-      function drawMap(cameraX, cameraY) {
-        const ctx = canvas.getContext('2d');
-        const fieldSize = CONFIG.FIELD_SIZE;
-
-        // Оптимизация: отключаем сглаживание для тайлов
-        ctx.imageSmoothingEnabled = false;
-
-        // --- 1. Заливка фона (темно-серый, как болото)
-        ctx.fillStyle = '#1a1a2e';
-        ctx.fillRect(-cameraX, -cameraY, fieldSize, fieldSize);
-
-        // --- 2. Отображение земли (тайловая текстура)
-        if (assetManager.get('ground')) {
-          const groundTex = assetManager.get('ground');
-          const tilesX = Math.ceil(fieldSize / TILE_SIZE) + 1;
-          const tilesY = Math.ceil(fieldSize / TILE_SIZE) + 1;
-
-          for (let tx = 0; tx < tilesX; tx++) {
-            for (let ty = 0; ty < tilesY; ty++) {
-              const x = tx * TILE_SIZE - cameraX;
-              const y = ty * TILE_SIZE - cameraY;
-              ctx.drawImage(groundTex, x, y, TILE_SIZE, TILE_SIZE);
-            }
-          }
-        } else {
-          // Фолбэк: простая заливка
-          ctx.fillStyle = '#3a2e2e';
-          ctx.fillRect(-cameraX, -cameraY, fieldSize, fieldSize);
-        }
-
-        // --- 3. Река (центральная, Y = 1000, ширина 150)
-        const riverTop = CONFIG.RIVER_Y - CONFIG.RIVER_WIDTH / 2;
-        const riverBottom = CONFIG.RIVER_Y + CONFIG.RIVER_WIDTH / 2;
-
-        if (assetManager.get('water')) {
-          const waterTex = assetManager.get('water');
-          const waterHeight = riverBottom - riverTop;
-          const tilesYWater = Math.ceil(waterHeight / TILE_SIZE) + 1;
-
-          // Анимация: медленное горизонтальное смещение
-          waterOffset += 0.2;
-          if (waterOffset > TILE_SIZE) waterOffset -= TILE_SIZE;
-
-          for (let tx = 0; tx < Math.ceil(fieldSize / TILE_SIZE) + 1; tx++) {
-            for (let ty = 0; ty < tilesYWater; ty++) {
-              const x = tx * TILE_SIZE - cameraX + waterOffset;
-              const y = riverTop + ty * TILE_SIZE - cameraY;
-              ctx.drawImage(waterTex, x, y, TILE_SIZE, TILE_SIZE);
-            }
-          }
-        } else {
-          // Фолбэк: синяя заливка
-          ctx.fillStyle = 'rgba(30, 60, 80, 0.7)';
-          ctx.fillRect(-cameraX, riverTop - cameraY, fieldSize, riverBottom - riverTop);
-        }
-
-        // --- 4. Берега (тонкие полосы по краям реки)
-        ctx.fillStyle = '#4a3a2a'; // Темная грязь у берега
-        ctx.fillRect(-cameraX, riverTop - cameraY - 8, fieldSize, 8); // Верхний берег
-        ctx.fillRect(-cameraX, riverBottom - cameraY, fieldSize, 8);  // Нижний берег
-
-        // --- 5. Стены по краям арены
-        if (assetManager.get('wall')) {
-          const wallTex = assetManager.get('wall');
-          const wallHeight = TILE_SIZE;
-          const wallTilesX = Math.ceil(fieldSize / TILE_SIZE) + 1;
-
-          // Левая стена (X = 0)
-          for (let ty = 0; ty * TILE_SIZE < fieldSize; ty++) {
-            const y = ty * TILE_SIZE - cameraY;
-            ctx.drawImage(wallTex, -cameraX, y, TILE_SIZE, wallHeight);
-          }
-          // Правая стена (X = fieldSize)
-          for (let ty = 0; ty * TILE_SIZE < fieldSize; ty++) {
-            const y = ty * TILE_SIZE - cameraY;
-            ctx.drawImage(wallTex, fieldSize - cameraX, y, TILE_SIZE, wallHeight);
-          }
-          // Верхняя стена (Y = 0)
-          for (let tx = 0; tx * TILE_SIZE < fieldSize; tx++) {
-            const x = tx * TILE_SIZE - cameraX;
-            ctx.drawImage(wallTex, x, -cameraY, TILE_SIZE, wallHeight);
-          }
-          // Нижняя стена (Y = fieldSize)
-          for (let tx = 0; tx * TILE_SIZE < fieldSize; tx++) {
-            const x = tx * TILE_SIZE - cameraX;
-            ctx.drawImage(wallTex, x, fieldSize - cameraY, TILE_SIZE, wallHeight);
-          }
-        } else {
-          // Фолбэк: толстые линии
-          ctx.strokeStyle = '#5d4037';
-          ctx.lineWidth = 20;
-          ctx.beginPath();
-          ctx.moveTo(-cameraX, -cameraY);
-          ctx.lineTo(fieldSize - cameraX, -cameraY);
-          ctx.lineTo(fieldSize - cameraX, fieldSize - cameraY);
-          ctx.lineTo(-cameraX, fieldSize - cameraY);
-          ctx.closePath();
-          ctx.stroke();
-        }
-
-        // --- 6. Виньетка (затемнение по краям)
-        const gradient = ctx.createRadialGradient(
-          canvas.width / 2, canvas.height / 2, 0,
-          canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.8
-        );
-        gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-
-      function draw() {
-        if (!assetManager.isReady) {
-          ctx.fillStyle = '#1a1a2e';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.font = '24px Arial';
-          ctx.fillStyle = '#e74c3c';
-          ctx.textAlign = 'center';
-          ctx.fillText('Loading assets...', canvas.width / 2, canvas.height / 2);
-          requestAnimationFrame(draw);
-          return;
-        }
-
-        const camera = updateCamera();
-        drawMap(camera.x, camera.y);
-
-        // Рисуем частицы
-        updateAndDrawParticles(camera.x, camera.y);
-
-        // Рисуем крюки
-        for (const hook of state.hooks) {
-          hook.draw(ctx, camera.x, camera.y);
-        }
-
-        // Рисуем игроков
-        for (const player of state.players.values()) {
-          player.update(16);
-          player.draw(ctx, camera.x, camera.y);
-        }
-
-        // Рисуем миникарту
-        drawMinimap();
-        
-        // Обновляем индикаторы врагов
-        updateEnemyArrows(camera.x, camera.y);
-
-        // Обновляем UI
-        updateUI();
-        
-        // Рисуем уведомления
-        drawNotifications();
-      }
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(-cameraX, -cameraY, CONFIG.FIELD_SIZE, CONFIG.FIELD_SIZE);
     }
 
-    /**
-     * Обновление и отрисовка частиц
-     */
+    const mmCanvas = document.getElementById('minimap');
+    const mmCtx = mmCanvas.getContext('2d');
+    const MM_SCALE = 150 / CONFIG.FIELD_SIZE;
+    
+    function drawMinimap() {
+      mmCtx.fillStyle = 'rgba(0,0,0,0.9)';
+      mmCtx.fillRect(0, 0, 150, 150);
+      
+      mmCtx.fillStyle = 'rgba(52,152,219,0.5)';
+      mmCtx.fillRect(0, (CONFIG.RIVER_Y - CONFIG.RIVER_WIDTH/2) * MM_SCALE, 150, CONFIG.RIVER_WIDTH * MM_SCALE);
+      
+      for (const player of state.players.values()) {
+        mmCtx.fillStyle = player.team === CONFIG.TEAM_RADIANT ? '#2ecc71' : '#e74c3c';
+        const size = player.id === myId ? 5 : 3;
+        mmCtx.beginPath();
+        mmCtx.arc(player.x * MM_SCALE, player.y * MM_SCALE, size, 0, Math.PI * 2);
+        mmCtx.fill();
+      }
+      
+      const player = state.players.get(myId);
+      if (player) {
+        const camX = player.x - canvas.width / 2;
+        const camY = player.y - canvas.height / 2;
+        mmCtx.strokeStyle = '#fff';
+        mmCtx.lineWidth = 1;
+        mmCtx.strokeRect(camX * MM_SCALE, camY * MM_SCALE, canvas.width * MM_SCALE, canvas.height * MM_SCALE);
+      }
+    }
+    
     function updateAndDrawParticles(cameraX, cameraY) {
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
@@ -1233,67 +998,6 @@
       }
     }
     
-    /**
-     * Отрисовка миникарты
-     */
-    const mmCanvas = document.getElementById('minimap');
-    const mmCtx = mmCanvas.getContext('2d');
-    const MM_SCALE = 150 / CONFIG.FIELD_SIZE;
-    
-    function drawMinimap() {
-      // Очистка
-      mmCtx.fillStyle = 'rgba(0,0,0,0.9)';
-      mmCtx.fillRect(0, 0, 150, 150);
-      
-      // Река
-      mmCtx.fillStyle = 'rgba(52,152,219,0.5)';
-      mmCtx.fillRect(0, (CONFIG.RIVER_Y - CONFIG.RIVER_WIDTH/2) * MM_SCALE, 150, CONFIG.RIVER_WIDTH * MM_SCALE);
-      
-      // Игроки
-      for (const player of state.players.values()) {
-        mmCtx.fillStyle = player.team === CONFIG.TEAM_RADIANT ? '#2ecc71' : '#e74c3c';
-        const size = player.id === myId ? 5 : 3;
-        mmCtx.beginPath();
-        mmCtx.arc(
-          player.x * MM_SCALE,
-          player.y * MM_SCALE,
-          size, 0, Math.PI * 2
-        );
-        mmCtx.fill();
-      }
-      
-      // Рамка камеры
-      const player = state.players.get(myId);
-      if (player) {
-        const camX = player.x - canvas.width / 2;
-        const camY = player.y - canvas.height / 2;
-        mmCtx.strokeStyle = '#fff';
-        mmCtx.lineWidth = 1;
-        mmCtx.strokeRect(
-          camX * MM_SCALE,
-          camY * MM_SCALE,
-          canvas.width * MM_SCALE,
-          canvas.height * MM_SCALE
-        );
-      }
-    }
-    
-    function updateUI() {
-      const player = state.players.get(myId);
-      if (player) {
-        document.getElementById('health').textContent = Math.round(player.health);
-      }
-      document.getElementById('kills').textContent = state.myStats.kills;
-      document.getElementById('deaths').textContent = state.myStats.deaths;
-      document.getElementById('gold').textContent = state.gold;
-      
-      // Обновляем кулдаун хука
-      updateHookCooldown();
-    }
-    
-    /**
-     * Создание уведомления на экране
-     */
     function showNotification(text, className) {
       const existing = document.getElementById('notification');
       if (existing) existing.remove();
@@ -1307,11 +1011,37 @@
       setTimeout(() => el.remove(), 500);
     }
     
-    /**
-     * Отрисовка уведомлений (для будущих эффектов)
-     */
-    function drawNotifications() {
-      // Здесь можно добавить дополнительные эффекты
+    function drawNotifications() {}
+
+    function draw() {
+      const camera = updateCamera();
+      drawMap(camera.x, camera.y);
+      updateAndDrawParticles(camera.x, camera.y);
+
+      for (const hook of state.hooks) {
+        hook.draw(ctx, camera.x, camera.y);
+      }
+
+      for (const player of state.players.values()) {
+        player.update(16);
+        player.draw(ctx, camera.x, camera.y);
+      }
+      
+      drawMinimap();
+      updateEnemyArrows(camera.x, camera.y);
+      updateUI();
+      drawNotifications();
+    }
+
+    function updateUI() {
+      const player = state.players.get(myId);
+      if (player) {
+        document.getElementById('health').textContent = Math.round(player.health);
+      }
+      document.getElementById('kills').textContent = state.myStats.kills;
+      document.getElementById('deaths').textContent = state.myStats.deaths;
+      document.getElementById('gold').textContent = state.gold;
+      updateHookCooldown();
     }
 
     // ==========================================
@@ -1320,15 +1050,15 @@
     function gameLoop(timestamp) {
       const dt = timestamp - lastTime;
       lastTime = timestamp;
-      
+
       if (gameRunning) {
         sendInput();
         draw();
       }
-      
+
       requestAnimationFrame(gameLoop);
     }
-    
+
     requestAnimationFrame(gameLoop);
   </script>
 </body>
