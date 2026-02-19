@@ -5,26 +5,19 @@ const path = require('path');
 
 const PORT = process.env.PORT || 8080;
 const TICK_RATE = 60;
-const FIELD_SIZE = 2000;
+const PLAYER_RADIUS = 12;
+const BASE_SPEED = 4;
+const MAX_SPEED = 7;
+const ACCELERATION = 0.3;
+const FRICTION = 0.92;
+const INFECT_DURATION = 5000;
+const FIELD_SIZE = 2500;
 
-const GAME = {
-  PLAYER_RADIUS: 14,
-  PARASITE_RADIUS: 7,
-  PLAYER_SPEED: 3.5,
-  INFECT_DURATION: 5000,
-  INFECT_COOLDOWN: 1500,
-  INFECT_RANGE: 50,
-  MIN_EXIT_DISTANCE: 60,
-  STUN_DURATION: 250,
-  MAX_PARASITES_PER_HOST: 4,
-  RAGE_THRESHOLD: 15000,
-  RAGE_DURATION: 2000,
-  RAGE_SPEED_MULTIPLIER: 1.6,
-  KNOCKBACK_FORCE: 8,
-  MAX_MOVE_PER_TICK: 8,
-  MOVE_MESSAGE_MIN_INTERVAL: 25,
-  MOVE_BURST_LIMIT: 8,
-  INFECT_MIN_INTERVAL: 100
+const ZONE_TYPES = {
+  NORMAL: 'normal',
+  SAFE: 'safe',
+  DANGER: 'danger',
+  SPEED: 'speed'
 };
 
 const clientPath = path.join(__dirname, '..', 'client', 'index.html');
@@ -46,150 +39,156 @@ const server = http.createServer((req, res) => {
   }
 });
 
-const wss = new WebSocket.Server({
+const wss = new WebSocket.Server({ 
   server,
-  maxPayload: 512,
+  maxPayload: 1024,
   perMessageDeflate: false
 });
 
 const players = new Map();
-const spatialGrid = new Map();
-const GRID_CELL_SIZE = GAME.PLAYER_RADIUS * 6;
-
+const zones = [];
 let nextId = 1;
 let eventSeq = 0;
+let gameTime = 0;
+let globalEvent = null;
+let globalEventTimer = 0;
 
-function getGridKey(x, y) {
-  const gx = Math.floor(x / GRID_CELL_SIZE);
-  const gy = Math.floor(y / GRID_CELL_SIZE);
-  return `${gx},${gy}`;
+function generateZones() {
+  zones.length = 0;
+  
+  // Safe zones (corners)
+  zones.push({ type: ZONE_TYPES.SAFE, x: 100, y: 100, w: 400, h: 400 });
+  zones.push({ type: ZONE_TYPES.SAFE, x: FIELD_SIZE - 500, y: FIELD_SIZE - 500, w: 400, h: 400 });
+  
+  // Danger zones (center cross)
+  zones.push({ type: ZONE_TYPES.DANGER, x: FIELD_SIZE/2 - 150, y: 200, w: 300, h: FIELD_SIZE - 400 });
+  zones.push({ type: ZONE_TYPES.DANGER, x: 200, y: FIELD_SIZE/2 - 150, w: FIELD_SIZE - 400, h: 300 });
+  
+  // Speed zones (diagonal)
+  zones.push({ type: ZONE_TYPES.SPEED, x: 300, y: 300, w: 500, h: 200 });
+  zones.push({ type: ZONE_TYPES.SPEED, x: FIELD_SIZE - 800, y: FIELD_SIZE - 500, w: 500, h: 200 });
 }
 
-function updateSpatialGrid() {
-  spatialGrid.clear();
-  for (const player of players.values()) {
-    const key = getGridKey(player.x, player.y);
-    if (!spatialGrid.has(key)) {
-      spatialGrid.set(key, []);
+function getZoneAt(x, y) {
+  for (const zone of zones) {
+    if (x >= zone.x && x <= zone.x + zone.w &&
+        y >= zone.y && y <= zone.y + zone.h) {
+      return zone;
     }
-    spatialGrid.get(key).push(player);
   }
+  return { type: ZONE_TYPES.NORMAL };
 }
 
-function getNearbyPlayers(x, y, radius) {
-  const gx = Math.floor(x / GRID_CELL_SIZE);
-  const gy = Math.floor(y / GRID_CELL_SIZE);
-  const result = [];
-  for (let dx = -1; dx <= 1; dx++) {
-    for (let dy = -1; dy <= 1; dy++) {
-      const key = `${gx + dx},${gy + dy}`;
-      const cell = spatialGrid.get(key);
-      if (cell) {
-        for (const p of cell) {
-          const dist = Math.hypot(p.x - x, p.y - y);
-          if (dist <= radius) result.push(p);
-        }
-      }
-    }
-  }
-  return result;
+function randomPosition() {
+  const safeZone = zones.filter(z => z.type === ZONE_TYPES.SAFE)[0];
+  return {
+    x: safeZone.x + Math.random() * safeZone.w,
+    y: safeZone.y + Math.random() * safeZone.h
+  };
 }
 
 function distance(p1, p2) {
   return Math.hypot(p1.x - p2.x, p1.y - p2.y);
 }
 
-function randomPosition() {
-  return {
-    x: Math.random() * (FIELD_SIZE - GAME.PLAYER_RADIUS * 2) + GAME.PLAYER_RADIUS,
-    y: Math.random() * (FIELD_SIZE - GAME.PLAYER_RADIUS * 2) + GAME.PLAYER_RADIUS
-  };
-}
-
-function clamp(value, min, max) {
+function sanitizeNumber(value, min, max, defaultValue = 0) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return defaultValue;
   return Math.max(min, Math.min(max, value));
 }
 
-function sanitizeNumber(value, min, max, defaultValue = 0) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return defaultValue;
-  return clamp(value, min, max);
+function broadcastEvent(event) {
+  eventSeq++;
+  event.seq = eventSeq;
+  event.t = Date.now();
+  const data = JSON.stringify({ type: 'event', event });
+  for (const p of players.values()) {
+    if (p.ws.readyState === WebSocket.OPEN) p.ws.send(data);
+  }
+}
+
+function broadcastState() {
+  const state = {
+    type: 'state',
+    t: Date.now(),
+    gt: gameTime,
+    ge: globalEvent,
+    p: []
+  };
+  for (const player of players.values()) {
+    state.p.push([
+      player.id,
+      Math.round(player.x * 100) / 100,
+      Math.round(player.y * 100) / 100,
+      player.vx,
+      player.vy,
+      player.radius,
+      player.hostId,
+      player.infectedAt,
+      player.heat,
+      player.combo,
+      player.stunned
+    ]);
+  }
+  const data = JSON.stringify(state);
+  for (const player of players.values()) {
+    if (player.ws.readyState === WebSocket.OPEN) player.ws.send(data);
+  }
 }
 
 wss.on('connection', (ws, req) => {
   const id = nextId++;
   const pos = randomPosition();
-  const now = Date.now();
-
+  
   const player = {
     id,
     x: pos.x,
     y: pos.y,
-    prevX: pos.x,
-    prevY: pos.y,
-    radius: GAME.PLAYER_RADIUS,
-    speed: GAME.PLAYER_SPEED,
+    vx: 0,
+    vy: 0,
+    radius: PLAYER_RADIUS,
+    speed: BASE_SPEED,
     hostId: null,
     infectedAt: null,
+    heat: 0,
+    combo: 0,
+    comboTimer: 0,
+    stunned: 0,
     ws,
-    connectTime: now,
     lastMoveTime: 0,
     moveCount: 0,
-    lastInfectTime: 0,
-    parasiteExitTime: null,
-    rageMode: false,
-    rageUntil: 0,
-    stunUntil: 0,
-    knockbackX: 0,
-    knockbackY: 0,
-    lastStateSent: 0
+    connectTime: Date.now(),
+    totalInfections: 0,
+    infectionsReceived: 0
   };
-
+  
   players.set(id, player);
-
+  
   broadcastEvent({
     type: 'playerJoin',
     playerId: id,
     x: pos.x,
     y: pos.y
   });
-
-  const welcomeMsg = {
-    type: 'welcome',
-    playerId: id,
-    gameConfig: {
-      playerRadius: GAME.PLAYER_RADIUS,
-      parasiteRadius: GAME.PARASITE_RADIUS,
-      infectDuration: GAME.INFECT_DURATION,
-      infectCooldown: GAME.INFECT_COOLDOWN,
-      maxParasites: GAME.MAX_PARASITES_PER_HOST
-    }
-  };
-  ws.send(JSON.stringify(welcomeMsg));
-
+  
+  ws.send(JSON.stringify({ type: 'welcome', playerId: id }));
+  ws.send(JSON.stringify({ type: 'zones', zones }));
+  
   ws.on('message', (data) => {
     if (player.ws.readyState !== WebSocket.OPEN) return;
-    if (data.length > 512) {
-      player.ws.terminate();
-      return;
-    }
-
     try {
       const msg = JSON.parse(data);
       handlePlayerMessage(player, msg);
     } catch (e) {
-      player.ws.terminate();
+      ws.terminate();
     }
   });
-
+  
   ws.on('close', () => {
-    broadcastEvent({
-      type: 'playerLeave',
-      playerId: player.id
-    });
+    broadcastEvent({ type: 'playerLeave', playerId: player.id });
     releaseParasites(player);
     players.delete(id);
   });
-
+  
   ws.on('error', () => {
     releaseParasites(player);
     players.delete(id);
@@ -199,16 +198,14 @@ wss.on('connection', (ws, req) => {
 function releaseParasites(hostPlayer) {
   for (const p of players.values()) {
     if (p.hostId === hostPlayer.id) {
-      const angle = Math.random() * Math.PI * 2;
-      const exitDist = GAME.MIN_EXIT_DISTANCE + Math.random() * 20;
       p.hostId = null;
       p.infectedAt = null;
-      p.parasiteExitTime = Date.now();
-      p.x = clamp(hostPlayer.x + Math.cos(angle) * exitDist, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
-      p.y = clamp(hostPlayer.y + Math.sin(angle) * exitDist, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
-      p.knockbackX = Math.cos(angle) * GAME.KNOCKBACK_FORCE;
-      p.knockbackY = Math.sin(angle) * GAME.KNOCKBACK_FORCE;
-
+      const angle = Math.random() * Math.PI * 2;
+      p.x = hostPlayer.x + Math.cos(angle) * PLAYER_RADIUS * 4;
+      p.y = hostPlayer.y + Math.sin(angle) * PLAYER_RADIUS * 4;
+      p.x = Math.max(PLAYER_RADIUS, Math.min(FIELD_SIZE - PLAYER_RADIUS, p.x));
+      p.y = Math.max(PLAYER_RADIUS, Math.min(FIELD_SIZE - PLAYER_RADIUS, p.y));
+      
       broadcastEvent({
         type: 'parasiteExit',
         playerId: p.id,
@@ -222,7 +219,7 @@ function releaseParasites(hostPlayer) {
 
 function handlePlayerMessage(player, msg) {
   const now = Date.now();
-
+  
   if (msg.type === 'move') {
     handleMove(player, msg, now);
   } else if (msg.type === 'infect') {
@@ -233,51 +230,74 @@ function handlePlayerMessage(player, msg) {
 }
 
 function handleMove(player, msg, now) {
-  if (player.hostId !== null) return;
-  if (now < player.stunUntil) return;
-  if (now - player.connectTime < 100) return;
-
-  if (now - player.lastMoveTime < GAME.MOVE_MESSAGE_MIN_INTERVAL) {
+  // Anti-cheat: rate limiting with soft punishment
+  if (now - player.lastMoveTime < 16) {
     player.moveCount++;
-    if (player.moveCount > GAME.MOVE_BURST_LIMIT) {
-      player.ws.terminate();
+    if (player.moveCount > 20) {
+      player.stunned = Math.min(player.stunned + 10, 60);
       return;
     }
   } else {
-    player.moveCount = 1;
+    player.moveCount = 0;
     player.lastMoveTime = now;
   }
-
+  
+  if (player.stunned > 0) return;
+  if (player.hostId !== null) return;
+  
   const dx = sanitizeNumber(msg.dx, -1, 1, 0);
   const dy = sanitizeNumber(msg.dy, -1, 1, 0);
-
-  if (dx === 0 && dy === 0) return;
-
-  const len = Math.hypot(dx, dy) || 1;
-  const moveX = (dx / len) * player.speed;
-  const moveY = (dy / len) * player.speed;
-
-  player.prevX = player.x;
-  player.prevY = player.y;
-
-  player.x += moveX + player.knockbackX;
-  player.y += moveY + player.knockbackY;
-
-  player.knockbackX *= 0.7;
-  player.knockbackY *= 0.7;
-  if (Math.abs(player.knockbackX) < 0.1) player.knockbackX = 0;
-  if (Math.abs(player.knockbackY) < 0.1) player.knockbackY = 0;
-
-  const moveDist = Math.hypot(player.x - player.prevX, player.y - player.prevY);
-  if (moveDist > GAME.MAX_MOVE_PER_TICK) {
-    const ratio = GAME.MAX_MOVE_PER_TICK / moveDist;
-    player.x = player.prevX + (player.x - player.prevX) * ratio;
-    player.y = player.prevY + (player.y - player.prevY) * ratio;
+  
+  const zone = getZoneAt(player.x, player.y);
+  let currentSpeed = player.speed;
+  
+  if (zone.type === ZONE_TYPES.SPEED) currentSpeed *= 1.5;
+  if (zone.type === ZONE_TYPES.DANGER) currentSpeed *= 1.3;
+  if (player.heat > 70) currentSpeed *= 0.7;
+  if (player.combo > 2) currentSpeed *= 1.2;
+  
+  if (dx !== 0 || dy !== 0) {
+    const len = Math.hypot(dx, dy);
+    const targetVx = (dx / len) * currentSpeed;
+    const targetVy = (dy / len) * currentSpeed;
+    
+    player.vx += (targetVx - player.vx) * ACCELERATION;
+    player.vy += (targetVy - player.vy) * ACCELERATION;
+    
+    // Heat generation
+    const zone = getZoneAt(player.x, player.y);
+    let heatGen = 0.3;
+    if (zone.type === ZONE_TYPES.DANGER) heatGen = 0.6;
+    if (player.combo > 2) heatGen = 0.5;
+    
+    player.heat = Math.min(player.heat + heatGen, 100);
   }
-
-  player.x = clamp(player.x, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
-  player.y = clamp(player.y, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
-
+  
+  // Apply velocity with friction
+  player.x += player.vx;
+  player.y += player.vy;
+  player.vx *= FRICTION;
+  player.vy *= FRICTION;
+  
+  // Boundaries
+  player.x = Math.max(PLAYER_RADIUS, Math.min(FIELD_SIZE - PLAYER_RADIUS, player.x));
+  player.y = Math.max(PLAYER_RADIUS, Math.min(FIELD_SIZE - PLAYER_RADIUS, player.y));
+  
+  // Heat decay
+  player.heat = Math.max(0, player.heat - 0.15);
+  
+  // Combo decay
+  if (player.comboTimer > 0) {
+    player.comboTimer -= 1000 / TICK_RATE;
+    if (player.comboTimer <= 0) {
+      player.combo = 0;
+    }
+  }
+  
+  // Stun decay
+  if (player.stunned > 0) player.stunned--;
+  
+  // Move parasites with host
   for (const p of players.values()) {
     if (p.hostId === player.id) {
       p.x = player.x;
@@ -288,80 +308,112 @@ function handleMove(player, msg, now) {
 
 function handleInfect(player, msg, now) {
   if (player.hostId !== null) return;
-  if (now - player.connectTime < 500) return;
-  if (now - player.lastInfectTime < GAME.INFECT_COOLDOWN) return;
-  if (now < player.stunUntil) return;
-
+  if (player.stunned > 0) return;
+  
+  // Cooldown check
+  if (now - player.connectTime < 1000) return;
+  if (now - player.lastInfectTime < 500) return;
+  
   if (!msg.targetId || typeof msg.targetId !== 'number') {
     player.ws.terminate();
     return;
   }
-
+  
   const target = players.get(msg.targetId);
   if (!target || target.id === player.id) return;
   if (target.hostId !== null) return;
-
+  if (target.stunned > 0) return;
+  
+  const zone = getZoneAt(player.x, player.y);
+  if (zone.type === ZONE_TYPES.SAFE) return;
+  
   const dist = distance(player, target);
-  if (dist > GAME.INFECT_RANGE) return;
-
-  const parasiteCount = [...players.values()].filter(p => p.hostId === target.id).length;
-  if (parasiteCount >= GAME.MAX_PARASITES_PER_HOST) return;
-
-  player.lastInfectTime = now;
+  const maxInfectRange = PLAYER_RADIUS * 3;
+  
+  if (dist >= maxInfectRange) return;
+  
+  // Server validates and executes infection
   target.hostId = player.id;
   target.infectedAt = now;
   target.x = player.x;
   target.y = player.y;
-  target.stunUntil = now + GAME.STUN_DURATION;
-
+  target.infectionsReceived++;
+  
+  player.totalInfections++;
+  player.combo++;
+  player.comboTimer = 8000;
+  player.lastInfectTime = now;
+  
+  // Heat penalty for infection
+  player.heat = Math.min(player.heat + 15, 100);
+  
+  // Screen shake event for all nearby players
   broadcastEvent({
     type: 'infect',
     infector: player.id,
     target: target.id,
     x: player.x,
-    y: player.y
+    y: player.y,
+    combo: player.combo
   });
+  
+  // Combo announcement
+  if (player.combo >= 3) {
+    broadcastEvent({
+      type: 'combo',
+      playerId: player.id,
+      combo: player.combo,
+      x: player.x,
+      y: player.y
+    });
+  }
 }
 
-function broadcastEvent(event) {
-  eventSeq++;
-  event.seq = eventSeq;
-  event.t = Date.now();
-
-  const data = JSON.stringify({ type: 'event', event });
-
-  for (const p of players.values()) {
-    if (p.ws.readyState === WebSocket.OPEN) {
-      p.ws.send(data);
+function updateGlobalEvent() {
+  globalEventTimer--;
+  
+  if (globalEventTimer <= 0) {
+    globalEvent = null;
+    
+    // Start new global event
+    if (Math.random() < 0.4) {
+      const events = ['heatwave', 'darkness', 'speedfrenzy'];
+      globalEvent = events[Math.floor(Math.random() * events.length)];
+      globalEventTimer = 30 * TICK_RATE;
+      
+      broadcastEvent({
+        type: 'globalEvent',
+        event: globalEvent,
+        duration: globalEventTimer
+      });
+    }
+  }
+  
+  // Apply global effects
+  if (globalEvent === 'heatwave') {
+    for (const p of players.values()) {
+      if (p.hostId === null) p.heat = Math.min(p.heat + 0.1, 100);
     }
   }
 }
 
 const gameLoop = setInterval(() => {
-  const now = Date.now();
-
+  gameTime++;
+  
   for (const player of players.values()) {
     if (player.hostId !== null && player.infectedAt !== null) {
-      if (now - player.infectedAt >= GAME.INFECT_DURATION) {
+      if (Date.now() - player.infectedAt >= INFECT_DURATION) {
         const host = players.get(player.hostId);
         if (host) {
           const angle = Math.random() * Math.PI * 2;
-          const exitDist = GAME.MIN_EXIT_DISTANCE + Math.random() * 20;
-          
           player.hostId = null;
           player.infectedAt = null;
-          player.parasiteExitTime = now;
-          player.x = clamp(host.x + Math.cos(angle) * exitDist, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
-          player.y = clamp(host.y + Math.sin(angle) * exitDist, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
-          player.knockbackX = Math.cos(angle) * GAME.KNOCKBACK_FORCE;
-          player.knockbackY = Math.sin(angle) * GAME.KNOCKBACK_FORCE;
-
-          const infectionDuration = now - player.infectedAt;
-          if (infectionDuration >= GAME.RAGE_THRESHOLD) {
-            player.rageMode = true;
-            player.rageUntil = now + GAME.RAGE_DURATION;
-          }
-
+          player.x = host.x + Math.cos(angle) * PLAYER_RADIUS * 4;
+          player.y = host.y + Math.sin(angle) * PLAYER_RADIUS * 4;
+          player.x = Math.max(PLAYER_RADIUS, Math.min(FIELD_SIZE - PLAYER_RADIUS, player.x));
+          player.y = Math.max(PLAYER_RADIUS, Math.min(FIELD_SIZE - PLAYER_RADIUS, player.y));
+          player.stunned = 20;
+          
           broadcastEvent({
             type: 'parasiteExit',
             playerId: player.id,
@@ -375,60 +427,24 @@ const gameLoop = setInterval(() => {
         }
       }
     }
-
-    if (player.rageMode && now >= player.rageUntil) {
-      player.rageMode = false;
-    }
   }
-
-  updateSpatialGrid();
-  broadcastState(now);
-
+  
+  updateGlobalEvent();
+  broadcastState();
 }, 1000 / TICK_RATE);
 
-function broadcastState(now) {
-  const state = {
-    type: 'state',
-    t: now,
-    p: []
-  };
-
-  for (const player of players.values()) {
-    const sendInterval = player.hostId !== null ? 200 : 100;
-    if (now - player.lastStateSent < sendInterval) continue;
-    player.lastStateSent = now;
-
-    state.p.push([
-      player.id,
-      Math.round(player.x * 100) / 100,
-      Math.round(player.y * 100) / 100,
-      player.hostId,
-      player.infectedAt,
-      player.rageMode ? 1 : 0,
-      player.stunUntil > now ? 1 : 0
-    ]);
-  }
-
-  if (state.p.length === 0) return;
-
-  const data = JSON.stringify(state);
-
-  for (const player of players.values()) {
-    if (player.ws.readyState === WebSocket.OPEN) {
-      player.ws.send(data);
-    }
-  }
-}
+// Regenerate zones every 2 minutes
+setInterval(() => {
+  generateZones();
+  broadcastEvent({ type: 'zonesRegenerated', zones });
+}, 120000);
 
 server.listen(PORT, '0.0.0.0', () => {
+  generateZones();
   console.log(`[SERVER] Parasite Arena running on port ${PORT}`);
-  console.log(`[SERVER] Field size: ${FIELD_SIZE}x${FIELD_SIZE}`);
-  console.log(`[SERVER] Tick rate: ${TICK_RATE} Hz`);
-  console.log(`[SERVER] Client: http://localhost:${PORT}`);
-});
-
-server.on('error', (err) => {
-  console.error('[SERVER] Server error:', err);
+  console.log(`[SERVER] Field: ${FIELD_SIZE}x${FIELD_SIZE}`);
+  console.log(`[SERVER] Tick: ${TICK_RATE} Hz`);
+  console.log(`[SERVER] Zones: ${zones.length}`);
 });
 
 process.on('SIGINT', () => {
