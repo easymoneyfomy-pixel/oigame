@@ -2,98 +2,362 @@ const WebSocket = require('ws');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const PORT = process.env.PORT || 8080;
 const TICK_RATE = 60;
-const PLAYER_RADIUS = 12;
-const BASE_SPEED = 4;
-const MAX_SPEED = 7;
-const ACCELERATION = 0.3;
-const FRICTION = 0.92;
-const INFECT_DURATION = 5000;
-const FIELD_SIZE = 2500;
+const FIELD_SIZE = 2000;
+const MATCH_DURATION = 180000;
+const VIEW_RADIUS = 250;
+const FOG_ALPHA = 0.97;
 
-const ZONE_TYPES = {
-  NORMAL: 'normal',
-  SAFE: 'safe',
-  DANGER: 'danger',
-  SPEED: 'speed'
+const GAME = {
+  PLAYER_RADIUS: 14,
+  PARASITE_RADIUS: 7,
+  PLAYER_SPEED: 3.5,
+  INFECT_DURATION: 5000,
+  INFECT_COOLDOWN: 1500,
+  INFECT_RANGE: 50,
+  MIN_EXIT_DISTANCE: 60,
+  STUN_DURATION: 250,
+  MAX_PARASITES_PER_HOST: 4,
+  RAGE_THRESHOLD: 15000,
+  RAGE_DURATION: 2000,
+  RAGE_SPEED_MULTIPLIER: 1.6,
+  KNOCKBACK_FORCE: 8,
+  MAX_MOVE_PER_TICK: 8,
+  MOVE_MESSAGE_MIN_INTERVAL: 25,
+  MOVE_BURST_LIMIT: 8,
+  POWERUP_COUNT: 6,
+  POWERUP_DURATION: 8000,
+  OBSTACLES: [
+    { x: 300, y: 300, w: 200, h: 200, type: 'building' },
+    { x: 1500, y: 300, w: 200, h: 200, type: 'building' },
+    { x: 300, y: 1500, w: 200, h: 200, type: 'building' },
+    { x: 1500, y: 1500, w: 200, h: 200, type: 'building' },
+    { x: 900, y: 900, w: 200, h: 200, type: 'building' },
+    { x: 150, y: 850, w: 120, h: 300, type: 'wall' },
+    { x: 1730, y: 850, w: 120, h: 300, type: 'wall' },
+    { x: 850, y: 150, w: 300, h: 120, type: 'wall' },
+    { x: 850, y: 1730, w: 300, h: 120, type: 'wall' },
+    { x: 600, y: 600, w: 100, h: 100, type: 'tree' },
+    { x: 1300, y: 600, w: 100, h: 100, type: 'tree' },
+    { x: 600, y: 1300, w: 100, h: 100, type: 'tree' },
+    { x: 1300, y: 1300, w: 100, h: 100, type: 'tree' }
+  ],
+  POWERUP_TYPES: [
+    { id: 'speed', name: 'Speed', icon: '⚡', color: '#00bfff', desc: '1.8x скорость на 8 сек' },
+    { id: 'shield', name: 'Shield', icon: '🛡️', color: '#da70d6', desc: 'Защита от заражений' },
+    { id: 'invisibility', name: 'Ghost', icon: '👻', color: '#ffffff', desc: 'Невидимость 8 сек' },
+    { id: 'double', name: '2x Score', icon: '💰', color: '#ffd700', desc: 'Двойные очки' }
+  ],
+  ZONES: [
+    { x: 0, y: 0, w: 400, h: 400, name: 'Spawn Zone', safe: true },
+    { x: 1600, y: 0, w: 400, h: 400, name: 'North Base', safe: true },
+    { x: 0, y: 1600, w: 400, h: 400, name: 'South Base', safe: true },
+    { x: 1600, y: 1600, w: 400, h: 400, name: 'East Base', safe: true },
+    { x: 800, y: 800, w: 400, h: 400, name: 'Battle Zone', safe: false }
+  ]
 };
 
 const clientPath = path.join(__dirname, '..', 'client', 'index.html');
+const accountsPath = path.join(__dirname, 'accounts.json');
+
+let accounts = {};
+try {
+  if (fs.existsSync(accountsPath)) {
+    accounts = JSON.parse(fs.readFileSync(accountsPath, 'utf8'));
+  }
+} catch (e) { accounts = {}; }
+
+function saveAccounts() {
+  try { fs.writeFileSync(accountsPath, JSON.stringify(accounts, null, 2)); } catch (e) {}
+}
+
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
 
 const server = http.createServer((req, res) => {
   if (req.url === '/' || req.url === '/index.html') {
     fs.readFile(clientPath, (err, data) => {
-      if (err) {
-        res.writeHead(500);
-        res.end('Error loading client');
-        return;
-      }
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(data);
+      if (err) { res.writeHead(500); res.end('Error'); return; }
+      res.writeHead(200, { 'Content-Type': 'text/html' }); res.end(data);
     });
-  } else {
-    res.writeHead(426, { 'Content-Type': 'text/plain' });
-    res.end('Upgrade Required');
-  }
+  } else if (req.url === '/api/register' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const { username, password } = JSON.parse(body);
+        if (!username || !password) { res.writeHead(400); res.end(JSON.stringify({ error: 'Fill all fields' })); return; }
+        if (username.length < 3 || username.length > 20) { res.writeHead(400); res.end(JSON.stringify({ error: 'Username 3-20 chars' })); return; }
+        if (password.length < 4) { res.writeHead(400); res.end(JSON.stringify({ error: 'Password 4+ chars' })); return; }
+        if (accounts[username]) { res.writeHead(409); res.end(JSON.stringify({ error: 'Username exists' })); return; }
+        accounts[username] = { password: hashPassword(password), created: Date.now(), gamesPlayed: 0, totalScore: 0, wins: 0 };
+        saveAccounts();
+        res.writeHead(200); res.end(JSON.stringify({ success: true }));
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: 'Invalid request' })); }
+    });
+  } else if (req.url === '/api/login' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const { username, password } = JSON.parse(body);
+        if (!accounts[username] || accounts[username].password !== hashPassword(password)) {
+          res.writeHead(401); res.end(JSON.stringify({ error: 'Invalid credentials' })); return;
+        }
+        res.writeHead(200); res.end(JSON.stringify({ success: true, stats: { gamesPlayed: accounts[username].gamesPlayed, totalScore: accounts[username].totalScore, wins: accounts[username].wins } }));
+      } catch (e) { res.writeHead(400); res.end(JSON.stringify({ error: 'Invalid request' })); }
+    });
+  } else { res.writeHead(426); res.end('Upgrade Required'); }
 });
 
-const wss = new WebSocket.Server({ 
-  server,
-  maxPayload: 1024,
-  perMessageDeflate: false
-});
+const wss = new WebSocket.Server({ server, maxPayload: 512, perMessageDeflate: false });
 
 const players = new Map();
-const zones = [];
+const powerups = [];
+const spatialGrid = new Map();
+const GRID_CELL_SIZE = GAME.PLAYER_RADIUS * 6;
+
 let nextId = 1;
 let eventSeq = 0;
-let gameTime = 0;
-let globalEvent = null;
-let globalEventTimer = 0;
+let matchStartTime = Date.now();
+let matchId = 1;
 
-function generateZones() {
-  zones.length = 0;
-  
-  // Safe zones (corners)
-  zones.push({ type: ZONE_TYPES.SAFE, x: 100, y: 100, w: 400, h: 400 });
-  zones.push({ type: ZONE_TYPES.SAFE, x: FIELD_SIZE - 500, y: FIELD_SIZE - 500, w: 400, h: 400 });
-  
-  // Danger zones (center cross)
-  zones.push({ type: ZONE_TYPES.DANGER, x: FIELD_SIZE/2 - 150, y: 200, w: 300, h: FIELD_SIZE - 400 });
-  zones.push({ type: ZONE_TYPES.DANGER, x: 200, y: FIELD_SIZE/2 - 150, w: FIELD_SIZE - 400, h: 300 });
-  
-  // Speed zones (diagonal)
-  zones.push({ type: ZONE_TYPES.SPEED, x: 300, y: 300, w: 500, h: 200 });
-  zones.push({ type: ZONE_TYPES.SPEED, x: FIELD_SIZE - 800, y: FIELD_SIZE - 500, w: 500, h: 200 });
+function getGridKey(x, y) {
+  return `${Math.floor(x / GRID_CELL_SIZE)},${Math.floor(y / GRID_CELL_SIZE)}`;
 }
 
-function getZoneAt(x, y) {
-  for (const zone of zones) {
-    if (x >= zone.x && x <= zone.x + zone.w &&
-        y >= zone.y && y <= zone.y + zone.h) {
-      return zone;
-    }
+function updateSpatialGrid() {
+  spatialGrid.clear();
+  for (const player of players.values()) {
+    const key = getGridKey(player.x, player.y);
+    if (!spatialGrid.has(key)) spatialGrid.set(key, []);
+    spatialGrid.get(key).push(player);
   }
-  return { type: ZONE_TYPES.NORMAL };
 }
+
+function distance(p1, p2) { return Math.hypot(p1.x - p2.x, p1.y - p2.y); }
 
 function randomPosition() {
-  const safeZone = zones.filter(z => z.type === ZONE_TYPES.SAFE)[0];
-  return {
-    x: safeZone.x + Math.random() * safeZone.w,
-    y: safeZone.y + Math.random() * safeZone.h
+  const safeZones = GAME.ZONES.filter(z => z.safe);
+  const zone = safeZones[Math.floor(Math.random() * safeZones.length)];
+  return { x: zone.x + Math.random() * (zone.w - 40) + 20, y: zone.y + Math.random() * (zone.h - 40) + 20 };
+}
+
+function checkObstacleCollision(x, y, radius) {
+  for (const obs of GAME.OBSTACLES) {
+    const closestX = Math.max(obs.x, Math.min(x, obs.x + obs.w));
+    const closestY = Math.max(obs.y, Math.min(y, obs.y + obs.h));
+    if (Math.hypot(x - closestX, y - closestY) < radius) return true;
+  }
+  return false;
+}
+
+function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+
+function sanitizeNumber(value, min, max, def = 0) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return def;
+  return clamp(value, min, max);
+}
+
+function spawnPowerup() {
+  if (powerups.length >= GAME.POWERUP_COUNT) return;
+  let pos, valid = false, attempts = 0;
+  while (!valid && attempts < 30) {
+    pos = { x: Math.random() * (FIELD_SIZE - 40) + 20, y: Math.random() * (FIELD_SIZE - 40) + 20, type: GAME.POWERUP_TYPES[Math.floor(Math.random() * GAME.POWERUP_TYPES.length)].id };
+    valid = !checkObstacleCollision(pos.x, pos.y, 15); attempts++;
+  }
+  if (valid) powerups.push(pos);
+}
+
+function checkPowerupCollision(player) {
+  for (let i = powerups.length - 1; i >= 0; i--) {
+    const p = powerups[i];
+    if (distance(player, p) < GAME.PLAYER_RADIUS + 12) {
+      applyPowerup(player, p.type);
+      broadcastEvent({ type: 'powerupCollect', x: p.x, y: p.y, type: p.type, playerId: player.id });
+      powerups.splice(i, 1);
+      setTimeout(spawnPowerup, 5000);
+    }
+  }
+}
+
+function applyPowerup(player, type) {
+  const now = Date.now();
+  if (type === 'speed') player.speedBoostUntil = now + GAME.POWERUP_DURATION;
+  else if (type === 'shield') player.shieldUntil = now + GAME.POWERUP_DURATION;
+  else if (type === 'invisibility') player.invisibleUntil = now + GAME.POWERUP_DURATION;
+  else if (type === 'double') player.doublePointsUntil = now + GAME.POWERUP_DURATION;
+}
+
+wss.on('connection', (ws) => {
+  const id = nextId++;
+  const pos = randomPosition();
+  const now = Date.now();
+
+  const player = {
+    id, x: pos.x, y: pos.y, prevX: pos.x, prevY: pos.y,
+    radius: GAME.PLAYER_RADIUS, speed: GAME.PLAYER_SPEED,
+    hostId: null, infectedAt: null, ws, connectTime: now,
+    lastMoveTime: 0, moveCount: 0, lastInfectTime: 0,
+    stunUntil: 0, knockbackX: 0, knockbackY: 0, lastStateSent: 0,
+    score: 0, infections: 0, deaths: 0, combo: 0, comboTime: 0,
+    speedBoostUntil: 0, shieldUntil: 0, invisibleUntil: 0, doublePointsUntil: 0,
+    name: `Player_${id}`, username: null, lastPing: now
   };
+
+  players.set(id, player);
+  broadcastEvent({ type: 'playerJoin', playerId: id, x: pos.x, y: pos.y });
+
+  ws.send(JSON.stringify({
+    type: 'welcome', playerId: id, matchId,
+    matchTime: Math.max(0, MATCH_DURATION - (Date.now() - matchStartTime)),
+    gameConfig: {
+      playerRadius: GAME.PLAYER_RADIUS, parasiteRadius: GAME.PARASITE_RADIUS,
+      infectDuration: GAME.INFECT_DURATION, infectCooldown: GAME.INFECT_COOLDOWN,
+      maxParasites: GAME.MAX_PARASITES_PER_HOST, matchDuration: MATCH_DURATION,
+      obstacles: GAME.OBSTACLES, zones: GAME.ZONES, powerupTypes: GAME.POWERUP_TYPES
+    },
+    leaderboard: getLeaderboard()
+  }));
+
+  ws.on('message', (data) => {
+    if (player.ws.readyState !== WebSocket.OPEN) return;
+    if (data.length > 512) { player.ws.terminate(); return; }
+    try {
+      const msg = JSON.parse(data);
+      if (msg.type === 'setUsername' && msg.username) {
+        player.username = msg.username.substring(0, 20);
+        player.name = msg.username.substring(0, 20);
+      } else if (msg.type === 'ping') {
+        player.lastPing = Date.now();
+        ws.send(JSON.stringify({ type: 'pong', t: Date.now() }));
+      } else {
+        handlePlayerMessage(player, msg);
+      }
+    } catch (e) { player.ws.terminate(); }
+  });
+
+  ws.on('close', () => {
+    broadcastEvent({ type: 'playerLeave', playerId: player.id });
+    releaseParasites(player);
+    players.delete(id);
+  });
+
+  ws.on('error', () => { releaseParasites(player); players.delete(id); });
+});
+
+function getLeaderboard() {
+  return [...players.values()].sort((a, b) => b.score - a.score).slice(0, 10)
+    .map(p => ({ id: p.id, name: p.name, score: p.score, infections: p.infections }));
 }
 
-function distance(p1, p2) {
-  return Math.hypot(p1.x - p2.x, p1.y - p2.y);
+function releaseParasites(hostPlayer) {
+  for (const p of players.values()) {
+    if (p.hostId === hostPlayer.id) {
+      const angle = Math.random() * Math.PI * 2;
+      const exitDist = GAME.MIN_EXIT_DISTANCE + Math.random() * 20;
+      p.hostId = null; p.infectedAt = null;
+      p.x = clamp(hostPlayer.x + Math.cos(angle) * exitDist, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
+      p.y = clamp(hostPlayer.y + Math.sin(angle) * exitDist, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
+      p.knockbackX = Math.cos(angle) * GAME.KNOCKBACK_FORCE;
+      p.knockbackY = Math.sin(angle) * GAME.KNOCKBACK_FORCE;
+      broadcastEvent({ type: 'parasiteExit', playerId: p.id, hostId: hostPlayer.id, x: p.x, y: p.y });
+    }
+  }
 }
 
-function sanitizeNumber(value, min, max, defaultValue = 0) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return defaultValue;
-  return Math.max(min, Math.min(max, value));
+function handlePlayerMessage(player, msg) {
+  const now = Date.now();
+  if (msg.type === 'move') handleMove(player, msg, now);
+  else if (msg.type === 'infect') handleInfect(player, msg, now);
+  else player.ws.terminate();
+}
+
+function handleMove(player, msg, now) {
+  if (player.hostId !== null || now < player.stunUntil || now - player.connectTime < 100) return;
+  if (now - player.lastMoveTime < GAME.MOVE_MESSAGE_MIN_INTERVAL) {
+    player.moveCount++;
+    if (player.moveCount > GAME.MOVE_BURST_LIMIT) { player.ws.terminate(); return; }
+  } else { player.moveCount = 1; player.lastMoveTime = now; }
+
+  const dx = sanitizeNumber(msg.dx, -1, 1, 0);
+  const dy = sanitizeNumber(msg.dy, -1, 1, 0);
+  if (dx === 0 && dy === 0) return;
+
+  const len = Math.hypot(dx, dy) || 1;
+  let moveX = (dx / len) * player.speed;
+  let moveY = (dy / len) * player.speed;
+  if (player.speedBoostUntil > now) { moveX *= 1.8; moveY *= 1.8; }
+
+  player.prevX = player.x; player.prevY = player.y;
+  player.x += moveX + player.knockbackX;
+  player.y += moveY + player.knockbackY;
+  player.knockbackX *= 0.7; player.knockbackY *= 0.7;
+  if (Math.abs(player.knockbackX) < 0.1) player.knockbackX = 0;
+  if (Math.abs(player.knockbackY) < 0.1) player.knockbackY = 0;
+
+  const moveDist = Math.hypot(player.x - player.prevX, player.y - player.prevY);
+  const maxMove = GAME.MAX_MOVE_PER_TICK * (player.speedBoostUntil > now ? 1.8 : 1);
+  if (moveDist > maxMove) {
+    const ratio = maxMove / moveDist;
+    player.x = player.prevX + (player.x - player.prevX) * ratio;
+    player.y = player.prevY + (player.y - player.prevY) * ratio;
+  }
+
+  if (checkObstacleCollision(player.x, player.y, GAME.PLAYER_RADIUS)) {
+    player.x = player.prevX; player.y = player.prevY;
+  }
+  player.x = clamp(player.x, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
+  player.y = clamp(player.y, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
+
+  checkPowerupCollision(player);
+  for (const p of players.values()) {
+    if (p.hostId === player.id) { p.x = player.x; p.y = player.y; }
+  }
+}
+
+function handleInfect(player, msg, now) {
+  if (player.hostId !== null || now - player.connectTime < 500 || 
+      now - player.lastInfectTime < GAME.INFECT_COOLDOWN || now < player.stunUntil ||
+      player.invisibleUntil > now) return;
+
+  if (!msg.targetId || typeof msg.targetId !== 'number') { player.ws.terminate(); return; }
+
+  const target = players.get(msg.targetId);
+  if (!target || target.id === player.id || target.hostId !== null || 
+      (target.shieldUntil && target.shieldUntil > now)) return;
+
+  const dist = distance(player, target);
+  if (dist > GAME.INFECT_RANGE) return;
+
+  const parasiteCount = [...players.values()].filter(p => p.hostId === target.id).length;
+  if (parasiteCount >= GAME.MAX_PARASITES_PER_HOST) return;
+
+  player.lastInfectTime = now;
+  target.hostId = player.id;
+  target.infectedAt = now;
+  target.x = player.x; target.y = player.y;
+  target.stunUntil = now + GAME.STUN_DURATION;
+
+  const points = (player.doublePointsUntil > now ? 20 : 10) * Math.min(player.combo + 1, 5);
+  player.score += points;
+  player.infections++;
+  player.combo++;
+  player.comboTime = now + 5000;
+
+  broadcastEvent({ type: 'infect', infector: player.id, target: target.id, x: player.x, y: player.y, combo: player.combo });
+  broadcastLeaderboard();
+}
+
+function broadcastLeaderboard() {
+  const data = JSON.stringify({ type: 'leaderboard', leaderboard: getLeaderboard() });
+  for (const p of players.values()) {
+    if (p.ws.readyState === WebSocket.OPEN) p.ws.send(data);
+  }
 }
 
 function broadcastEvent(event) {
@@ -106,354 +370,107 @@ function broadcastEvent(event) {
   }
 }
 
-function broadcastState() {
+const gameLoop = setInterval(() => {
+  const now = Date.now();
+  const matchElapsed = now - matchStartTime;
+
+  if (matchElapsed >= MATCH_DURATION) { endMatch(); return; }
+
+  for (const player of players.values()) {
+    if (player.combo > 0 && now > player.comboTime) player.combo = 0;
+
+    if (player.hostId !== null && player.infectedAt !== null && now - player.infectedAt >= GAME.INFECT_DURATION) {
+      const host = players.get(player.hostId);
+      if (host) {
+        const angle = Math.random() * Math.PI * 2;
+        const exitDist = GAME.MIN_EXIT_DISTANCE + Math.random() * 20;
+        player.hostId = null; player.infectedAt = null;
+        player.x = clamp(host.x + Math.cos(angle) * exitDist, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
+        player.y = clamp(host.y + Math.sin(angle) * exitDist, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
+        player.knockbackX = Math.cos(angle) * GAME.KNOCKBACK_FORCE;
+        player.knockbackY = Math.sin(angle) * GAME.KNOCKBACK_FORCE;
+        
+        if (now - player.infectedAt >= GAME.RAGE_THRESHOLD) {
+          player.rageMode = true;
+          player.rageUntil = now + GAME.RAGE_DURATION;
+        }
+        if (host) { host.deaths++; host.score = Math.max(0, host.score - 5); }
+        broadcastEvent({ type: 'parasiteExit', playerId: player.id, hostId: host.id, x: player.x, y: player.y });
+      } else {
+        player.hostId = null; player.infectedAt = null;
+      }
+    }
+    if (player.rageMode && now >= player.rageUntil) player.rageMode = false;
+  }
+
+  if (Math.random() < 0.015) spawnPowerup();
+  updateSpatialGrid();
+  broadcastState(now);
+}, 1000 / TICK_RATE);
+
+function endMatch() {
+  const winner = getLeaderboard()[0];
+  broadcastEvent({ type: 'matchEnd', winner: winner ? { id: winner.id, name: winner.name, score: winner.score } : null, leaderboard: getLeaderboard() });
+
+  if (winner && winner.username && accounts[winner.username]) {
+    accounts[winner.username].wins++;
+    saveAccounts();
+  }
+
+  matchId++;
+  matchStartTime = Date.now();
+  for (const player of players.values()) {
+    player.score = 0; player.infections = 0; player.deaths = 0; player.combo = 0;
+    const pos = randomPosition();
+    player.x = pos.x; player.y = pos.y;
+    player.hostId = null; player.infectedAt = null;
+    if (player.username && accounts[player.username]) {
+      accounts[player.username].gamesPlayed++;
+      accounts[player.username].totalScore += player.score;
+      saveAccounts();
+    }
+  }
+  powerups.length = 0;
+  for (let i = 0; i < GAME.POWERUP_COUNT; i++) spawnPowerup();
+  setTimeout(() => broadcastEvent({ type: 'matchStart', matchId, matchDuration: MATCH_DURATION }), 3000);
+}
+
+function broadcastState(now) {
   const state = {
-    type: 'state',
-    t: Date.now(),
-    gt: gameTime,
-    ge: globalEvent,
-    p: []
+    type: 'state', t: now,
+    matchTime: Math.max(0, MATCH_DURATION - (now - matchStartTime)),
+    p: [], powerups: powerups.map(p => [p.x, p.y, p.type])
   };
   for (const player of players.values()) {
+    const sendInterval = player.hostId !== null ? 200 : 100;
+    if (now - player.lastStateSent < sendInterval) continue;
+    player.lastStateSent = now;
     state.p.push([
-      player.id,
-      Math.round(player.x * 100) / 100,
-      Math.round(player.y * 100) / 100,
-      player.vx,
-      player.vy,
-      player.radius,
-      player.hostId,
-      player.infectedAt,
-      player.heat,
-      player.combo,
-      player.stunned
+      player.id, Math.round(player.x * 100) / 100, Math.round(player.y * 100) / 100,
+      player.hostId, player.infectedAt, player.rageMode ? 1 : 0, player.stunUntil > now ? 1 : 0,
+      player.shieldUntil > now ? 1 : 0, player.invisibleUntil > now ? 1 : 0,
+      player.speedBoostUntil > now ? 1 : 0, player.score, player.name
     ]);
   }
+  if (state.p.length === 0) return;
   const data = JSON.stringify(state);
   for (const player of players.values()) {
     if (player.ws.readyState === WebSocket.OPEN) player.ws.send(data);
   }
 }
 
-wss.on('connection', (ws, req) => {
-  const id = nextId++;
-  const pos = randomPosition();
-  
-  const player = {
-    id,
-    x: pos.x,
-    y: pos.y,
-    vx: 0,
-    vy: 0,
-    radius: PLAYER_RADIUS,
-    speed: BASE_SPEED,
-    hostId: null,
-    infectedAt: null,
-    heat: 0,
-    combo: 0,
-    comboTimer: 0,
-    stunned: 0,
-    ws,
-    lastMoveTime: 0,
-    moveCount: 0,
-    connectTime: Date.now(),
-    totalInfections: 0,
-    infectionsReceived: 0
-  };
-  
-  players.set(id, player);
-  
-  broadcastEvent({
-    type: 'playerJoin',
-    playerId: id,
-    x: pos.x,
-    y: pos.y
-  });
-  
-  ws.send(JSON.stringify({ type: 'welcome', playerId: id }));
-  ws.send(JSON.stringify({ type: 'zones', zones }));
-  
-  ws.on('message', (data) => {
-    if (player.ws.readyState !== WebSocket.OPEN) return;
-    try {
-      const msg = JSON.parse(data);
-      handlePlayerMessage(player, msg);
-    } catch (e) {
-      ws.terminate();
-    }
-  });
-  
-  ws.on('close', () => {
-    broadcastEvent({ type: 'playerLeave', playerId: player.id });
-    releaseParasites(player);
-    players.delete(id);
-  });
-  
-  ws.on('error', () => {
-    releaseParasites(player);
-    players.delete(id);
-  });
-});
-
-function releaseParasites(hostPlayer) {
-  for (const p of players.values()) {
-    if (p.hostId === hostPlayer.id) {
-      p.hostId = null;
-      p.infectedAt = null;
-      const angle = Math.random() * Math.PI * 2;
-      p.x = hostPlayer.x + Math.cos(angle) * PLAYER_RADIUS * 4;
-      p.y = hostPlayer.y + Math.sin(angle) * PLAYER_RADIUS * 4;
-      p.x = Math.max(PLAYER_RADIUS, Math.min(FIELD_SIZE - PLAYER_RADIUS, p.x));
-      p.y = Math.max(PLAYER_RADIUS, Math.min(FIELD_SIZE - PLAYER_RADIUS, p.y));
-      
-      broadcastEvent({
-        type: 'parasiteExit',
-        playerId: p.id,
-        hostId: hostPlayer.id,
-        x: p.x,
-        y: p.y
-      });
-    }
-  }
-}
-
-function handlePlayerMessage(player, msg) {
-  const now = Date.now();
-  
-  if (msg.type === 'move') {
-    handleMove(player, msg, now);
-  } else if (msg.type === 'infect') {
-    handleInfect(player, msg, now);
-  } else {
-    player.ws.terminate();
-  }
-}
-
-function handleMove(player, msg, now) {
-  // Anti-cheat: rate limiting with soft punishment
-  if (now - player.lastMoveTime < 16) {
-    player.moveCount++;
-    if (player.moveCount > 20) {
-      player.stunned = Math.min(player.stunned + 10, 60);
-      return;
-    }
-  } else {
-    player.moveCount = 0;
-    player.lastMoveTime = now;
-  }
-  
-  if (player.stunned > 0) return;
-  if (player.hostId !== null) return;
-  
-  const dx = sanitizeNumber(msg.dx, -1, 1, 0);
-  const dy = sanitizeNumber(msg.dy, -1, 1, 0);
-  
-  const zone = getZoneAt(player.x, player.y);
-  let currentSpeed = player.speed;
-  
-  if (zone.type === ZONE_TYPES.SPEED) currentSpeed *= 1.5;
-  if (zone.type === ZONE_TYPES.DANGER) currentSpeed *= 1.3;
-  if (player.heat > 70) currentSpeed *= 0.7;
-  if (player.combo > 2) currentSpeed *= 1.2;
-  
-  if (dx !== 0 || dy !== 0) {
-    const len = Math.hypot(dx, dy);
-    const targetVx = (dx / len) * currentSpeed;
-    const targetVy = (dy / len) * currentSpeed;
-    
-    player.vx += (targetVx - player.vx) * ACCELERATION;
-    player.vy += (targetVy - player.vy) * ACCELERATION;
-    
-    // Heat generation
-    const zone = getZoneAt(player.x, player.y);
-    let heatGen = 0.3;
-    if (zone.type === ZONE_TYPES.DANGER) heatGen = 0.6;
-    if (player.combo > 2) heatGen = 0.5;
-    
-    player.heat = Math.min(player.heat + heatGen, 100);
-  }
-  
-  // Apply velocity with friction
-  player.x += player.vx;
-  player.y += player.vy;
-  player.vx *= FRICTION;
-  player.vy *= FRICTION;
-  
-  // Boundaries
-  player.x = Math.max(PLAYER_RADIUS, Math.min(FIELD_SIZE - PLAYER_RADIUS, player.x));
-  player.y = Math.max(PLAYER_RADIUS, Math.min(FIELD_SIZE - PLAYER_RADIUS, player.y));
-  
-  // Heat decay
-  player.heat = Math.max(0, player.heat - 0.15);
-  
-  // Combo decay
-  if (player.comboTimer > 0) {
-    player.comboTimer -= 1000 / TICK_RATE;
-    if (player.comboTimer <= 0) {
-      player.combo = 0;
-    }
-  }
-  
-  // Stun decay
-  if (player.stunned > 0) player.stunned--;
-  
-  // Move parasites with host
-  for (const p of players.values()) {
-    if (p.hostId === player.id) {
-      p.x = player.x;
-      p.y = player.y;
-    }
-  }
-}
-
-function handleInfect(player, msg, now) {
-  if (player.hostId !== null) return;
-  if (player.stunned > 0) return;
-  
-  // Cooldown check
-  if (now - player.connectTime < 1000) return;
-  if (now - player.lastInfectTime < 500) return;
-  
-  if (!msg.targetId || typeof msg.targetId !== 'number') {
-    player.ws.terminate();
-    return;
-  }
-  
-  const target = players.get(msg.targetId);
-  if (!target || target.id === player.id) return;
-  if (target.hostId !== null) return;
-  if (target.stunned > 0) return;
-  
-  const zone = getZoneAt(player.x, player.y);
-  if (zone.type === ZONE_TYPES.SAFE) return;
-  
-  const dist = distance(player, target);
-  const maxInfectRange = PLAYER_RADIUS * 3;
-  
-  if (dist >= maxInfectRange) return;
-  
-  // Server validates and executes infection
-  target.hostId = player.id;
-  target.infectedAt = now;
-  target.x = player.x;
-  target.y = player.y;
-  target.infectionsReceived++;
-  
-  player.totalInfections++;
-  player.combo++;
-  player.comboTimer = 8000;
-  player.lastInfectTime = now;
-  
-  // Heat penalty for infection
-  player.heat = Math.min(player.heat + 15, 100);
-  
-  // Screen shake event for all nearby players
-  broadcastEvent({
-    type: 'infect',
-    infector: player.id,
-    target: target.id,
-    x: player.x,
-    y: player.y,
-    combo: player.combo
-  });
-  
-  // Combo announcement
-  if (player.combo >= 3) {
-    broadcastEvent({
-      type: 'combo',
-      playerId: player.id,
-      combo: player.combo,
-      x: player.x,
-      y: player.y
-    });
-  }
-}
-
-function updateGlobalEvent() {
-  globalEventTimer--;
-  
-  if (globalEventTimer <= 0) {
-    globalEvent = null;
-    
-    // Start new global event
-    if (Math.random() < 0.4) {
-      const events = ['heatwave', 'darkness', 'speedfrenzy'];
-      globalEvent = events[Math.floor(Math.random() * events.length)];
-      globalEventTimer = 30 * TICK_RATE;
-      
-      broadcastEvent({
-        type: 'globalEvent',
-        event: globalEvent,
-        duration: globalEventTimer
-      });
-    }
-  }
-  
-  // Apply global effects
-  if (globalEvent === 'heatwave') {
-    for (const p of players.values()) {
-      if (p.hostId === null) p.heat = Math.min(p.heat + 0.1, 100);
-    }
-  }
-}
-
-const gameLoop = setInterval(() => {
-  gameTime++;
-  
-  for (const player of players.values()) {
-    if (player.hostId !== null && player.infectedAt !== null) {
-      if (Date.now() - player.infectedAt >= INFECT_DURATION) {
-        const host = players.get(player.hostId);
-        if (host) {
-          const angle = Math.random() * Math.PI * 2;
-          player.hostId = null;
-          player.infectedAt = null;
-          player.x = host.x + Math.cos(angle) * PLAYER_RADIUS * 4;
-          player.y = host.y + Math.sin(angle) * PLAYER_RADIUS * 4;
-          player.x = Math.max(PLAYER_RADIUS, Math.min(FIELD_SIZE - PLAYER_RADIUS, player.x));
-          player.y = Math.max(PLAYER_RADIUS, Math.min(FIELD_SIZE - PLAYER_RADIUS, player.y));
-          player.stunned = 20;
-          
-          broadcastEvent({
-            type: 'parasiteExit',
-            playerId: player.id,
-            hostId: host.id,
-            x: player.x,
-            y: player.y
-          });
-        } else {
-          player.hostId = null;
-          player.infectedAt = null;
-        }
-      }
-    }
-  }
-  
-  updateGlobalEvent();
-  broadcastState();
-}, 1000 / TICK_RATE);
-
-// Regenerate zones every 2 minutes
-setInterval(() => {
-  generateZones();
-  broadcastEvent({ type: 'zonesRegenerated', zones });
-}, 120000);
-
 server.listen(PORT, '0.0.0.0', () => {
-  generateZones();
-  console.log(`[SERVER] Parasite Arena running on port ${PORT}`);
-  console.log(`[SERVER] Field: ${FIELD_SIZE}x${FIELD_SIZE}`);
-  console.log(`[SERVER] Tick: ${TICK_RATE} Hz`);
-  console.log(`[SERVER] Zones: ${zones.length}`);
+  console.log(`[SERVER] Parasite Arena on port ${PORT}`);
+  console.log(`[SERVER] Field: ${FIELD_SIZE}x${FIELD_SIZE}, Ticks: ${TICK_RATE}Hz, Match: ${MATCH_DURATION/1000}s`);
+  console.log(`[SERVER] Accounts: ${Object.keys(accounts).length} (saved to: ${accountsPath})`);
+  console.log(`[SERVER] http://localhost:${PORT}`);
+  for (let i = 0; i < GAME.POWERUP_COUNT; i++) spawnPowerup();
 });
 
+server.on('error', (err) => console.error('[SERVER] Error:', err));
 process.on('SIGINT', () => {
   console.log('\n[SERVER] Shutting down...');
   clearInterval(gameLoop);
-  server.close(() => {
-    wss.close(() => {
-      console.log('[SERVER] Closed');
-      process.exit(0);
-    });
-  });
+  saveAccounts();
+  server.close(() => { wss.close(() => { console.log('[SERVER] Closed'); process.exit(0); }); });
 });

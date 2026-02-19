@@ -2,978 +2,479 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Parasite Arena</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { overflow: hidden; background: #0a0a16; }
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: none; }
+    body { overflow: hidden; background: #0a0a14; font-family: 'Segoe UI', sans-serif; }
     canvas { display: block; }
-    
-    #ui {
-      position: fixed;
-      top: 15px;
-      left: 15px;
-      color: #fff;
-      font-family: 'Segoe UI', sans-serif;
-      font-size: 13px;
-      background: linear-gradient(135deg, rgba(20,20,40,0.95), rgba(10,10,25,0.98));
-      padding: 18px 22px;
-      border-radius: 14px;
-      z-index: 100;
-      user-select: none;
-      border: 1px solid rgba(100,150,255,0.25);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
-      min-width: 200px;
-    }
-    #ui strong {
-      font-size: 17px;
-      background: linear-gradient(90deg, #6af, #4f8);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 20px rgba(100,200,255,0.5);
-    }
-    #ui .divider {
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(100,150,255,0.3), transparent);
-      margin: 12px 0;
-    }
-    #ui .stat { display: flex; justify-content: space-between; margin: 5px 0; }
-    #ui .stat-label { color: #88a; }
-    #ui .stat-value { font-weight: bold; }
-    
-    #heatBar {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 300px;
-      height: 12px;
-      background: rgba(0,0,0,0.6);
-      border-radius: 6px;
-      overflow: hidden;
-      z-index: 100;
-      display: none;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    #heatFill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #4f8, #ff4, #f44);
-      transition: width 0.1s ease;
-      box-shadow: 0 0 20px rgba(255,100,100,0.5);
-    }
-    #heatLabel {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 9px;
-      font-weight: bold;
-      color: #fff;
-      text-shadow: 0 0 5px #000;
-    }
-    
-    #exitTimer {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: #ff6b6b;
-      font-family: 'Segoe UI', sans-serif;
-      font-size: 36px;
-      font-weight: bold;
-      text-shadow: 0 0 25px rgba(255,107,107,0.9);
-      display: none;
-      z-index: 100;
-      pointer-events: none;
-      animation: pulse 0.4s ease-in-out infinite alternate;
-    }
-    @keyframes pulse {
-      from { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
-      to { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
-    }
-    
-    #status {
-      position: fixed;
-      bottom: 15px;
-      left: 15px;
-      color: #668;
-      font-family: 'Segoe UI', sans-serif;
-      font-size: 11px;
-      z-index: 100;
-      background: rgba(0,0,0,0.5);
-      padding: 8px 14px;
-      border-radius: 6px;
-    }
-    
-    #globalEvent {
-      position: fixed;
-      top: 15px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 20px;
-      font-weight: bold;
-      color: #f64;
-      text-shadow: 0 0 20px rgba(255,100,50,0.8);
-      z-index: 100;
-      display: none;
-      pointer-events: none;
-      animation: eventGlow 2s ease-in-out infinite;
-    }
-    @keyframes eventGlow {
-      0%, 100% { text-shadow: 0 0 20px rgba(255,100,50,0.8); }
-      50% { text-shadow: 0 0 40px rgba(255,100,50,1); }
-    }
-    
-    #comboDisplay {
-      position: fixed;
-      top: 100px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 42px;
-      font-weight: bold;
-      color: #ff0;
-      text-shadow: 0 0 30px rgba(255,200,0,0.9);
-      z-index: 100;
-      display: none;
-      pointer-events: none;
-    }
-    
-    .effect-text {
-      position: fixed;
-      font-size: 24px;
-      font-weight: bold;
-      pointer-events: none;
-      z-index: 200;
-      animation: floatUp 1s ease-out forwards;
-    }
-    @keyframes floatUp {
-      0% { opacity: 1; transform: translateY(0) scale(1); }
-      100% { opacity: 0; transform: translateY(-50px) scale(1.2); }
-    }
+
+    /* AUTH */
+    #authScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #0d0d1a, #0a0a14); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
+    #authScreen.hidden { display: none; }
+    .authBox { background: linear-gradient(135deg, rgba(30,35,60,0.95), rgba(20,25,50,0.98)); border: 2px solid rgba(100,150,220,0.4); border-radius: 20px; padding: 35px; width: 90%; max-width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+    .authBox h1 { font-size: 28px; color: #7af; text-align: center; margin-bottom: 8px; text-shadow: 0 0 20px rgba(100,180,255,0.5); }
+    .authBox p { color: #689; text-align: center; margin-bottom: 25px; font-size: 13px; }
+    .authBox input { width: 100%; padding: 12px 16px; margin: 8px 0; background: rgba(15,20,40,0.8); border: 1px solid rgba(100,140,220,0.3); border-radius: 8px; color: #fff; font-size: 15px; }
+    .authBox input:focus { outline: none; border-color: #5a8; }
+    .authBox input::placeholder { color: #567; }
+    .authBtn { width: 100%; padding: 12px; margin: 8px 0; font-size: 15px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #3a5a8a, #2a4a6a); border: 2px solid #5a8; border-radius: 8px; cursor: pointer; }
+    .authBtn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(80,150,120,0.3); }
+    .authBtn.secondary { background: linear-gradient(135deg, #4a4a6a, #3a3a5a); border-color: #88a; }
+    .authError { color: #f66; text-align: center; margin-top: 12px; font-size: 13px; min-height: 18px; }
+    .authStats { background: rgba(50,60,90,0.4); border-radius: 8px; padding: 12px; margin-top: 15px; }
+    .authStats h3 { color: #7af; font-size: 13px; margin-bottom: 8px; }
+    .authStats .stat { display: flex; justify-content: space-between; color: #aab; font-size: 12px; margin: 4px 0; }
+
+    /* MENU */
+    #menu { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(ellipse at center, #1a1a2e, #0a0a14); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
+    #menu.hidden { display: none; }
+    #menuLogo { font-size: 48px; font-weight: bold; background: linear-gradient(135deg, #7af, #5f9, #fa6); background-size: 200% 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: gradientShift 3s ease infinite; margin-bottom: 8px; }
+    @keyframes gradientShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+    #menuSubtitle { font-size: 13px; color: #689; margin-bottom: 25px; letter-spacing: 2px; }
+    .btn { width: 240px; padding: 12px; margin: 6px; font-size: 15px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #3a5a8a, #2a4a6a); border: 2px solid #5a8; border-radius: 8px; cursor: pointer; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(80,150,120,0.3); }
+    .btn-secondary { background: linear-gradient(135deg, #4a4a6a, #3a3a5a); border-color: #88a; }
+    .langRow { display: flex; align-items: center; gap: 10px; }
+    #langBtn { padding: 10px 18px; font-size: 14px; background: linear-gradient(135deg, #4a4a6a, #3a3a5a); border: 2px solid #88a; color: #fff; border-radius: 8px; cursor: pointer; min-width: 90px; }
+
+    /* MODAL */
+    #modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 1100; backdrop-filter: blur(5px); }
+    #modal.show { display: flex; }
+    .modal-content { background: linear-gradient(135deg, #1a1a2e, #121225); border: 2px solid #5a8; border-radius: 15px; padding: 25px; max-width: 480px; color: #fff; max-height: 85vh; overflow-y: auto; }
+    .modal-content h2 { color: #7af; margin-bottom: 12px; font-size: 22px; }
+    .modal-content p { margin: 8px 0; color: #aab; line-height: 1.4; font-size: 13px; }
+    .modal-content ul { margin: 8px 0 8px 18px; color: #aab; }
+    .modal-content li { margin: 5px 0; font-size: 12px; }
+    .close-btn { margin-top: 15px; padding: 10px 25px; background: linear-gradient(135deg, #3a5a8a, #2a4a6a); border: 2px solid #5a8; color: #fff; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; width: 100%; }
+
+    /* MATCH END */
+    #matchEnd { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 3000; }
+    #matchEnd.show { display: flex; }
+    #matchEnd h1 { font-size: 42px; margin-bottom: 12px; }
+    #matchEnd.winner h1 { color: #fd4; } #matchEnd.loser h1 { color: #f66; }
+    #matchEnd p { color: #fff; font-size: 16px; margin-bottom: 20px; }
+
+    /* UI */
+    #playerName { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); color: #7af; font-size: 13px; background: rgba(20,30,50,0.8); padding: 6px 16px; border-radius: 15px; border: 1px solid #5a8; z-index: 100; }
+    #matchTimer { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); font-size: 18px; font-weight: bold; color: #fff; background: rgba(20,20,40,0.9); padding: 8px 20px; border-radius: 20px; border: 2px solid #7af; z-index: 100; }
+    #matchTimer.urgent { border-color: #f66; color: #f66; animation: timerPulse 0.5s infinite; }
+    @keyframes timerPulse { 0%,100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.05); } }
+    #leaderboard { position: fixed; top: 55px; right: 8px; background: rgba(20,20,40,0.92); border: 2px solid #5a8; border-radius: 8px; padding: 10px; min-width: 150px; z-index: 100; }
+    #leaderboard h3 { color: #7af; margin-bottom: 6px; font-size: 12px; text-align: center; }
+    .lb-entry { display: flex; justify-content: space-between; padding: 3px 6px; margin: 2px 0; border-radius: 4px; font-size: 11px; }
+    .lb-entry.me { background: rgba(80,180,120,0.3); border: 1px solid #5a8; }
+    #powerupInfo { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 100; flex-wrap: wrap; justify-content: center; max-width: 90%; }
+    .powerup-card { background: rgba(30,35,60,0.95); border: 2px solid #557; border-radius: 8px; padding: 8px; min-width: 70px; text-align: center; opacity: 0.25; transition: all 0.3s; }
+    .powerup-card.active { opacity: 1; border-color: var(--color); box-shadow: 0 0 15px var(--color); }
+    .powerup-card .icon { font-size: 24px; display: block; }
+    .powerup-card .name { font-size: 10px; color: #aab; display: block; margin-top: 2px; }
+    .powerup-card .timer { font-size: 11px; color: var(--color); font-weight: bold; display: block; }
+    #combo { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); font-size: 24px; font-weight: bold; color: #fa6; text-shadow: 0 0 15px rgba(255,170,80,0.8); display: none; z-index: 100; }
+    #combo.show { display: block; }
+    #notification { position: fixed; top: 30%; left: 50%; transform: translate(-50%, -50%); font-size: 36px; font-weight: bold; text-align: center; z-index: 2000; pointer-events: none; animation: notifyPop 0.7s forwards; }
+    @keyframes notifyPop { 0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
+    #cooldown { position: fixed; bottom: 55px; left: 50%; transform: translateX(-50%); width: 90px; height: 5px; background: rgba(30,30,50,0.8); border-radius: 3px; display: none; z-index: 100; border: 1px solid #5a8; }
+    #cooldown-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #f66, #fa6); border-radius: 3px; }
+    #ping { position: fixed; top: 12px; right: 8px; color: #688; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 5px; z-index: 100; font-size: 11px; }
+    #minimap { position: fixed; bottom: 8px; right: 8px; width: 130px; height: 130px; background: rgba(10,12,25,0.95); border: 2px solid #5a8; border-radius: 8px; z-index: 100; }
+
+    /* MOBILE */
+    #mobileControls { position: fixed; bottom: 15px; left: 15px; z-index: 500; display: none; }
+    #joystick { width: 110px; height: 110px; background: rgba(50,60,90,0.4); border: 2px solid rgba(100,140,220,0.3); border-radius: 50%; position: relative; }
+    #joystickKnob { width: 45px; height: 45px; background: rgba(100,150,220,0.5); border: 2px solid rgba(150,200,255,0.7); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    #infectBtn { position: fixed; bottom: 35px; right: 160px; width: 70px; height: 70px; background: rgba(220,80,80,0.6); border: 3px solid rgba(255,120,120,0.7); border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 28px; z-index: 500; }
+    #infectBtn:active { background: rgba(255,100,100,0.8); transform: scale(0.95); }
+    @media (max-width: 768px) { #mobileControls, #infectBtn { display: block; } #menuLogo { font-size: 38px; } .btn { width: 200px; font-size: 14px; } }
   </style>
 </head>
 <body>
   <canvas id="game"></canvas>
-  
-  <div id="ui">
-    <div><strong>🦠 PARASITE ARENA</strong></div>
-    <div class="divider"></div>
-    <div style="color:#aaa;font-size:11px;margin-bottom:8px">WASD — Move | SPACE — Infect</div>
-    <div class="stat"><span class="stat-label">👥 Players:</span><span class="stat-value" id="playerCount" style="color:#6ff">0</span></div>
-    <div class="stat"><span class="stat-label">📡 Ping:</span><span class="stat-value" id="ping" style="color:#4f4">--</span></div>
-    <div class="stat"><span class="stat-label">🔥 Heat:</span><span class="stat-value" id="heatValue" style="color:#f64">0%</span></div>
-    <div class="stat"><span class="stat-label">💀 Infections:</span><span class="stat-value" id="infectCount" style="color:#f44">0</span></div>
+  <canvas id="minimap" width="130" height="130"></canvas>
+
+  <!-- AUTH -->
+  <div id="authScreen">
+    <div class="authBox">
+      <h1>🦠 Parasite Arena</h1>
+      <p data-i18n="authSubtitle">Battle Royale • 3 Min</p>
+      <input type="text" id="regUsername" placeholder="Username (3-20)" maxlength="20" autocomplete="off">
+      <input type="password" id="regPassword" placeholder="Password (4+)" maxlength="50" autocomplete="off">
+      <button class="authBtn" id="registerBtn" data-i18n="register">Register</button>
+      <button class="authBtn secondary" id="loginBtn" data-i18n="login">Login</button>
+      <button class="authBtn secondary" id="guestBtn" data-i18n="guest">Guest</button>
+      <div class="authError" id="authError"></div>
+      <div class="authStats" id="authStats" style="display:none;">
+        <h3 data-i18n="stats">Stats</h3>
+        <div class="stat"><span data-i18n="games">Games:</span><span id="statGames">0</span></div>
+        <div class="stat"><span data-i18n="score">Score:</span><span id="statScore">0</span></div>
+        <div class="stat"><span data-i18n="wins">Wins:</span><span id="statWins">0</span></div>
+      </div>
+    </div>
   </div>
-  
-  <div id="heatBar"><div id="heatFill"></div><span id="heatLabel">HEAT</span></div>
-  <div id="exitTimer">⏱ FREE IN <span id="timerValue">5.0</span>s</div>
-  <div id="globalEvent">⚠️ HEATWAVE</div>
-  <div id="comboDisplay">🔥 x3 COMBO!</div>
-  <div id="status">Disconnected</div>
+
+  <!-- MENU -->
+  <div id="menu">
+    <div id="menuLogo">PARASITE ARENA</div>
+    <div id="menuSubtitle" data-i18n="menuSubtitle">Battle Royale • 3 Min Matches</div>
+    <button class="btn" id="playBtn" data-i18n="play">▶ Play</button>
+    <div class="langRow">
+      <button class="btn btn-secondary" id="howToBtn" data-i18n="howTo">❓ Help</button>
+      <button id="langBtn" title="Language">🌐 EN</button>
+    </div>
+    <button class="btn btn-secondary" id="discordBtn">💬 Discord</button>
+  </div>
+
+  <!-- MODAL -->
+  <div id="modal">
+    <div class="modal-content">
+      <h2 data-i18n="howToTitle">🎮 How to Play</h2>
+      <p><strong>🟢 FREE</strong> — <span data-i18n="howto1">Move (WASD/joystick), infect (SPACE/button)</span></p>
+      <p><strong>🔴 PARASITE</strong> — <span data-i18n="howto2">Wait 5 sec inside host, then escape</span></p>
+      <p><strong>🔥 RAGE</strong> — <span data-i18n="howto3">Infected 15+ sec = speed boost!</span></p>
+      <hr style="border-color:#334;margin:12px 0;">
+      <p><strong data-i18n="powerups">POWERUPS:</strong></p>
+      <ul>
+        <li><span style="color:#00bfff">⚡ Speed</span> — <span data-i18n="pwrSpeed">1.8x speed, 8 sec</span></li>
+        <li><span style="color:#da70d6">🛡️ Shield</span> — <span data-i18n="pwrShield">Blocks infections</span></li>
+        <li><span style="color:#fff">👻 Ghost</span> — <span data-i18n="pwrGhost">Invisible 8 sec</span></li>
+        <li><span style="color:#ffd700">💰 2x</span> — <span data-i18n="pwrDouble">Double points</span></li>
+      </ul>
+      <p style="color:#fa6;margin-top:10px;" data-i18n="tip">💡 Combo = more points!</p>
+      <button class="close-btn" data-i18n="gotIt">Got It!</button>
+    </div>
+  </div>
+
+  <!-- MATCH END -->
+  <div id="matchEnd">
+    <h1 id="matchEndTitle">🏆 VICTORY!</h1>
+    <p id="matchEndScore"></p>
+    <button class="btn" onclick="location.reload()" data-i18n="playAgain">Play Again</button>
+  </div>
+
+  <!-- UI -->
+  <div id="playerName"></div>
+  <div id="matchTimer">⏱ 3:00</div>
+  <div id="leaderboard"><h3 data-i18n="leaderboard">Leaderboard</h3><div id="lbList"></div></div>
+  <div id="combo">🔥 x1</div>
+  <div id="powerupInfo"></div>
+  <div id="cooldown"><div id="cooldown-bar"></div></div>
+  <div id="ping">-- ms</div>
+
+  <!-- MOBILE -->
+  <div id="mobileControls"><div id="joystick"><div id="joystickKnob"></div></div></div>
+  <div id="infectBtn">💉</div>
 
   <script>
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
-    const playerCountEl = document.getElementById('playerCount');
-    const pingEl = document.getElementById('ping');
-    const heatValueEl = document.getElementById('heatValue');
-    const infectCountEl = document.getElementById('infectCount');
-    const exitTimerEl = document.getElementById('exitTimer');
-    const timerValueEl = document.getElementById('timerValue');
-    const statusEl = document.getElementById('status');
-    const heatBarEl = document.getElementById('heatBar');
-    const heatFillEl = document.getElementById('heatFill');
-    const globalEventEl = document.getElementById('globalEvent');
-    const comboDisplayEl = document.getElementById('comboDisplay');
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const WS_URL = `wss://${window.location.host}`;
-    const PLAYER_RADIUS = 12;
-    const INFECT_DURATION = 5000;
-    const FIELD_SIZE = 2500;
-    const BOUNDARY_WARNING = 300; // Дистанция предупреждения о границе
-
-    const ZONE_STYLES = {
-      normal: {
-        bg: 'rgba(15,18,35,0.9)',
-        border: 'rgba(80,100,140,0.4)',
-        grid: 'rgba(70,90,130,0.25)',
-        pattern: 'dots'
+    // ========== LOCALIZATION ==========
+    const I18N = {
+      en: {
+        authSubtitle: 'Battle Royale • 3 Min', register: '📝 Register', login: '🔑 Login', guest: '👤 Guest', stats: '📊 Your Stats', games: 'Games:', score: 'Score:', wins: 'Wins:',
+        menuSubtitle: 'Battle Royale • 3 Min Matches', play: '▶ Play', howTo: '❓ Help', howToTitle: '🎮 How to Play',
+        howto1: 'Move (WASD/joystick), infect (SPACE/button)', howto2: 'Wait 5 sec inside host', howto3: 'Infected 15+ sec = speed boost!',
+        powerups: 'POWERUPS:', pwrSpeed: '1.8x speed, 8 sec', pwrShield: 'Blocks infections', pwrGhost: 'Invisible 8 sec', pwrDouble: 'Double points',
+        tip: '💡 Combo = more points!', gotIt: 'Got It!', leaderboard: '🏆 Leaderboard', playAgain: 'Play Again',
+        statusFree: 'FREE', statusParasite: 'PARASITE', statusRage: 'RAGE!', infectNotify: '💉 INFECTED!', freeNotify: '✅ FREE!',
+        victory: '🏆 VICTORY!', defeat: '💀 DEFEAT', winner: 'Winner:'
       },
-      safe: {
-        bg: 'rgba(30,60,40,0.85)',
-        border: 'rgba(80,180,100,0.6)',
-        grid: 'rgba(60,140,90,0.3)',
-        pattern: 'diagonal',
-        glow: 'rgba(60,160,80,0.15)'
-      },
-      danger: {
-        bg: 'rgba(70,25,25,0.85)',
-        border: 'rgba(200,80,80,0.7)',
-        grid: 'rgba(180,60,60,0.35)',
-        pattern: 'stripes',
-        glow: 'rgba(180,50,50,0.2)'
-      },
-      speed: {
-        bg: 'rgba(25,35,70,0.85)',
-        border: 'rgba(100,140,220,0.6)',
-        grid: 'rgba(90,120,200,0.35)',
-        pattern: 'arrows',
-        glow: 'rgba(80,120,200,0.15)'
+      ru: {
+        authSubtitle: 'Битва • 3 мин', register: '📝 Регистрация', login: '🔑 Вход', guest: '👤 Гость', stats: '📊 Статистика', games: 'Игры:', score: 'Очки:', wins: 'Победы:',
+        menuSubtitle: 'Королевская битва • 3 мин', play: '▶ Играть', howTo: '❓ Помощь', howToTitle: '🎮 Как играть',
+        howto1: 'Движение (WASD/джойстик), заразить (SPACE/кнопка)', howto2: 'Жди 5 сек внутри хозяина', howto3: 'Заражён 15+ сек = ускорение!',
+        powerups: 'БУСТЫ:', pwrSpeed: '1.8x скорость, 8 сек', pwrShield: 'Защита от заражений', pwrGhost: 'Невидимость 8 сек', pwrDouble: 'Двойные очки',
+        tip: '💡 Комбо = больше очков!', gotIt: 'Понятно!', leaderboard: '🏆 Лидеры', playAgain: 'Ещё раз',
+        statusFree: 'СВОБОДЕН', statusParasite: 'ПАРАЗИТ', statusRage: 'ЯРОСТЬ!', infectNotify: '💉 ЗАРАЖЁН!', freeNotify: '✅ СВОБОДЕН!',
+        victory: '🏆 ПОБЕДА!', defeat: '💀 ПОРАЖЕНИЕ', winner: 'Победитель:'
       }
     };
+    let lang = localStorage.getItem('parasiteLang') || 'en';
+    function t(key) { return I18N[lang][key] || key; }
+    function setLang(l) { lang = l; localStorage.setItem('parasiteLang', l); document.querySelectorAll('[data-i18n]').forEach(el => { const k = el.getAttribute('data-i18n'); if (I18N[l][k]) el.textContent = I18N[l][k]; }); document.getElementById('langBtn').textContent = '🌐 ' + l.toUpperCase(); }
+    setLang(lang);
+    document.getElementById('langBtn').onclick = () => setLang(lang === 'en' ? 'ru' : 'en');
 
-    let ws = null;
-    let players = new Map();
-    let myId = null;
-    let zones = [];
-    let lastServerTime = 0;
-    let gameTime = 0;
-    let globalEvent = null;
-    let connectionState = 'disconnected';
-    let reconnectAttempts = 0;
-    let particles = [];
-    let floatingTexts = [];
-    let screenShake = 0;
-    let myStats = { infections: 0, deaths: 0 };
-    let bgStars = [];
-    let boundaryPulse = 0;
+    // ========== AUDIO ==========
+    const Audio = {
+      ctx: null, init() { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+      play(f, type, dur, vol = 0.1) { if (!this.ctx) return; const o = this.ctx.createOscillator(), g = this.ctx.createGain(); o.connect(g); g.connect(this.ctx.destination); o.type = type; o.frequency.setValueAtTime(f, this.ctx.currentTime); g.gain.setValueAtTime(vol, this.ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur); o.start(); o.stop(this.ctx.currentTime + dur); },
+      infect() { this.play(400, 'sawtooth', 0.15, 0.15); }, free() { this.play(600, 'sine', 0.2, 0.1); }, powerup() { this.play(800, 'sine', 0.1); setTimeout(() => this.play(1200, 'sine', 0.15), 100); }, combo() { this.play(500, 'square', 0.1); setTimeout(() => this.play(700, 'square', 0.1), 80); }, matchEnd() { [400,500,600,800].forEach((f,i) => setTimeout(() => this.play(f,'sine',0.3,0.2), i*150)); }
+    };
 
-    function initStars() {
-      bgStars = [];
-      for (let i = 0; i < 200; i++) {
-        bgStars.push({
-          x: Math.random() * FIELD_SIZE,
-          y: Math.random() * FIELD_SIZE,
-          size: Math.random() * 1.5 + 0.5,
-          alpha: Math.random() * 0.5 + 0.3,
-          twinkle: Math.random() * Math.PI * 2
-        });
-      }
-    }
-    initStars();
+    // ========== CONFIG ==========
+    const FIELD_SIZE = 2000, VIEW_RADIUS = 250;
+    let CONFIG = { playerRadius: 14, parasiteRadius: 7, infectDuration: 5000, infectCooldown: 1500, matchDuration: 180000, obstacles: [], zones: [], powerupTypes: [] };
 
-    const keysDown = {};
+    // ========== STATE ==========
+    const canvas = document.getElementById('game'), ctx = canvas.getContext('2d');
+    const mmCanvas = document.getElementById('minimap'), mm = mmCanvas.getContext('2d');
+    let ws = null, myId = null, players = new Map(), matchTime = 0, gameStarted = false, isPaused = false;
+    let cameraX = 0, cameraY = 0, keysDown = {}, lastInfectTime = 0, myCombo = 0, myPowerups = {};
+    let myUsername = null, myStats = null, joystickActive = false, joystickData = { x: 0, y: 0 };
+    let pingLastSent = 0, pingValue = 0;
 
+    // ========== AUTH ==========
+    const authScreen = document.getElementById('authScreen'), authError = document.getElementById('authError'), authStats = document.getElementById('authStats');
+    async function api(ep, data) { const r = await fetch(ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); const j = await r.json(); if (!r.ok) throw new Error(j.error); return j; }
+    document.getElementById('registerBtn').onclick = async () => {
+      const u = document.getElementById('regUsername').value.trim(), p = document.getElementById('regPassword').value.trim();
+      authError.textContent = ''; authError.style.color = '#f66';
+      if (!u || !p) { authError.textContent = 'Fill all'; return; }
+      try { await api('/api/register', { username: u, password: p }); authError.textContent = lang === 'en' ? '✓ Registered! Login now.' : '✓ Зарегистрирован! Войдите.'; authError.style.color = '#5f8'; } catch (e) { authError.textContent = e.message; }
+    };
+    document.getElementById('loginBtn').onclick = async () => {
+      const u = document.getElementById('regUsername').value.trim(), p = document.getElementById('regPassword').value.trim();
+      authError.textContent = ''; authError.style.color = '#f66';
+      if (!u || !p) { authError.textContent = 'Fill all'; return; }
+      try { const res = await api('/api/login', { username: u, password: p }); myUsername = u; myStats = res.stats; authStats.style.display = 'block'; document.getElementById('statGames').textContent = myStats.gamesPlayed; document.getElementById('statScore').textContent = myStats.totalScore; document.getElementById('statWins').textContent = myStats.wins; authError.textContent = `✓ ${u}!`; authError.style.color = '#5f8'; localStorage.setItem('parasiteUser', u); localStorage.setItem('parasitePass', p); } catch (e) { authError.textContent = e.message; }
+    };
+    document.getElementById('guestBtn').onclick = () => { myUsername = null; showMenu(); };
+    function showMenu() { authScreen.classList.add('hidden'); document.getElementById('menu').classList.remove('hidden'); if (myUsername) document.getElementById('playerName').textContent = '👤 ' + myUsername; }
+    (async () => {
+      const u = localStorage.getItem('parasiteUser'), p = localStorage.getItem('parasitePass');
+      if (u && p) { document.getElementById('regUsername').value = u; document.getElementById('regPassword').value = p; try { const res = await api('/api/login', { username: u, password: p }); myUsername = u; myStats = res.stats; authStats.style.display = 'block'; document.getElementById('statGames').textContent = myStats.gamesPlayed; document.getElementById('statScore').textContent = myStats.totalScore; document.getElementById('statWins').textContent = myStats.wins; authError.textContent = `✓ ${u}!`; authError.style.color = '#5f8'; } catch (e) { localStorage.removeItem('parasiteUser'); localStorage.removeItem('parasitePass'); } }
+    })();
+
+    // ========== MENU ==========
+    const menuEl = document.getElementById('menu'), modalEl = document.getElementById('modal'), matchEndEl = document.getElementById('matchEnd');
+    document.getElementById('playBtn').onclick = () => { Audio.init(); menuEl.classList.add('hidden'); gameStarted = true; if (!ws) connect(); };
+    document.getElementById('howToBtn').onclick = () => modalEl.classList.add('show');
+    document.getElementById('modal').onclick = (e) => { if (e.target === modalEl) modalEl.classList.remove('show'); };
+    document.querySelector('.close-btn').onclick = () => modalEl.classList.remove('show');
+    document.getElementById('discordBtn').onclick = () => window.open('https://discord.gg/8vAGK37Sjb', '_blank');
+
+    // ========== CONTROLS ==========
     document.addEventListener('keydown', (e) => {
+      if (e.code === 'Escape') { if (modalEl.classList.contains('show')) { modalEl.classList.remove('show'); return; } if (gameStarted) isPaused = !isPaused; return; }
+      if (!gameStarted || isPaused) return;
       if (['KeyW','KeyA','KeyS','KeyD','Space'].includes(e.code)) e.preventDefault();
       keysDown[e.code] = true;
       if (e.code === 'Space') tryInfect();
     });
+    document.addEventListener('keyup', (e) => { if (!gameStarted || isPaused) return; keysDown[e.code] = false; });
+    const joystick = document.getElementById('joystick'), knob = document.getElementById('joystickKnob'), J_CENTER = 55, J_MAX = 30;
+    joystick.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; handleJoy(e.touches[0]); });
+    joystick.addEventListener('touchmove', (e) => { e.preventDefault(); if (joystickActive) handleJoy(e.touches[0]); });
+    joystick.addEventListener('touchend', (e) => { e.preventDefault(); joystickActive = false; knob.style.transform = 'translate(-50%, -50%)'; joystickData = { x: 0, y: 0 }; });
+    function handleJoy(touch) { const rect = joystick.getBoundingClientRect(); let x = touch.clientX - rect.left - J_CENTER, y = touch.clientY - rect.top - J_CENTER; const d = Math.hypot(x, y); if (d > J_MAX) { x = (x / d) * J_MAX; y = (y / d) * J_MAX; } knob.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`; joystickData = { x: x / J_MAX, y: y / J_MAX }; }
+    document.getElementById('infectBtn').addEventListener('touchstart', (e) => { e.preventDefault(); tryInfect(); });
+    document.getElementById('infectBtn').addEventListener('click', tryInfect);
 
-    document.addEventListener('keyup', (e) => keysDown[e.code] = false);
-
+    // ========== NETWORK ==========
     function connect() {
-      if (ws) ws.close();
-      statusEl.textContent = 'Connecting...';
-      statusEl.style.color = '#fa0';
-      ws = new WebSocket(WS_URL);
-
-      ws.onopen = () => {
-        connectionState = 'connected';
-        statusEl.textContent = 'Connected';
-        statusEl.style.color = '#4f4';
-        reconnectAttempts = 0;
-        createParticles(canvas.width/2, canvas.height/2, 40, '#6af');
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${proto}//${location.host}`);
+      ws.onopen = () => { document.getElementById('ping').textContent = 'Connected'; document.getElementById('ping').style.color = '#5f8'; if (myUsername) ws.send(JSON.stringify({ type: 'setUsername', username: myUsername })); };
+      ws.onmessage = (e) => {
+        const d = JSON.parse(e.data);
+        if (d.type === 'welcome') { myId = d.playerId; CONFIG = { ...CONFIG, ...d.gameConfig }; matchTime = d.matchTime; updateLB(d.leaderboard); initPowerupCards(); }
+        else if (d.type === 'state') { matchTime = d.matchTime; updatePlayers(d.p); window.currentPowerups = d.powerups.map(p => ({ x: p[0], y: p[1], type: p[2] })); }
+        else if (d.type === 'event') handleEvent(d.event);
+        else if (d.type === 'leaderboard') updateLB(d.leaderboard);
+        else if (d.type === 'pong') { pingValue = Date.now() - pingLastSent; document.getElementById('ping').textContent = pingValue + ' ms'; document.getElementById('ping').style.color = pingValue < 50 ? '#5f8' : pingValue < 100 ? '#fa6' : '#f66'; }
       };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'welcome') myId = data.playerId;
-          else if (data.type === 'state') {
-            lastServerTime = data.t;
-            gameTime = data.gt;
-            globalEvent = data.ge;
-            updatePlayers(data.p);
-          } else if (data.type === 'event') handleEvent(data.event);
-          else if (data.type === 'zones') zones = data.zones;
-        } catch (e) {}
-      };
-
-      ws.onclose = () => {
-        connectionState = 'disconnected';
-        statusEl.textContent = 'Disconnected';
-        statusEl.style.color = '#f44';
-        if (reconnectAttempts < 5) { reconnectAttempts++; setTimeout(connect, 2000); }
-      };
-
-      ws.onerror = () => {
-        statusEl.textContent = 'Error';
-        statusEl.style.color = '#f44';
-      };
+      ws.onclose = () => { document.getElementById('ping').textContent = 'Disconnected'; document.getElementById('ping').style.color = '#f66'; };
+      ws.onerror = () => { document.getElementById('ping').textContent = 'Error'; document.getElementById('ping').style.color = '#f66'; };
     }
+    setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) { ws.send(JSON.stringify({ type: 'ping' })); pingLastSent = Date.now(); } }, 2000);
 
-    function handleEvent(event) {
-      const myPlayer = getMyPlayer();
-      const camX = myPlayer ? myPlayer.displayX - canvas.width/2 : 0;
-      const camY = myPlayer ? myPlayer.displayY - canvas.height/2 : 0;
-
-      if (event.type === 'infect') {
-        const sx = event.x - camX, sy = event.y - camY;
-        createParticles(sx, sy, 50, '#f44');
-        createParticles(sx, sy, 25, '#ff0');
-        screenShake = event.combo >= 3 ? 15 : 8;
-        if (event.target === myId) {
-          showFloatingText(canvas.width/2, canvas.height/2, 'INFECTED!', '#f44');
-          showFloatingText(canvas.width/2, canvas.height/2 + 40, `by #${event.infector}`, '#fa0');
-        }
-        if (event.infector === myId) {
-          showFloatingText(canvas.width/2, canvas.height/2 - 50, `+1 ${event.combo > 1 ? `COMBO x${event.combo}!` : ''}`, '#6f4');
-          myStats.infections++;
-          infectCountEl.textContent = myStats.infections;
-        }
-      } else if (event.type === 'parasiteExit') {
-        const sx = event.x - camX, sy = event.y - camY;
-        createParticles(sx, sy, 30, '#4f4');
-        showFloatingText(sx, sy, 'FREE!', '#4f4');
-      } else if (event.type === 'playerJoin') {
-        showFloatingText(canvas.width/2, 80, '➕ Player joined', '#6af');
-      } else if (event.type === 'playerLeave') {
-        showFloatingText(canvas.width/2, 80, 'Player left', '#888');
-      } else if (event.type === 'combo') {
-        showFloatingText(canvas.width/2, 150, `🔥 #${event.playerId} on ${event.combo}x COMBO!`, '#ff0');
-        screenShake = 10;
-      } else if (event.type === 'globalEvent') {
-        globalEventEl.textContent = getEventName(event.event);
-        globalEventEl.style.display = 'block';
-        setTimeout(() => { globalEventEl.style.display = 'none'; }, 3000);
-      } else if (event.type === 'zonesRegenerated') {
-        zones = event.zones;
-        showFloatingText(canvas.width/2, canvas.height/2, 'MAP CHANGED!', '#6af');
-        screenShake = 5;
+    function updatePlayers(arr) {
+      for (const p of arr) {
+        const [id, x, y, hostId, infectedAt, rage, stunned, shield, invisible, speed, score, name] = p;
+        const ex = players.get(id);
+        if (ex) { ex.x = x; ex.y = y; ex.hostId = hostId; ex.infectedAt = infectedAt; ex.rageMode = rage === 1; ex.shield = shield === 1; ex.invisible = invisible === 1; ex.speedBoost = speed === 1; ex.score = score; ex.name = name; }
+        else { players.set(id, { id, x, y, hostId, infectedAt, rageMode: rage === 1, shield: shield === 1, invisible: invisible === 1, speedBoost: speed === 1, displayX: x, displayY: y, score, name, pulse: Math.random() * Math.PI * 2 }); }
       }
+      for (const [id] of players) { if (!arr.find(p => p[0] === id)) players.delete(id); }
     }
 
-    function getEventName(type) {
-      return { heatwave: '🔥 HEATWAVE', darkness: '🌑 DARKNESS', speedfrenzy: '⚡ SPEED FRENZY' }[type] || type;
-    }
-
-    function updatePlayers(playerData) {
-      const newPlayers = new Map();
-      for (const p of playerData) {
-        const [id, x, y, vx, vy, radius, hostId, infectedAt, heat, combo, stunned] = p;
-        const existing = players.get(id);
-        if (existing) {
-          Object.assign(existing, { x, y, vx, vy, radius, hostId, infectedAt, heat, combo, stunned });
-          newPlayers.set(id, existing);
-        } else {
-          newPlayers.set(id, { id, x, y, vx, vy, radius, hostId, infectedAt, heat, combo, stunned,
-            displayX: x, displayY: y, pulse: Math.random() * Math.PI * 2 });
-        }
+    function handleEvent(e) {
+      if (e.type === 'infect') {
+        if (e.target === myId) { Audio.infect(); showNotification(t('infectNotify'), '#f55'); }
+        if (e.infector === myId) { myCombo = e.combo; if (myCombo > 1) { Audio.combo(); showNotification(`🔥 x${myCombo}`, '#fa6'); } }
       }
-      players = newPlayers;
-      playerCountEl.textContent = players.size;
+      if (e.type === 'parasiteExit' && e.playerId === myId) { Audio.free(); showNotification(t('freeNotify'), '#5f8'); }
+      if (e.type === 'powerupCollect' && e.playerId === myId) { Audio.powerup(); const pwr = CONFIG.powerupTypes.find(p => p.id === e.type); if (pwr) { myPowerups[e.type] = { until: Date.now() + 8000, name: pwr.name, color: pwr.color }; } }
+      if (e.type === 'matchEnd') { Audio.matchEnd(); matchEndEl.classList.add('show'); const win = e.winner && e.winner.id === myId; matchEndEl.className = win ? 'show winner' : 'show loser'; document.getElementById('matchEndTitle').textContent = win ? t('victory') : t('defeat'); document.getElementById('matchEndScore').textContent = e.winner ? `${t('winner')} ${e.winner.name} (${e.winner.score})` : ''; }
+      if (e.type === 'matchStart') matchTime = e.matchDuration;
+    }
+
+    function showNotification(text, color) {
+      const el = document.createElement('div'); el.id = 'notification'; el.textContent = text; el.style.color = color; document.body.appendChild(el); setTimeout(() => el.remove(), 700);
     }
 
     function getMyPlayer() { return players.get(myId); }
 
     function tryInfect() {
-      if (connectionState !== 'connected') return;
-      const myPlayer = getMyPlayer();
-      if (!myPlayer || myPlayer.hostId !== null) return;
+      const me = getMyPlayer(); if (!me || me.hostId !== null) return;
+      const now = Date.now(); if (now - lastInfectTime < CONFIG.infectCooldown) return; if (me.invisible) return;
       let closest = null, closestDist = Infinity;
-      for (const [id, p] of players) {
-        if (id === myPlayer.id || p.hostId !== null) continue;
-        const dist = Math.hypot(p.x - myPlayer.x, p.y - myPlayer.y);
-        if (dist < closestDist) { closestDist = dist; closest = p; }
-      }
-      if (closest && closestDist < PLAYER_RADIUS * 3.5) {
-        ws.send(JSON.stringify({ type: 'infect', targetId: closest.id }));
-      }
+      for (const [id, p] of players) { if (id === myId || p.hostId !== null || p.shield) continue; const d = Math.hypot(p.displayX - me.displayX, p.displayY - me.displayY); if (d < closestDist) { closestDist = d; closest = p; } }
+      if (closest && closestDist < CONFIG.playerRadius * 3.5) { ws.send(JSON.stringify({ type: 'infect', targetId: closest.id })); lastInfectTime = now; showCooldown(); }
     }
 
-    function showFloatingText(x, y, text, color) {
-      const el = document.createElement('div');
-      el.className = 'effect-text';
-      el.textContent = text;
-      el.style.left = x + 'px';
-      el.style.top = y + 'px';
-      el.style.color = color;
-      el.style.textShadow = `0 0 15px ${color}`;
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 1000);
+    function showCooldown() {
+      const el = document.getElementById('cooldown'), bar = document.getElementById('cooldown-bar');
+      el.style.display = 'block'; bar.style.width = '100%';
+      const start = Date.now();
+      const anim = () => { const elapsed = Date.now() - start, rem = Math.max(0, CONFIG.infectCooldown - elapsed); bar.style.width = (rem / CONFIG.infectCooldown * 100) + '%'; if (rem > 0) requestAnimationFrame(anim); else el.style.display = 'none'; };
+      anim();
+    }
+
+    function updateLB(lb) { document.getElementById('lbList').innerHTML = lb.map((p, i) => `<div class="lb-entry ${p.id === myId ? 'me' : ''}"><span>#${i+1} ${p.name}</span><span>${p.score}</span></div>`).join(''); }
+
+    function initPowerupCards() {
+      const container = document.getElementById('powerupInfo');
+      container.innerHTML = CONFIG.powerupTypes.map(p => `<div class="powerup-card" id="pwr-${p.id}" style="--color:${p.color}"><span class="icon">${p.icon}</span><span class="name">${p.name}</span><span class="timer" id="timer-${p.id}"></span></div>`).join('');
     }
 
     function sendMovement() {
-      if (connectionState !== 'connected') return;
-      const myPlayer = getMyPlayer();
-      if (!myPlayer || myPlayer.hostId !== null || myPlayer.stunned > 0) return;
-      let dx = 0, dy = 0;
-      if (keysDown['KeyW']) dy = -1;
-      if (keysDown['KeyS']) dy = 1;
-      if (keysDown['KeyA']) dx = -1;
-      if (keysDown['KeyD']) dx = 1;
-      if (dx !== 0 || dy !== 0) ws.send(JSON.stringify({ type: 'move', dx, dy }));
+      if (!gameStarted || isPaused) return;
+      const me = getMyPlayer(); if (!me || me.hostId !== null) return;
+      let dx = joystickData.x, dy = joystickData.y;
+      if (keysDown['KeyW']) dy = -1; if (keysDown['KeyS']) dy = 1; if (keysDown['KeyA']) dx = -1; if (keysDown['KeyD']) dx = 1;
+      if (dx || dy) ws.send(JSON.stringify({ type: 'move', dx, dy }));
     }
 
-    function createParticles(x, y, count, color) {
-      for (let i = 0; i < count; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 5 + 3;
-        particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-          life: 1, decay: Math.random() * 0.02 + 0.01, color, size: Math.random() * 5 + 2 });
-      }
-    }
+    // ========== RENDER ==========
+    function lerp(a, b, t) { return a + (b - a) * t; }
 
-    function updateParticles() {
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx; p.y += p.vy;
-        p.vx *= 0.95; p.vy *= 0.95;
-        p.life -= p.decay;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
-      if (screenShake > 0) screenShake *= 0.9;
-      if (screenShake < 0.5) screenShake = 0;
-    }
-
-    function drawParticles() {
-      for (const p of particles) {
-        ctx.save();
-        ctx.globalAlpha = p.life;
-        ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 15;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-    }
-
-    function lerp(a, b, t) { return a + (b - a) * Math.min(1, t * 0.2); }
-
-    function drawZonePattern(zone, style, time) {
-      const { x, y, w, h } = zone;
-      if (style.pattern === 'diagonal') {
-        ctx.strokeStyle = style.border;
-        ctx.lineWidth = 2;
-        for (let i = -h; i < w; i += 20) {
-          ctx.beginPath(); ctx.moveTo(x + i, y); ctx.lineTo(x + i + h, y + h); ctx.stroke();
-        }
-      } else if (style.pattern === 'stripes') {
-        ctx.fillStyle = 'rgba(0,0,0,0.15)';
-        for (let i = 0; i < w; i += 15) { ctx.fillRect(x + i, y, 8, h); }
-      } else if (style.pattern === 'arrows') {
-        ctx.fillStyle = style.border;
-        const arrowSpacing = 50;
-        const offset = (time * 30) % arrowSpacing;
-        for (let i = 0; i < w; i += arrowSpacing) {
-          const ax = x + i + offset;
-          if (ax > x && ax < x + w) {
-            ctx.beginPath(); ctx.moveTo(ax, y + h/2 - 8); ctx.lineTo(ax + 10, y + h/2); ctx.lineTo(ax, y + h/2 + 8); ctx.fill();
-          }
-        }
-      } else if (style.pattern === 'dots') {
-        ctx.fillStyle = 'rgba(100,120,160,0.1)';
-        for (let i = 0; i < w; i += 25) {
-          for (let j = 0; j < h; j += 25) {
-            ctx.beginPath(); ctx.arc(x + i, y + j, 2, 0, Math.PI * 2); ctx.fill();
-          }
-        }
-      }
-    }
-
-    function drawZoneBorder(zone, style, time) {
-      const { x, y, w, h } = zone;
-      const pulse = Math.sin(time * 2) * 0.2 + 0.8;
-      ctx.save();
-      ctx.strokeStyle = style.border;
-      ctx.lineWidth = 3;
-      ctx.globalAlpha = pulse;
-      const r = 15;
-      ctx.beginPath();
-      ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-      ctx.stroke();
-      ctx.fillStyle = style.border;
-      ctx.globalAlpha = 1;
-      const cs = 8;
-      ctx.fillRect(x - cs/2, y - cs/2, cs, cs);
-      ctx.fillRect(x + w - cs/2, y - cs/2, cs, cs);
-      ctx.fillRect(x - cs/2, y + h - cs/2, cs, cs);
-      ctx.fillRect(x + w - cs/2, y + h - cs/2, cs, cs);
-      ctx.restore();
-    }
-
-    function drawZoneIcon(zone, style, time) {
-      const { x, y, w, h } = zone;
-      const iconSize = 24;
-      const iconX = x + iconSize, iconY = y + iconSize;
-      ctx.save();
-      ctx.globalAlpha = 0.7 + Math.sin(time * 3) * 0.2;
-      if (zone.type === 'safe') {
-        ctx.fillStyle = '#5c5';
-        ctx.beginPath();
-        ctx.moveTo(iconX, iconY - 10); ctx.lineTo(iconX + 8, iconY - 5);
-        ctx.lineTo(iconX + 8, iconY + 5); ctx.lineTo(iconX, iconY + 10);
-        ctx.lineTo(iconX - 8, iconY + 5); ctx.lineTo(iconX - 8, iconY - 5);
-        ctx.closePath(); ctx.fill();
-      } else if (zone.type === 'danger') {
-        ctx.fillStyle = '#f55';
-        ctx.beginPath(); ctx.arc(iconX, iconY - 3, 6, 0, Math.PI * 2); ctx.fill();
-        ctx.fillRect(iconX - 8, iconY + 5, 16, 4);
-        ctx.fillStyle = '#000';
-        ctx.beginPath(); ctx.arc(iconX - 3, iconY - 4, 2, 0, Math.PI * 2);
-        ctx.arc(iconX + 3, iconY - 4, 2, 0, Math.PI * 2); ctx.fill();
-      } else if (zone.type === 'speed') {
-        ctx.fillStyle = '#55f';
-        ctx.beginPath();
-        ctx.moveTo(iconX + 2, iconY - 10); ctx.lineTo(iconX - 6, iconY + 2);
-        ctx.lineTo(iconX, iconY + 2); ctx.lineTo(iconX - 4, iconY + 10);
-        ctx.lineTo(iconX + 6, iconY - 2); ctx.lineTo(iconX, iconY - 2);
-        ctx.closePath(); ctx.fill();
-      }
-      ctx.restore();
-    }
-
-    // === НОВАЯ ФУНКЦИЯ: Рисуем красивые границы уровня ===
-    function drawBoundaries(camX, camY, time) {
-      const padding = 100;
-      const left = -padding;
-      const right = FIELD_SIZE + padding;
-      const top = -padding;
-      const bottom = FIELD_SIZE + padding;
-      
-      const myPlayer = getMyPlayer();
-      const centerX = myPlayer ? myPlayer.displayX : canvas.width / 2 + camX;
-      const centerY = myPlayer ? myPlayer.displayY : canvas.height / 2 + camY;
-      
-      // Дистанции до границ
-      const distLeft = centerX - 0;
-      const distRight = FIELD_SIZE - centerX;
-      const distTop = centerY - 0;
-      const distBottom = FIELD_SIZE - centerY;
-      
-      boundaryPulse += 0.05;
-      const pulseIntensity = Math.sin(boundaryPulse) * 0.3 + 0.7;
-      
-      // Функция для отрисовки предупреждающей границы
-      function drawWarningEdge(x1, y1, x2, y2, distance, isHorizontal) {
-        if (distance < BOUNDARY_WARNING) {
-          const intensity = 1 - (distance / BOUNDARY_WARNING);
-          const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
-          
-          const alpha = intensity * pulseIntensity * 0.8;
-          const width = 3 + intensity * 8;
-          
-          // Внешнее свечение (красное предупреждение)
-          ctx.save();
-          ctx.strokeStyle = `rgba(255, 80, 80, ${alpha * 0.5})`;
-          ctx.lineWidth = width * 3;
-          ctx.shadowColor = 'rgba(255, 50, 50, 0.8)';
-          ctx.shadowBlur = 20 + intensity * 30;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-          ctx.restore();
-          
-          // Основная линия
-          ctx.save();
-          ctx.strokeStyle = `rgba(255, 100, 100, ${alpha})`;
-          ctx.lineWidth = width;
-          ctx.setLineDash([20, 10]);
-          ctx.lineDashOffset = -time * 50;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-          ctx.restore();
-          
-          // Стрелки-указатели направления (к центру)
-          if (intensity > 0.5) {
-            ctx.save();
-            ctx.fillStyle = `rgba(255, 150, 150, ${alpha})`;
-            const arrowCount = Math.floor(Math.abs(isHorizontal ? x2 - x1 : y2 - y1) / 100);
-            for (let i = 1; i < arrowCount; i++) {
-              const ax = isHorizontal ? x1 + (x2 - x1) * (i / arrowCount) : x1;
-              const ay = isHorizontal ? y1 : y1 + (y2 - y1) * (i / arrowCount);
-              
-              ctx.beginPath();
-              if (isHorizontal) {
-                if (distance === distLeft) { // Левая граница → стрелка вправо
-                  ctx.moveTo(ax, ay - 8); ctx.lineTo(ax + 12, ay); ctx.lineTo(ax, ay + 8);
-                } else { // Правая граница → стрелка влево
-                  ctx.moveTo(ax, ay - 8); ctx.lineTo(ax - 12, ay); ctx.lineTo(ax, ay + 8);
-                }
-              } else {
-                if (distance === distTop) { // Верхняя граница → стрелка вниз
-                  ctx.moveTo(ax - 8, ay); ctx.lineTo(ax, ay + 12); ctx.lineTo(ax + 8, ay);
-                } else { // Нижняя граница → стрелка вверх
-                  ctx.moveTo(ax - 8, ay); ctx.lineTo(ax, ay - 12); ctx.lineTo(ax + 8, ay);
-                }
-              }
-              ctx.closePath();
-              ctx.fill();
-            }
-            ctx.restore();
-          }
-        }
-      }
-      
-      // Рисуем предупреждающие границы
-      drawWarningEdge(left, top, right, top, distTop, true); // Верх
-      drawWarningEdge(left, bottom, right, bottom, distBottom, true); // Низ
-      drawWarningEdge(left, top, left, bottom, distLeft, false); // Лево
-      drawWarningEdge(right, top, right, bottom, distRight, false); // Право
-      
-      // Основная граница поля (постоянная)
-      ctx.save();
-      ctx.strokeStyle = 'rgba(200, 80, 80, 0.5)';
-      ctx.lineWidth = 5;
-      ctx.shadowColor = 'rgba(200, 50, 50, 0.6)';
-      ctx.shadowBlur = 15;
-      ctx.setLineDash([]);
-      ctx.strokeRect(0, 0, FIELD_SIZE, FIELD_SIZE);
-      ctx.restore();
-      
-      // Угловые маркеры границ
-      ctx.save();
-      ctx.fillStyle = `rgba(255, 100, 100, ${0.4 + Math.sin(boundaryPulse) * 0.2})`;
-      ctx.shadowColor = 'rgba(255, 50, 50, 0.8)';
-      ctx.shadowBlur = 20;
-      const cornerSize = 20;
-      
-      // Четыре угла
-      const corners = [[0, 0], [FIELD_SIZE, 0], [0, FIELD_SIZE], [FIELD_SIZE, FIELD_SIZE]];
-      for (const [cx, cy] of corners) {
-        // Проверяем, виден ли угол
-        const distToCorner = Math.hypot(cx - centerX, cy - centerY);
-        if (distToCorner < BOUNDARY_WARNING + 200) {
-          ctx.beginPath();
-          ctx.arc(cx, cy, cornerSize, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Внутренний круг
-          ctx.fillStyle = 'rgba(255, 200, 200, 0.8)';
-          ctx.beginPath();
-          ctx.arc(cx, cy, cornerSize * 0.5, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = `rgba(255, 100, 100, ${0.4 + Math.sin(boundaryPulse) * 0.2})`;
-        }
-      }
-      ctx.restore();
-      
-      // "За пределами" — виньетка
-      const vignetteGradient = ctx.createRadialGradient(
-        centerX - camX, centerY - camY, Math.min(canvas.width, canvas.height) * 0.3,
-        centerX - camX, centerY - camY, Math.max(canvas.width, canvas.height) * 0.8
-      );
-      
-      // Проверяем, насколько близко игрок к границам
-      const minBoundaryDist = Math.min(distLeft, distRight, distTop, distBottom);
-      if (minBoundaryDist < BOUNDARY_WARNING) {
-        const vignetteIntensity = (1 - minBoundaryDist / BOUNDARY_WARNING) * 0.7;
-        vignetteGradient.addColorStop(0, 'rgba(180, 50, 50, 0)');
-        vignetteGradient.addColorStop(0.5, `rgba(180, 50, 50, ${vignetteIntensity * 0.3})`);
-        vignetteGradient.addColorStop(1, `rgba(180, 50, 50, ${vignetteIntensity})`);
-      } else {
-        vignetteGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-        vignetteGradient.addColorStop(0.7, 'rgba(0, 0, 0, 0.1)');
-        vignetteGradient.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
-      }
-      
-      ctx.fillStyle = vignetteGradient;
-      ctx.fillRect(camX, camY, canvas.width, canvas.height);
+    function drawMiniMap() {
+      const s = 130 / FIELD_SIZE;
+      mm.clearRect(0, 0, 130, 130);
+      for (const z of CONFIG.zones) { mm.fillStyle = z.safe ? 'rgba(80,120,80,0.3)' : 'rgba(120,60,60,0.2)'; mm.fillRect(z.x * s, z.y * s, z.w * s, z.h * s); }
+      for (const o of CONFIG.obstacles) { mm.fillStyle = o.type === 'building' ? 'rgba(80,70,100,0.6)' : 'rgba(60,80,60,0.5)'; mm.fillRect(o.x * s, o.y * s, o.w * s, o.h * s); }
+      if (window.currentPowerups) { for (const p of window.currentPowerups) { mm.fillStyle = p.type === 'speed' ? '#00bfff' : p.type === 'shield' ? '#da70d6' : p.type === 'invisibility' ? '#fff' : '#ffd700'; mm.beginPath(); mm.arc(p.x * s, p.y * s, 4, 0, Math.PI * 2); mm.fill(); } }
+      for (const [id, p] of players) { const mx = p.x * s, my = p.y * s, mine = id === myId; if (p.invisible && !mine) continue; mm.fillStyle = p.hostId !== null ? (mine ? '#5f7' : '#f56') : (mine ? '#5f8' : p.rageMode ? '#fa6' : '#f86'); mm.beginPath(); mm.arc(mx, my, mine ? 4 : 2.5, 0, Math.PI * 2); mm.fill(); if (mine) { mm.strokeStyle = '#5f8'; mm.lineWidth = 1.5; mm.beginPath(); mm.arc(mx, my, 7, 0, Math.PI * 2); mm.stroke(); } }
+      const me = getMyPlayer(); if (me) { const vw = canvas.width * s, vh = canvas.height * s, vx = Math.max(0, Math.min(130 - vw, cameraX * s)), vy = Math.max(0, Math.min(130 - vh, cameraY * s)); mm.strokeStyle = 'rgba(100,180,255,0.5)'; mm.lineWidth = 1; mm.strokeRect(vx, vy, vw, vh); }
     }
 
     function draw() {
-      const time = Date.now() * 0.001;
-      
-      // === ФОН: градиент + звёзды ===
-      const bgGradient = ctx.createRadialGradient(
-        canvas.width/2, canvas.height/2, 0,
-        canvas.width/2, canvas.height/2, canvas.width
-      );
-      
-      if (globalEvent === 'darkness') {
-        bgGradient.addColorStop(0, '#080815');
-        bgGradient.addColorStop(0.5, '#04040a');
-        bgGradient.addColorStop(1, '#020205');
-      } else if (globalEvent === 'heatwave') {
-        bgGradient.addColorStop(0, '#1a0a0a');
-        bgGradient.addColorStop(0.5, '#0f0505');
-        bgGradient.addColorStop(1, '#050202');
-      } else {
-        bgGradient.addColorStop(0, '#0d1020');
-        bgGradient.addColorStop(0.5, '#080a15');
-        bgGradient.addColorStop(1, '#05050a');
-      }
-      
-      ctx.fillStyle = bgGradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Звёзды (мерцающие)
-      ctx.save();
-      for (const star of bgStars) {
-        const twinkle = Math.sin(time * 2 + star.twinkle) * 0.3 + 0.7;
-        ctx.fillStyle = `rgba(180,200,255,${star.alpha * twinkle})`;
-        ctx.beginPath();
-        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-
-      const myPlayer = getMyPlayer();
-      let camX = 0, camY = 0;
-      
-      if (myPlayer) {
-        camX = myPlayer.x - canvas.width / 2;
-        camY = myPlayer.y - canvas.height / 2;
-        myPlayer.displayX = lerp(myPlayer.displayX, myPlayer.x, 0.15);
-        myPlayer.displayY = lerp(myPlayer.displayY, myPlayer.y, 0.15);
-      }
-
-      ctx.save();
-      
-      if (screenShake > 0) {
-        ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
-      }
-      ctx.translate(-camX, -camY);
-
-      // === ОТРИСОВКА ЗОН ===
-      for (const zone of zones) {
-        const style = ZONE_STYLES[zone.type];
-        const { x, y, w, h } = zone;
-        ctx.fillStyle = style.bg;
-        ctx.fillRect(x, y, w, h);
-        if (style.glow) {
-          ctx.shadowColor = style.glow;
-          ctx.shadowBlur = 30;
-          ctx.fillStyle = style.glow;
-          ctx.fillRect(x, y, w, h);
-          ctx.shadowBlur = 0;
-        }
-        drawZonePattern(zone, style, time);
-        drawZoneBorder(zone, style, time);
-        drawZoneIcon(zone, style, time);
-      }
-
-      // === СЕТКА ===
-      const gridSize = 80;
-      ctx.strokeStyle = 'rgba(90,110,160,0.2)';
-      ctx.lineWidth = 1;
-      const startX = Math.floor(camX / gridSize) * gridSize - gridSize;
-      const startY = Math.floor(camY / gridSize) * gridSize - gridSize;
-      const endX = startX + canvas.width + gridSize * 2;
-      const endY = startY + canvas.height + gridSize * 2;
-      
-      for (let x = startX; x < endX; x += gridSize) {
-        ctx.beginPath(); ctx.moveTo(x, startY); ctx.lineTo(x, endY); ctx.stroke();
-      }
-      for (let y = startY; y < endY; y += gridSize) {
-        ctx.beginPath(); ctx.moveTo(startX, y); ctx.lineTo(endX, y); ctx.stroke();
-      }
-      
-      // Основные линии сетки (каждые 400px)
-      ctx.strokeStyle = 'rgba(120,140,200,0.35)';
-      ctx.lineWidth = 2;
-      const majorGrid = 400;
-      for (let x = 0; x <= FIELD_SIZE; x += majorGrid) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, FIELD_SIZE); ctx.stroke();
-      }
-      for (let y = 0; y <= FIELD_SIZE; y += majorGrid) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(FIELD_SIZE, y); ctx.stroke();
-      }
-
-      ctx.shadowBlur = 20;
-      
-      const hosts = [], parasites = [];
-      for (const [id, player] of players) {
-        if (player.hostId !== null) parasites.push(player);
-        else hosts.push(player);
-      }
-
-      // === ХОСТЫ ===
-      for (const player of hosts) {
-        const isMine = player.id === myId;
-        const displayX = isMine ? player.displayX : player.x;
-        const displayY = isMine ? player.displayY : player.y;
-        
-        player.pulse += 0.05;
-        const pulseSize = Math.sin(player.pulse) * 1.5;
-        const speed = Math.hypot(player.vx, player.vy);
-        const stretch = Math.min(speed * 0.02, 0.3);
-        const angle = Math.atan2(player.vy, player.vx);
-
-        ctx.save();
-        ctx.translate(displayX, displayY);
-        ctx.rotate(angle);
-        ctx.scale(1 + stretch, 1 - stretch * 0.5);
-        ctx.rotate(-angle);
-
-        if (player.heat > 50) {
-          ctx.shadowColor = `hsl(${60 - player.heat * 0.6}, 100%, 50%)`;
-          ctx.shadowBlur = 20 + player.heat * 0.4;
-        } else {
-          ctx.shadowColor = isMine ? '#48f' : '#f64';
-          ctx.shadowBlur = 25 + pulseSize * 5;
-        }
-
-        if (player.stunned > 0) {
-          ctx.shadowColor = '#888';
-          ctx.shadowBlur = 30;
-        }
-
-        ctx.beginPath();
-        ctx.arc(0, 0, player.radius + pulseSize, 0, Math.PI * 2);
-        
-        if (player.stunned > 0) ctx.fillStyle = '#888';
-        else if (isMine) ctx.fillStyle = `hsl(${210 + Math.sin(time)*15}, 85%, 60%)`;
-        else ctx.fillStyle = `hsl(${15 + Math.sin(time)*15}, 85%, 60%)`;
-        ctx.fill();
-
-        ctx.shadowBlur = 0;
-        const grad = ctx.createRadialGradient(-3, -3, 0, 0, 0, player.radius);
-        grad.addColorStop(0, 'rgba(255,255,255,0.5)');
-        grad.addColorStop(0.6, 'rgba(255,255,255,0.15)');
-        grad.addColorStop(1, 'rgba(255,255,255,0)');
-        ctx.fillStyle = grad;
-        ctx.fill();
-
-        ctx.fillStyle = '#fff';
-        ctx.shadowColor = '#fff';
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
-        ctx.ellipse(-4, -2, 4, 5, 0, 0, Math.PI * 2);
-        ctx.ellipse(4, -2, 4, 5, 0, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.fillStyle = '#000';
-        ctx.shadowBlur = 0;
-        ctx.beginPath();
-        ctx.arc(-3, -2, 2.5, 0, Math.PI * 2);
-        ctx.arc(5, -2, 2.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        if (player.combo >= 2) {
-          ctx.strokeStyle = `hsl(${50 + player.combo * 10}, 100%, 50%)`;
-          ctx.lineWidth = 3;
-          ctx.shadowColor = ctx.strokeStyle;
-          ctx.shadowBlur = 15;
-          ctx.beginPath();
-          ctx.arc(0, 0, player.radius + 10 + player.combo * 2, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-
-        ctx.restore();
-
-        if (isMine) {
-          ctx.strokeStyle = 'rgba(100,255,150,0.9)';
-          ctx.lineWidth = 3;
-          ctx.shadowColor = '#4f8';
-          ctx.shadowBlur = 20;
-          ctx.beginPath();
-          ctx.arc(displayX, displayY, player.radius + 10, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-      }
-
-      // === ПАРАЗИТЫ ===
-      for (const parasite of parasites) {
-        const host = players.get(parasite.hostId);
-        if (!host) continue;
-        const isMine = parasite.id === myId;
-        const offsetX = (parasite.id % 3 - 1) * 16;
-        const offsetY = (Math.floor(parasite.id / 3) % 3 - 1) * 16;
-        const px = host.x + offsetX;
-        const py = host.y + offsetY;
-
-        ctx.shadowColor = isMine ? '#4f4' : '#f44';
-        ctx.shadowBlur = 18;
-
-        ctx.beginPath();
-        ctx.arc(px, py, PLAYER_RADIUS * 0.6, 0, Math.PI * 2);
-        ctx.fillStyle = isMine 
-          ? `hsl(${140 + Math.sin(time)*10}, 90%, 55%)` 
-          : `hsl(${350 + Math.sin(time)*10}, 90%, 55%)`;
-        ctx.fill();
-
-        ctx.fillStyle = '#fff';
-        ctx.shadowColor = '#ff0';
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.arc(px - 3, py - 1, 3, 0, Math.PI * 2);
-        ctx.arc(px + 3, py - 1, 3, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.fillStyle = '#ff0';
-        ctx.shadowBlur = 0;
-        ctx.beginPath();
-        ctx.arc(px - 2, py - 1, 1.5, 0, Math.PI * 2);
-        ctx.arc(px + 4, py - 1, 1.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.restore();
-      
-      // === ГРАНИЦЫ УРОВНЯ (поверх всего) ===
-      drawBoundaries(camX, camY, time);
-      
-      drawParticles();
-      updateParticles();
-
-      if (myPlayer) {
-        heatBarEl.style.display = myPlayer.hostId === null ? 'block' : 'none';
-        heatFillEl.style.width = myPlayer.heat + '%';
-        heatValueEl.textContent = Math.round(myPlayer.heat) + '%';
-        heatFillEl.style.boxShadow = myPlayer.heat > 80 ? '0 0 30px rgba(255,50,50,0.8)' : 
-                                     myPlayer.heat > 50 ? '0 0 20px rgba(255,200,50,0.6)' : 'none';
-        comboDisplayEl.textContent = `🔥 x${myPlayer.combo} COMBO!`;
-        comboDisplayEl.style.display = myPlayer.combo >= 2 ? 'block' : 'none';
-        if (myPlayer.combo >= 2) {
-          comboDisplayEl.style.color = `hsl(${50 + myPlayer.combo * 15}, 100%, 50%)`;
-        }
-      }
-
-      updateExitTimer();
-      updatePing();
       requestAnimationFrame(draw);
+      if (!gameStarted) { drawMiniMap(); return; }
+
+      // Background
+      const grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, canvas.width);
+      grad.addColorStop(0, '#0e0e1e'); grad.addColorStop(0.5, '#0a0a14'); grad.addColorStop(1, '#05050a');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const me = getMyPlayer();
+      if (me) { cameraX = lerp(cameraX, me.displayX - canvas.width/2, 0.08); cameraY = lerp(cameraY, me.displayY - canvas.height/2, 0.08); me.displayX = lerp(me.displayX, me.x, 0.2); me.displayY = lerp(me.displayY, me.y, 0.2); }
+
+      ctx.save(); ctx.translate(-cameraX, -cameraY);
+
+      // Grid
+      ctx.strokeStyle = 'rgba(50,70,100,0.15)'; ctx.lineWidth = 1;
+      const gs = 50, sx = Math.floor(cameraX / gs) * gs - gs, sy = Math.floor(cameraY / gs) * gs - gs;
+      for (let x = sx; x < cameraX + canvas.width + gs; x += gs) { ctx.beginPath(); ctx.moveTo(x, sy); ctx.lineTo(x, sy + canvas.height + gs*2); ctx.stroke(); }
+      for (let y = sy; y < cameraY + canvas.height + gs; y += gs) { ctx.beginPath(); ctx.moveTo(sx, y); ctx.lineTo(sx + canvas.width + gs*2, y); ctx.stroke(); }
+
+      // Obstacles
+      for (const o of CONFIG.obstacles) {
+        if (o.type === 'building') {
+          ctx.fillStyle = 'rgba(70,60,100,0.85)'; ctx.fillRect(o.x, o.y, o.w, o.h);
+          ctx.strokeStyle = 'rgba(120,100,160,0.5)'; ctx.lineWidth = 2; ctx.strokeRect(o.x, o.y, o.w, o.h);
+        } else if (o.type === 'tree') {
+          ctx.fillStyle = 'rgba(60,100,70,0.8)'; ctx.beginPath(); ctx.arc(o.x + o.w/2, o.y + o.h/2, o.w/2, 0, Math.PI * 2); ctx.fill();
+        } else { ctx.fillStyle = 'rgba(80,70,90,0.7)'; ctx.fillRect(o.x, o.y, o.w, o.h); }
+      }
+
+      // Powerups
+      const now = Date.now();
+      if (window.currentPowerups) {
+        for (const p of window.currentPowerups) {
+          const pulse = Math.sin(now * 0.005) * 2;
+          const cfg = CONFIG.powerupTypes.find(t => t.id === p.type);
+          const color = cfg ? cfg.color : '#fff';
+          ctx.shadowColor = color; ctx.shadowBlur = 15;
+          ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, 16 + pulse, 0, Math.PI * 2); ctx.stroke();
+          ctx.fillStyle = color; ctx.beginPath(); ctx.arc(p.x, p.y, 11 + pulse, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(cfg ? cfg.icon : '?', p.x, p.y);
+        }
+      }
+      ctx.shadowBlur = 0;
+
+      // Players
+      for (const [id, p] of players) {
+        const mine = id === myId;
+        p.pulse += 0.04; const pulse = Math.sin(p.pulse) * 1.5; const r = CONFIG.playerRadius + pulse;
+        const dx = mine ? me.displayX : p.x, dy = mine ? me.displayY : p.y;
+        if (!mine) { p.displayX = lerp(p.displayX, p.x, 0.15); p.displayY = lerp(p.displayY, p.y, 0.15); }
+        if (p.invisible && !mine) continue;
+
+        ctx.shadowColor = p.rageMode ? '#fa6' : p.shield ? '#da70d6' : mine ? '#5f8' : '#f75';
+        ctx.shadowBlur = p.rageMode ? 30 : p.shield ? 20 : 18;
+
+        if (p.shield) { ctx.strokeStyle = 'rgba(218,112,214,0.5)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(dx, dy, r + 7, 0, Math.PI * 2); ctx.stroke(); }
+
+        ctx.beginPath(); ctx.arc(dx, dy, r, 0, Math.PI * 2);
+        ctx.fillStyle = mine ? 'hsl(150, 75%, 55%)' : 'hsl(25, 75%, 55%)';
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        const hg = ctx.createRadialGradient(dx-3, dy-3, 0, dx, dy, r);
+        hg.addColorStop(0, 'rgba(255,255,255,0.3)'); hg.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = hg; ctx.fill();
+
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(dx-4, dy-2, 4, 5, 0, 0, Math.PI*2); ctx.ellipse(dx+4, dy-2, 4, 5, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#0a0a14'; ctx.beginPath(); ctx.arc(dx-3, dy-2, 2, 0, Math.PI*2); ctx.arc(dx+5, dy-2, 2, 0, Math.PI*2); ctx.fill();
+
+        if (mine) { ctx.strokeStyle = 'rgba(80,220,130,0.8)'; ctx.lineWidth = 2; ctx.shadowColor = '#5e8'; ctx.shadowBlur = 12; ctx.beginPath(); ctx.arc(dx, dy, r + 7, 0, Math.PI * 2); ctx.stroke(); }
+
+        if (p.hostId === null) {
+          const parasites = [...players.values()].filter(pl => pl.hostId === id);
+          parasites.forEach((par, i) => {
+            const angle = (i / Math.max(parasites.length, 1)) * Math.PI * 2 + now * 0.002;
+            const ox = dx + Math.cos(angle) * CONFIG.playerRadius * 0.7, oy = dy + Math.sin(angle) * CONFIG.playerRadius * 0.7;
+            ctx.shadowColor = par.id === myId ? '#5f7' : '#f56'; ctx.shadowBlur = 12;
+            ctx.beginPath(); ctx.arc(ox, oy, CONFIG.parasiteRadius, 0, Math.PI * 2);
+            ctx.fillStyle = par.id === myId ? '#5f7' : '#f56'; ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1; ctx.stroke();
+          });
+        }
+
+        if (p.score > 0) { ctx.fillStyle = '#fa6'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(p.score, dx, dy - r - 12); }
+      }
+
+      // FOG OF WAR
+      ctx.restore();
+      ctx.save();
+      const fogGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, VIEW_RADIUS * 0.7, canvas.width/2, canvas.height/2, VIEW_RADIUS * 1.3);
+      fogGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      fogGrad.addColorStop(0.5, 'rgba(0,0,0,0.3)');
+      fogGrad.addColorStop(1, 'rgba(0,0,0,0.97)');
+      ctx.fillStyle = fogGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      drawMiniMap();
+      updateUI();
     }
 
-    function updateExitTimer() {
-      const myPlayer = getMyPlayer();
-      if (myPlayer && myPlayer.hostId !== null && myPlayer.infectedAt) {
-        exitTimerEl.style.display = 'block';
-        const elapsed = Date.now() - myPlayer.infectedAt;
-        const remaining = Math.max(0, (INFECT_DURATION - elapsed) / 1000);
-        timerValueEl.textContent = remaining.toFixed(1);
-        exitTimerEl.style.color = remaining < 2 ? '#4f4' : '#ff6b6b';
-      } else {
-        exitTimerEl.style.display = 'none';
+    function updateUI() {
+      const me = getMyPlayer(), timerEl = document.getElementById('matchTimer');
+      const m = Math.floor(matchTime / 60000), s = Math.floor((matchTime % 60000) / 1000);
+      timerEl.textContent = `⏱ ${m}:${s.toString().padStart(2, '0')}`;
+      if (matchTime < 30000) timerEl.classList.add('urgent'); else timerEl.classList.remove('urgent');
+
+      const comboEl = document.getElementById('combo');
+      if (myCombo > 1) { comboEl.textContent = `🔥 x${myCombo}`; comboEl.classList.add('show'); } else { comboEl.classList.remove('show'); }
+
+      const now = Date.now();
+      for (const [type, data] of Object.entries(myPowerups)) {
+        const card = document.getElementById(`pwr-${type}`), timer = document.getElementById(`timer-${type}`);
+        if (card && timer) {
+          const rem = Math.max(0, data.until - now);
+          if (rem > 0) { card.classList.add('active'); timer.textContent = (rem / 1000).toFixed(1) + 's'; }
+          else { card.classList.remove('active'); timer.textContent = ''; delete myPowerups[type]; }
+        }
       }
     }
 
-    function updatePing() {
-      if (lastServerTime > 0) {
-        const ping = Date.now() - lastServerTime;
-        pingEl.textContent = ping;
-        pingEl.style.color = ping < 50 ? '#4f4' : ping < 100 ? '#ff4' : '#f44';
-      }
-    }
-
+    // ========== INIT ==========
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     setInterval(sendMovement, 1000 / 30);
     draw();
-
-    window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      initStars();
-    });
-
-    connect();
+    window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
   </script>
 </body>
 </html>
