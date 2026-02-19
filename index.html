@@ -72,6 +72,10 @@
     .upg-icon { font-size: 16px; }
     .upg-name { color: #aaa; font-size: 9px; text-transform: uppercase; }
     .upg-level { color: #e74c3c; font-size: 14px; font-weight: bold; }
+    
+    /* Индикаторы врагов */
+    .enemy-arrow { position: fixed; width: 0; height: 0; pointer-events: none; z-index: 90; }
+    .enemy-arrow::after { content: ''; position: absolute; width: 20px; height: 20px; border: 3px solid #e74c3c; border-radius: 50%; border-left-color: transparent; border-top-color: transparent; transform: rotate(-45deg); }
   </style>
 </head>
 <body>
@@ -206,6 +210,9 @@
     
     // Уведомления
     const notifications = [];
+    
+    // Индикаторы врагов
+    const enemyArrows = new Map();
     
     // Аудиосистема
     let audioEnabled = true;
@@ -556,6 +563,13 @@
     window.addEventListener('resize', resize);
     resize();
 
+    // Запуск предзагрузки текстур
+    assetManager.preload().then(() => {
+      console.log('[ASSETS] All textures loaded.');
+    }).catch(err => {
+      console.error('[ASSETS] Failed to load:', err);
+    });
+
     // ==========================================
     // УПРАВЛЕНИЕ
     // ==========================================
@@ -687,6 +701,65 @@
       }
       
       lbList.innerHTML = html;
+    }
+    
+    /**
+     * Обновление индикаторов врагов за пределами экрана
+     */
+    function updateEnemyArrows(cameraX, cameraY) {
+      const player = state.players.get(myId);
+      if (!player) return;
+      
+      const screenCX = canvas.width / 2;
+      const screenCY = canvas.height / 2;
+      const edgeDist = 80;
+      
+      // Очищаем старые стрелки
+      document.querySelectorAll('.enemy-arrow').forEach(el => el.remove());
+      enemyArrows.clear();
+      
+      // Для каждого врага
+      for (const [id, p] of state.players) {
+        if (id === myId || p.team === player.team || p.isDead) continue;
+        
+        const screenX = p.x - cameraX;
+        const screenY = p.y - cameraY;
+        
+        // Если враг на экране - не показываем стрелку
+        if (screenX > 0 && screenX < canvas.width && screenY > 0 && screenY < canvas.height) {
+          continue;
+        }
+        
+        // Вычисляем направление
+        const dx = screenX - screenCX;
+        const dy = screenY - screenCY;
+        const angle = Math.atan2(dy, dx);
+        
+        // Позиция стрелки на краю экрана
+        let arrowX, arrowY;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+        
+        if (absDx / canvas.width > absDy / canvas.height) {
+          arrowX = dx > 0 ? canvas.width - edgeDist : edgeDist;
+          arrowY = screenCY + Math.tan(angle) * (arrowX - screenCX);
+          arrowY = Math.max(edgeDist, Math.min(canvas.height - edgeDist, arrowY));
+        } else {
+          arrowY = dy > 0 ? canvas.height - edgeDist : edgeDist;
+          arrowX = screenCX + (arrowY - screenCY) / Math.tan(angle);
+          arrowX = Math.max(edgeDist, Math.min(canvas.width - edgeDist, arrowX));
+        }
+        
+        // Создаём стрелку
+        const arrow = document.createElement('div');
+        arrow.className = 'enemy-arrow';
+        arrow.style.left = (arrowX - 10) + 'px';
+        arrow.style.top = (arrowY - 10) + 'px';
+        arrow.style.transform = `rotate(${angle * 180 / Math.PI}deg)`;
+        document.body.appendChild(arrow);
+        
+        enemyArrows.set(id, arrow);
+      }
     }
 
     // ==========================================
@@ -927,58 +1000,225 @@
         ctx.stroke();
       }
       
-      // Река
-      const riverScreenY = CONFIG.RIVER_Y - cameraY;
-      ctx.fillStyle = 'rgba(52,152,219,0.3)';
-      ctx.fillRect(0, riverScreenY - CONFIG.RIVER_WIDTH/2, canvas.width, CONFIG.RIVER_WIDTH);
-      
-      // Границы реки
-      ctx.strokeStyle = 'rgba(52,152,219,0.5)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(0, riverScreenY - CONFIG.RIVER_WIDTH/2);
-      ctx.lineTo(canvas.width, riverScreenY - CONFIG.RIVER_WIDTH/2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, riverScreenY + CONFIG.RIVER_WIDTH/2);
-      ctx.lineTo(canvas.width, riverScreenY + CONFIG.RIVER_WIDTH/2);
-      ctx.stroke();
-      
-      // Границы карты
-      ctx.strokeStyle = '#e74c3c';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(-cameraX, -cameraY, CONFIG.FIELD_SIZE, CONFIG.FIELD_SIZE);
-    }
-    
-    function draw() {
-      const camera = updateCamera();
+      // ==========================================
+      // МЕНЕДЖЕР АССЕТОВ
+      // ==========================================
+      class AssetManager {
+        constructor() {
+          this.textures = {};
+          this.loadingCount = 0;
+          this.totalCount = 0;
+          this.onReady = null;
+          this.isReady = false;
+        }
 
-      drawMap(camera.x, camera.y);
-      
-      // Рисуем частицы
-      updateAndDrawParticles(camera.x, camera.y);
+        loadTexture(name, url) {
+          this.loadingCount++;
+          this.totalCount++;
 
-      // Рисуем крюки
-      for (const hook of state.hooks) {
-        hook.draw(ctx, camera.x, camera.y);
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+              this.textures[name] = img;
+              this.loadingCount--;
+              if (this.loadingCount === 0) {
+                this.isReady = true;
+                if (this.onReady) this.onReady();
+              }
+              resolve(img);
+            };
+            img.onerror = () => {
+              console.error(`Failed to load texture: ${url}`);
+              this.loadingCount--;
+              reject(new Error(`Failed to load ${name}`));
+            };
+            img.src = url;
+          });
+        }
+
+        async preload() {
+          await Promise.all([
+            this.loadTexture('ground', 'assets/ground_texture.png'),
+            this.loadTexture('water', 'assets/water_texture.png'),
+            this.loadTexture('wall', 'assets/wall_texture.png')
+          ]);
+        }
+
+        get(name) {
+          return this.textures[name] || null;
+        }
+
+        ready(callback) {
+          if (this.isReady) {
+            callback();
+          } else {
+            this.onReady = callback;
+          }
+        }
       }
 
-      // Рисуем игроков
-      for (const player of state.players.values()) {
-        player.update(16);
-        player.draw(ctx, camera.x, camera.y);
-      }
-      
-      // Рисуем миникарту
-      drawMinimap();
+      const assetManager = new AssetManager();
 
-      // Обновляем UI
-      updateUI();
-      
-      // Рисуем уведомления
-      drawNotifications();
+      // ==========================================
+      // ОТРИСОВКА КАРТЫ (Pudge Wars Style)
+      // ==========================================
+      let waterOffset = 0;
+      const TILE_SIZE = 64;
+
+      function drawMap(cameraX, cameraY) {
+        const ctx = canvas.getContext('2d');
+        const fieldSize = CONFIG.FIELD_SIZE;
+
+        // Оптимизация: отключаем сглаживание для тайлов
+        ctx.imageSmoothingEnabled = false;
+
+        // --- 1. Заливка фона (темно-серый, как болото)
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(-cameraX, -cameraY, fieldSize, fieldSize);
+
+        // --- 2. Отображение земли (тайловая текстура)
+        if (assetManager.get('ground')) {
+          const groundTex = assetManager.get('ground');
+          const tilesX = Math.ceil(fieldSize / TILE_SIZE) + 1;
+          const tilesY = Math.ceil(fieldSize / TILE_SIZE) + 1;
+
+          for (let tx = 0; tx < tilesX; tx++) {
+            for (let ty = 0; ty < tilesY; ty++) {
+              const x = tx * TILE_SIZE - cameraX;
+              const y = ty * TILE_SIZE - cameraY;
+              ctx.drawImage(groundTex, x, y, TILE_SIZE, TILE_SIZE);
+            }
+          }
+        } else {
+          // Фолбэк: простая заливка
+          ctx.fillStyle = '#3a2e2e';
+          ctx.fillRect(-cameraX, -cameraY, fieldSize, fieldSize);
+        }
+
+        // --- 3. Река (центральная, Y = 1000, ширина 150)
+        const riverTop = CONFIG.RIVER_Y - CONFIG.RIVER_WIDTH / 2;
+        const riverBottom = CONFIG.RIVER_Y + CONFIG.RIVER_WIDTH / 2;
+
+        if (assetManager.get('water')) {
+          const waterTex = assetManager.get('water');
+          const waterHeight = riverBottom - riverTop;
+          const tilesYWater = Math.ceil(waterHeight / TILE_SIZE) + 1;
+
+          // Анимация: медленное горизонтальное смещение
+          waterOffset += 0.2;
+          if (waterOffset > TILE_SIZE) waterOffset -= TILE_SIZE;
+
+          for (let tx = 0; tx < Math.ceil(fieldSize / TILE_SIZE) + 1; tx++) {
+            for (let ty = 0; ty < tilesYWater; ty++) {
+              const x = tx * TILE_SIZE - cameraX + waterOffset;
+              const y = riverTop + ty * TILE_SIZE - cameraY;
+              ctx.drawImage(waterTex, x, y, TILE_SIZE, TILE_SIZE);
+            }
+          }
+        } else {
+          // Фолбэк: синяя заливка
+          ctx.fillStyle = 'rgba(30, 60, 80, 0.7)';
+          ctx.fillRect(-cameraX, riverTop - cameraY, fieldSize, riverBottom - riverTop);
+        }
+
+        // --- 4. Берега (тонкие полосы по краям реки)
+        ctx.fillStyle = '#4a3a2a'; // Темная грязь у берега
+        ctx.fillRect(-cameraX, riverTop - cameraY - 8, fieldSize, 8); // Верхний берег
+        ctx.fillRect(-cameraX, riverBottom - cameraY, fieldSize, 8);  // Нижний берег
+
+        // --- 5. Стены по краям арены
+        if (assetManager.get('wall')) {
+          const wallTex = assetManager.get('wall');
+          const wallHeight = TILE_SIZE;
+          const wallTilesX = Math.ceil(fieldSize / TILE_SIZE) + 1;
+
+          // Левая стена (X = 0)
+          for (let ty = 0; ty * TILE_SIZE < fieldSize; ty++) {
+            const y = ty * TILE_SIZE - cameraY;
+            ctx.drawImage(wallTex, -cameraX, y, TILE_SIZE, wallHeight);
+          }
+          // Правая стена (X = fieldSize)
+          for (let ty = 0; ty * TILE_SIZE < fieldSize; ty++) {
+            const y = ty * TILE_SIZE - cameraY;
+            ctx.drawImage(wallTex, fieldSize - cameraX, y, TILE_SIZE, wallHeight);
+          }
+          // Верхняя стена (Y = 0)
+          for (let tx = 0; tx * TILE_SIZE < fieldSize; tx++) {
+            const x = tx * TILE_SIZE - cameraX;
+            ctx.drawImage(wallTex, x, -cameraY, TILE_SIZE, wallHeight);
+          }
+          // Нижняя стена (Y = fieldSize)
+          for (let tx = 0; tx * TILE_SIZE < fieldSize; tx++) {
+            const x = tx * TILE_SIZE - cameraX;
+            ctx.drawImage(wallTex, x, fieldSize - cameraY, TILE_SIZE, wallHeight);
+          }
+        } else {
+          // Фолбэк: толстые линии
+          ctx.strokeStyle = '#5d4037';
+          ctx.lineWidth = 20;
+          ctx.beginPath();
+          ctx.moveTo(-cameraX, -cameraY);
+          ctx.lineTo(fieldSize - cameraX, -cameraY);
+          ctx.lineTo(fieldSize - cameraX, fieldSize - cameraY);
+          ctx.lineTo(-cameraX, fieldSize - cameraY);
+          ctx.closePath();
+          ctx.stroke();
+        }
+
+        // --- 6. Виньетка (затемнение по краям)
+        const gradient = ctx.createRadialGradient(
+          canvas.width / 2, canvas.height / 2, 0,
+          canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.8
+        );
+        gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      function draw() {
+        if (!assetManager.isReady) {
+          ctx.fillStyle = '#1a1a2e';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.font = '24px Arial';
+          ctx.fillStyle = '#e74c3c';
+          ctx.textAlign = 'center';
+          ctx.fillText('Loading assets...', canvas.width / 2, canvas.height / 2);
+          requestAnimationFrame(draw);
+          return;
+        }
+
+        const camera = updateCamera();
+        drawMap(camera.x, camera.y);
+
+        // Рисуем частицы
+        updateAndDrawParticles(camera.x, camera.y);
+
+        // Рисуем крюки
+        for (const hook of state.hooks) {
+          hook.draw(ctx, camera.x, camera.y);
+        }
+
+        // Рисуем игроков
+        for (const player of state.players.values()) {
+          player.update(16);
+          player.draw(ctx, camera.x, camera.y);
+        }
+
+        // Рисуем миникарту
+        drawMinimap();
+        
+        // Обновляем индикаторы врагов
+        updateEnemyArrows(camera.x, camera.y);
+
+        // Обновляем UI
+        updateUI();
+        
+        // Рисуем уведомления
+        drawNotifications();
+      }
     }
-    
+
     /**
      * Обновление и отрисовка частиц
      */
