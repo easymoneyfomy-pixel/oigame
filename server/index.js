@@ -1,5 +1,7 @@
 const WebSocket = require('ws');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
 const PORT = process.env.PORT || 8080;
 const TICK_RATE = 30;
@@ -8,9 +10,23 @@ const PLAYER_SPEED = 3;
 const INFECT_DURATION = 5000;
 const FIELD_SIZE = 2000;
 
+const clientPath = path.join(__dirname, '..', 'client', 'index.html');
+
 const server = http.createServer((req, res) => {
-  res.writeHead(426, { 'Content-Type': 'text/plain' });
-  res.end('Upgrade Required');
+  if (req.url === '/' || req.url === '/index.html') {
+    fs.readFile(clientPath, (err, data) => {
+      if (err) {
+        res.writeHead(500);
+        res.end('Error loading client');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(data);
+    });
+  } else {
+    res.writeHead(426, { 'Content-Type': 'text/plain' });
+    res.end('Upgrade Required');
+  }
 });
 
 const wss = new WebSocket.Server({ 
@@ -40,30 +56,6 @@ function updateSpatialGrid() {
     }
     spatialGrid.get(key).push(player);
   }
-}
-
-function getNearbyPlayers(player, range) {
-  const nearby = [];
-  const gx = Math.floor(player.x / GRID_CELL_SIZE);
-  const gy = Math.floor(player.y / GRID_CELL_SIZE);
-  
-  for (let dx = -1; dx <= 1; dx++) {
-    for (let dy = -1; dy <= 1; dy++) {
-      const key = `${gx + dx},${gy + dy}`;
-      const cell = spatialGrid.get(key);
-      if (cell) {
-        for (const p of cell) {
-          if (p.id !== player.id) {
-            const dist = Math.hypot(p.x - player.x, p.y - player.y);
-            if (dist <= range) {
-              nearby.push({ player: p, distance: dist });
-            }
-          }
-        }
-      }
-    }
-  }
-  return nearby;
 }
 
 function distance(p1, p2) {
@@ -284,6 +276,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`[SERVER] Parasite Arena running on port ${PORT}`);
   console.log(`[SERVER] Field size: ${FIELD_SIZE}x${FIELD_SIZE}`);
   console.log(`[SERVER] Tick rate: ${TICK_RATE} Hz`);
+  console.log(`[SERVER] Client: http://localhost:${PORT}`);
 });
 
 server.on('error', (err) => {
