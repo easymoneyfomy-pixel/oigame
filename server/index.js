@@ -1,15 +1,20 @@
 const WebSocket = require('ws');
-const { v4: uuidv4 } = require('uuid');
+const http = require('http');
 
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 const TICK_RATE = 30;
 const PLAYER_RADIUS = 10;
 const PLAYER_SPEED = 3;
 const INFECT_DURATION = 5000;
 const FIELD_SIZE = 2000;
 
+const server = http.createServer((req, res) => {
+  res.writeHead(426, { 'Content-Type': 'text/plain' });
+  res.end('Upgrade Required');
+});
+
 const wss = new WebSocket.Server({ 
-  port: PORT,
+  server,
   maxPayload: 1024,
   perMessageDeflate: false
 });
@@ -81,12 +86,10 @@ function sanitizeNumber(value, min, max, defaultValue = 0) {
 
 wss.on('connection', (ws, req) => {
   const id = nextId++;
-  const uuid = uuidv4();
   const pos = randomPosition();
   
   const player = {
     id,
-    uuid,
     x: pos.x,
     y: pos.y,
     radius: PLAYER_RADIUS,
@@ -103,8 +106,7 @@ wss.on('connection', (ws, req) => {
   
   const welcomeMsg = {
     type: 'welcome',
-    playerId: id,
-    playerUuid: uuid
+    playerId: id
   };
   ws.send(JSON.stringify(welcomeMsg));
   
@@ -278,21 +280,23 @@ function broadcastState() {
   }
 }
 
-wss.on('listening', () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`[SERVER] Parasite Arena running on port ${PORT}`);
   console.log(`[SERVER] Field size: ${FIELD_SIZE}x${FIELD_SIZE}`);
   console.log(`[SERVER] Tick rate: ${TICK_RATE} Hz`);
 });
 
-wss.on('error', (err) => {
-  console.error('[SERVER] WebSocket error:', err);
+server.on('error', (err) => {
+  console.error('[SERVER] Server error:', err);
 });
 
 process.on('SIGINT', () => {
   console.log('\n[SERVER] Shutting down...');
   clearInterval(gameLoop);
-  wss.close(() => {
-    console.log('[SERVER] Closed');
-    process.exit(0);
+  server.close(() => {
+    wss.close(() => {
+      console.log('[SERVER] Closed');
+      process.exit(0);
+    });
   });
 });

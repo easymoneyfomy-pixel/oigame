@@ -73,14 +73,13 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const WS_URL = 'ws://localhost:8080';
+    const WS_URL = `wss://${window.location.host}`;
     const PLAYER_RADIUS = 10;
     const INFECT_DURATION = 5000;
 
     let ws = null;
     let players = new Map();
     let myId = null;
-    let myUuid = null;
     let keys = {};
     let lastServerTime = 0;
     let connectionState = 'disconnected';
@@ -127,7 +126,6 @@
           const data = JSON.parse(event.data);
           if (data.type === 'welcome') {
             myId = data.playerId;
-            myUuid = data.playerUuid;
             console.log('[CLIENT] My ID:', myId);
           } else if (data.type === 'state') {
             lastServerTime = data.t;
