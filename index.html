@@ -243,6 +243,13 @@
     // Индикаторы врагов
     const enemyArrows = new Map();
     
+    // Комбо убийств
+    const killStreak = {
+      count: 0,
+      timer: 0,
+      lastKillTime: 0
+    };
+    
     // Аудиосистема
     let audioEnabled = true;
     let audioCtx = null;
@@ -856,6 +863,7 @@
               playKillSound();
               if (data.event.killerId === myId) {
                 state.gold += 150;
+                handleKillStreak(); // Обработка комбо
                 showNotification('KILL! +150💰', 'notify-kill');
               }
               if (data.event.assistIds?.includes(myId)) {
@@ -1139,6 +1147,39 @@
       score.textContent = `Radiant: ${radiantKills} - Dire: ${direKills}`;
       
       playKillSound();
+    }
+    
+    /**
+     * Обработка серии убийств (комбо)
+     */
+    function handleKillStreak() {
+      const now = Date.now();
+      const timeSinceLastKill = now - killStreak.lastKillTime;
+      
+      // Если прошло меньше 10 секунд — увеличиваем серию
+      if (timeSinceLastKill < 10000) {
+        killStreak.count++;
+        
+        // Показываем уведомление для разных серий
+        if (killStreak.count === 2) {
+          showNotification('🔥 DOUBLE KILL!', 'notify-kill');
+          playKillSound();
+        } else if (killStreak.count === 3) {
+          showNotification('💀 TRIPLE KILL!', 'notify-kill');
+          playKillSound();
+        } else if (killStreak.count === 4) {
+          showNotification('👻 QUADRA KILL!', 'notify-kill');
+          playKillSound();
+        } else if (killStreak.count >= 5) {
+          showNotification(`⚡ ${killStreak.count}x KILL STREAK!`, 'notify-kill');
+          playKillSound();
+        }
+      } else {
+        // Сбрасываем серию
+        killStreak.count = 1;
+      }
+      
+      killStreak.lastKillTime = now;
     }
 
     // ==========================================
