@@ -45,11 +45,17 @@
     
     /* Миникарта */
     #minimap { position: fixed; top: 10px; right: 10px; width: 150px; height: 150px; background: rgba(0,0,0,0.8); border: 2px solid #444; border-radius: 8px; z-index: 100; }
+    
+    /* Звук */
+    #soundToggle { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); border: 2px solid #444; border-radius: 8px; padding: 8px 12px; color: #fff; cursor: pointer; z-index: 100; font-size: 18px; }
+    #soundToggle:hover { border-color: #e74c3c; }
   </style>
 </head>
 <body>
   <canvas id="game"></canvas>
   <canvas id="minimap" width="150" height="150"></canvas>
+  
+  <button id="soundToggle">🔊</button>
   
   <div id="ui">
     <h1>🥩 PUDGE WARS</h1>
@@ -134,6 +140,79 @@
     
     // Уведомления
     const notifications = [];
+    
+    // Аудиосистема
+    let audioEnabled = true;
+    let audioCtx = null;
+    
+    /**
+     * Инициализация аудио контекста
+     */
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+    
+    /**
+     * Воспроизведение тона (синтезатор)
+     */
+    function playSound(freq, type, duration, volume = 0.1) {
+      if (!audioEnabled || !audioCtx) return;
+      
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      
+      gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+      
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+    
+    /**
+     * Звук выстрела крюком
+     */
+    function playHookSound() {
+      playSound(400, 'sawtooth', 0.2, 0.15);
+    }
+    
+    /**
+     * Звук попадания
+     */
+    function playHitSound() {
+      playSound(200, 'square', 0.15, 0.2);
+    }
+    
+    /**
+     * Звук убийства
+     */
+    function playKillSound() {
+      playSound(300, 'sawtooth', 0.1, 0.15);
+      setTimeout(() => playSound(400, 'sawtooth', 0.2, 0.15), 100);
+    }
+    
+    /**
+     * Звук смерти
+     */
+    function playDeathSound() {
+      playSound(200, 'sawtooth', 0.3, 0.2);
+      setTimeout(() => playSound(150, 'sawtooth', 0.4, 0.2), 150);
+    }
+    
+    /**
+     * Звук спасения
+     */
+    function playSaveSound() {
+      playSound(500, 'sine', 0.15, 0.1);
+      setTimeout(() => playSound(700, 'sine', 0.2, 0.1), 100);
+    }
 
     // ==========================================
     // КЛАССЫ
@@ -220,16 +299,35 @@
       draw(ctx, cameraX, cameraY) {
         const screenX = this.x - cameraX;
         const screenY = this.y - cameraY;
-        
+
+        // Свечение для своего игрока
+        if (this.id === myId) {
+          const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, CONFIG.PLAYER_RADIUS * 2);
+          gradient.addColorStop(0, 'rgba(241, 196, 15, 0.3)');
+          gradient.addColorStop(1, 'rgba(241, 196, 15, 0)');
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(screenX, screenY, CONFIG.PLAYER_RADIUS * 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
         // Тело
         ctx.beginPath();
         ctx.arc(screenX, screenY, CONFIG.PLAYER_RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = this.team === CONFIG.TEAM_RADIANT ? '#2ecc71' : '#e74c3c';
         ctx.fill();
+        
+        // Обводка
         ctx.lineWidth = 3;
         ctx.strokeStyle = this.id === myId ? '#f1c40f' : '#333';
         ctx.stroke();
         
+        // Внутренний круг для детализации
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, CONFIG.PLAYER_RADIUS * 0.6, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.fill();
+
         // Направление взгляда
         ctx.beginPath();
         ctx.moveTo(screenX, screenY);
@@ -241,6 +339,14 @@
         ctx.lineWidth = 2;
         ctx.stroke();
         
+        // Индикатор над головой для своего игрока
+        if (this.id === myId) {
+          ctx.fillStyle = '#f1c40f';
+          ctx.font = '12px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('YOU', screenX, screenY - CONFIG.PLAYER_RADIUS - 8);
+        }
+
         // Полоска здоровья
         const hpBarWidth = 40;
         const hpPercent = this.health / this.maxHealth;
@@ -264,7 +370,8 @@
         this.ownerId = data[5];
         this.state = 'flying'; // flying, returning, pulling
         this.targetId = null;
-        
+        this.trail = []; // След для визуального эффекта
+
         // Вычисляем вектор движения
         const dx = this.targetX - this.x;
         const dy = this.targetY - this.y;
@@ -273,13 +380,18 @@
         this.vy = (dy / dist) * CONFIG.HOOK_SPEED;
         this.traveled = 0;
       }
-      
+
       update(dt) {
+        // Добавляем позицию в след
+        if (this.state === 'flying') {
+          this.trail.push({ x: this.x, y: this.y, life: 10 });
+        }
+      
         if (this.state === 'flying') {
           this.x += this.vx;
           this.y += this.vy;
           this.traveled += CONFIG.HOOK_SPEED;
-          
+
           // Достиг максимума - возвращается
           if (this.traveled >= CONFIG.HOOK_RANGE) {
             this.state = 'returning';
@@ -290,13 +402,13 @@
             const dx = owner.x - this.x;
             const dy = owner.y - this.y;
             const dist = Math.hypot(dx, dy);
-            
+
             if (dist < 10) {
               this.state = 'done';
             } else {
               this.x += (dx / dist) * CONFIG.HOOK_PULL_SPEED;
               this.y += (dy / dist) * CONFIG.HOOK_PULL_SPEED;
-              
+
               // Если тащим цель
               if (this.state === 'pulling' && this.targetId !== null) {
                 const target = state.players.get(this.targetId);
@@ -310,18 +422,37 @@
             this.state = 'done';
           }
         }
+        
+        // Обновляем след
+        for (let i = this.trail.length - 1; i >= 0; i--) {
+          this.trail[i].life--;
+          if (this.trail[i].life <= 0) {
+            this.trail.splice(i, 1);
+          }
+        }
       }
-      
+
       draw(ctx, cameraX, cameraY) {
         const screenX = this.x - cameraX;
         const screenY = this.y - cameraY;
         const owner = state.players.get(this.ownerId);
-        
+
         if (!owner) return;
-        
+
         const ownerScreenX = owner.x - cameraX;
         const ownerScreenY = owner.y - cameraY;
         
+        // Рисуем след
+        for (const point of this.trail) {
+          const alpha = point.life / 10;
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = '#e74c3c';
+          ctx.beginPath();
+          ctx.arc(point.x - cameraX, point.y - cameraY, CONFIG.HOOK_RADIUS * 0.7, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
         // Цепь/веревка
         ctx.beginPath();
         ctx.moveTo(ownerScreenX, ownerScreenY);
@@ -331,7 +462,7 @@
         ctx.setLineDash([5, 5]);
         ctx.stroke();
         ctx.setLineDash([]);
-        
+
         // Сам крюк
         ctx.beginPath();
         ctx.arc(screenX, screenY, CONFIG.HOOK_RADIUS, 0, Math.PI * 2);
@@ -340,6 +471,12 @@
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 2;
         ctx.stroke();
+        
+        // Блеск на крюке
+        ctx.beginPath();
+        ctx.arc(screenX - 2, screenY - 2, CONFIG.HOOK_RADIUS * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.fill();
       }
     }
 
@@ -378,7 +515,14 @@
     document.getElementById('startBtn').addEventListener('click', () => {
       document.getElementById('startScreen').classList.add('hidden');
       gameRunning = true;
+      initAudio(); // Инициализация аудио при первом клике
       connect();
+    });
+    
+    // Переключение звука
+    document.getElementById('soundToggle').addEventListener('click', () => {
+      audioEnabled = !audioEnabled;
+      document.getElementById('soundToggle').textContent = audioEnabled ? '🔊' : '🔇';
     });
 
     // ==========================================
@@ -452,12 +596,14 @@
           // Обработка событий
           if (data.event.type === 'hookFire' && data.event.playerId === myId) {
             startHookCooldown();
+            playHookSound();
           }
           // Попадание хука
           if (data.event.type === 'hookHit') {
             const target = state.players.get(data.event.targetId);
             if (target) {
               createHitEffect(target.x, target.y, '#e74c3c');
+              playHitSound();
               // Если попали в меня
               if (target.id === myId) {
                 showNotification('HIT!', 'notify-hit');
@@ -469,6 +615,7 @@
             const victim = state.players.get(data.event.victimId);
             if (victim) {
               createDeathEffect(victim.x, victim.y);
+              playKillSound();
               if (data.event.killerId === myId) {
                 showNotification('KILL!', 'notify-kill');
               }
@@ -479,6 +626,7 @@
             const ally = state.players.get(data.event.allyId);
             if (ally && ally.team === myTeam) {
               createHitEffect(ally.x, ally.y, '#2ecc71');
+              playSaveSound();
               showNotification('SAVE!', 'notify-save');
             }
           }
