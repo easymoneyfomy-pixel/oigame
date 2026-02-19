@@ -2,10 +2,10 @@
   "name": "parasite-arena",
   "version": "1.0.0",
   "description": "Multiplayer WebSocket game - Parasite Arena",
-  "main": "server/index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "node --watch server/index.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
   "engines": {
     "node": ">=18.0.0"
