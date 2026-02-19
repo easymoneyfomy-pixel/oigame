@@ -19,6 +19,16 @@
     .stat-label { color: #888; }
     .stat-value { color: #e74c3c; font-weight: bold; }
     
+    /* Лидерборд */
+    #leaderboard { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 2px solid #444; border-radius: 8px; padding: 10px 20px; z-index: 100; min-width: 300px; }
+    #leaderboard h3 { color: #e74c3c; font-size: 12px; margin: 0 0 8px 0; text-align: center; text-transform: uppercase; }
+    .lb-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px; }
+    .lb-row.me { background: rgba(241, 196, 15, 0.2); padding: 3px 8px; margin: 0 -8px; border-radius: 4px; }
+    .lb-name { color: #aaa; }
+    .lb-kills { color: #e74c3c; }
+    .lb-team-radiant { color: #2ecc71; }
+    .lb-team-dire { color: #e74c3c; }
+    
     #hookIndicator { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 8px 20px; border-radius: 20px; color: #fff; font-size: 14px; z-index: 100; transition: all 0.2s; }
     #hookIndicator.ready { border: 2px solid #2ecc71; box-shadow: 0 0 10px rgba(46,204,113,0.5); }
     #hookIndicator.cooldown { border: 2px solid #e74c3c; opacity: 0.7; }
@@ -29,6 +39,9 @@
     #startScreen.hidden { display: none; }
     #startScreen h1 { font-size: 48px; color: #e74c3c; margin-bottom: 20px; text-shadow: 0 0 30px rgba(231,76,60,0.6); }
     #startScreen p { color: #aaa; margin-bottom: 30px; font-size: 14px; }
+    #startScreen input { padding: 12px 20px; font-size: 16px; background: rgba(40,20,20,0.8); border: 2px solid #633; border-radius: 8px; color: #fff; margin-bottom: 15px; text-align: center; }
+    #startScreen input:focus { outline: none; border-color: #e74c3c; }
+    #startScreen input::placeholder { color: #644; }
     #startBtn { padding: 15px 40px; font-size: 18px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #e74c3c, #c0392b); border: none; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
     #startBtn:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(231,76,60,0.5); }
     
@@ -49,6 +62,16 @@
     /* Звук */
     #soundToggle { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); border: 2px solid #444; border-radius: 8px; padding: 8px 12px; color: #fff; cursor: pointer; z-index: 100; font-size: 18px; }
     #soundToggle:hover { border-color: #e74c3c; }
+    
+    /* Панель прокачки */
+    #upgrades { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 2px solid #e74c3c; border-radius: 12px; padding: 10px 15px; z-index: 100; display: flex; gap: 10px; align-items: center; }
+    #upgrades h3 { color: #e74c3c; font-size: 12px; margin: 0 10px 0 0; text-transform: uppercase; }
+    .upgrade-item { background: rgba(40,20,20,0.8); border: 1px solid #633; border-radius: 6px; padding: 6px 10px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; min-width: 50px; }
+    .upgrade-item:hover { background: rgba(60,30,30,0.9); border-color: #e74c3c; transform: translateY(-2px); }
+    .upgrade-item.maxed { opacity: 0.5; cursor: default; border-color: #444; }
+    .upg-icon { font-size: 16px; }
+    .upg-name { color: #aaa; font-size: 9px; text-transform: uppercase; }
+    .upg-level { color: #e74c3c; font-size: 14px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -62,14 +85,46 @@
     <p id="connectionStatus">Connecting...</p>
   </div>
   
+  <!-- Лидерборд -->
+  <div id="leaderboard">
+    <h3>🏆 Leaderboard</h3>
+    <div id="lbList"></div>
+  </div>
+  
   <div id="stats">
     <div><span class="stat-label">Kills:</span> <span class="stat-value" id="kills">0</span></div>
     <div><span class="stat-label">Deaths:</span> <span class="stat-value" id="deaths">0</span></div>
     <div><span class="stat-label">Health:</span> <span class="stat-value" id="health">1000</span></div>
+    <div><span class="stat-label">💰 Gold:</span> <span class="stat-value" id="gold">600</span></div>
   </div>
   
   <div id="hookIndicator" class="ready">🪝 HOOK READY</div>
   <div id="hookCooldownBar"><div id="hookCooldownFill"></div></div>
+  
+  <!-- Панель прокачки -->
+  <div id="upgrades">
+    <h3>⬆️ Upgrades</h3>
+    <div class="upgrade-item" id="upgRange">
+      <span class="upg-icon">📏</span>
+      <span class="upg-name">Range</span>
+      <span class="upg-level" id="rangeLevel">1</span>
+    </div>
+    <div class="upgrade-item" id="upgSpeed">
+      <span class="upg-icon">⚡</span>
+      <span class="upg-name">Speed</span>
+      <span class="upg-level" id="speedLevel">1</span>
+    </div>
+    <div class="upgrade-item" id="upgDamage">
+      <span class="upg-icon">💀</span>
+      <span class="upg-name">Dmg</span>
+      <span class="upg-level" id="damageLevel">1</span>
+    </div>
+    <div class="upgrade-item" id="upgCooldown">
+      <span class="upg-icon">⏱️</span>
+      <span class="upg-name">CD</span>
+      <span class="upg-level" id="cdLevel">1</span>
+    </div>
+  </div>
   
   <div id="controls">
     <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;|&nbsp; <kbd>MOUSE</kbd> Aim &nbsp;|&nbsp; <kbd>CLICK</kbd> Hook
@@ -78,6 +133,7 @@
   <div id="startScreen">
     <h1>🥩 PUDGE WARS</h1>
     <p>Hook enemies • Pull allies • Dominate the river</p>
+    <input type="text" id="playerNameInput" placeholder="Enter your name..." maxlength="20" autocomplete="off">
     <button id="startBtn">Start Game</button>
   </div>
 
@@ -118,7 +174,17 @@
       players: new Map(),
       hooks: [],
       myTeam: null,
-      myStats: { kills: 0, deaths: 0 }
+      myStats: { kills: 0, deaths: 0 },
+      gold: 600,
+      level: 1
+    };
+    
+    // Прокачка хука
+    const hookUpgrades = {
+      range: { level: 1, max: 5, base: 400, step: 50, cost: 100 },
+      speed: { level: 1, max: 5, base: 15, step: 2, cost: 150 },
+      damage: { level: 1, max: 5, base: 300, step: 50, cost: 200 },
+      cooldown: { level: 1, max: 5, base: 3000, step: -300, cost: 250 }
     };
     
     // Ввод
@@ -513,10 +579,20 @@
     });
     
     document.getElementById('startBtn').addEventListener('click', () => {
+      const nameInput = document.getElementById('playerNameInput');
+      const playerName = nameInput.value.trim() || `Pudge_${Math.floor(Math.random() * 1000)}`;
+      
       document.getElementById('startScreen').classList.add('hidden');
       gameRunning = true;
-      initAudio(); // Инициализация аудио при первом клике
+      initAudio();
       connect();
+      
+      // Отправляем имя после подключения
+      setTimeout(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'setName', name: playerName }));
+        }
+      }, 100);
     });
     
     // Переключение звука
@@ -524,6 +600,94 @@
       audioEnabled = !audioEnabled;
       document.getElementById('soundToggle').textContent = audioEnabled ? '🔊' : '🔇';
     });
+    
+    // Обработка кликов по апгрейдам
+    document.getElementById('upgRange').addEventListener('click', () => buyUpgrade('range'));
+    document.getElementById('upgSpeed').addEventListener('click', () => buyUpgrade('speed'));
+    document.getElementById('upgDamage').addEventListener('click', () => buyUpgrade('damage'));
+    document.getElementById('upgCooldown').addEventListener('click', () => buyUpgrade('cooldown'));
+    
+    /**
+     * Покупка апгрейда
+     */
+    function buyUpgrade(type) {
+      const upg = hookUpgrades[type];
+      if (upg.level >= upg.max) return;
+      if (state.gold < upg.cost) return;
+      
+      state.gold -= upg.cost;
+      upg.level++;
+      upg.cost = Math.floor(upg.cost * 1.5);
+      
+      // Отправляем на сервер новые характеристики
+      ws.send(JSON.stringify({
+        type: 'upgrade',
+        upgradeType: type,
+        value: getUpgradeValue(type)
+      }));
+      
+      updateUpgradesUI();
+      playSaveSound();
+    }
+    
+    /**
+     * Получение значения апгрейда
+     */
+    function getUpgradeValue(type) {
+      const upg = hookUpgrades[type];
+      return upg.base + (upg.step * (upg.level - 1));
+    }
+    
+    /**
+     * Обновление UI прокачки
+     */
+    function updateUpgradesUI() {
+      for (const [type, upg] of Object.entries(hookUpgrades)) {
+        const el = document.getElementById(`upg${type.charAt(0).toUpperCase() + type.slice(1)}`);
+        const levelEl = document.getElementById(`${type}Level`);
+        levelEl.textContent = upg.level;
+        
+        if (upg.level >= upg.max) {
+          el.classList.add('maxed');
+          el.title = 'MAX';
+        } else {
+          el.title = `Cost: ${upg.cost} gold`;
+        }
+      }
+      
+      // Обновляем конфиг с учётом апгрейдов
+      CONFIG.HOOK_RANGE = getUpgradeValue('range');
+      CONFIG.HOOK_SPEED = getUpgradeValue('speed');
+      CONFIG.HOOK_DAMAGE = getUpgradeValue('damage');
+      CONFIG.HOOK_COOLDOWN = getUpgradeValue('cooldown');
+    }
+    
+    /**
+     * Обновление лидерборда
+     */
+    function updateLeaderboard(players) {
+      const lbList = document.getElementById('lbList');
+      if (!players || players.length === 0) return;
+      
+      // Сортируем по убийствам
+      const sorted = [...players].sort((a, b) => b[8] - a[8]);
+      
+      let html = '';
+      for (let i = 0; i < Math.min(sorted.length, 10); i++) {
+        const p = sorted[i];
+        const [id, x, y, team, health, maxHealth, gold, level, kills, deaths, isDead, runeEffect, rotActive, hookCooldown, name] = p;
+        const isMe = id === myId ? 'me' : '';
+        const teamClass = team === 'radiant' ? 'lb-team-radiant' : 'lb-team-dire';
+        const teamIcon = team === 'radiant' ? '🟢' : '🔴';
+        
+        html += `<div class="lb-row ${isMe}">
+          <span class="lb-name">${i + 1}. ${teamIcon} ${name || `Pudge_${id}`}</span>
+          <span class="lb-kills">⚔️ ${kills}/${deaths}</span>
+        </div>`;
+      }
+      
+      lbList.innerHTML = html;
+    }
 
     // ==========================================
     // СЕТЕВОЕ ВЗАИМОДЕЙСТВИЕ
@@ -564,6 +728,7 @@
         case 'state':
           // Обновление состояния игроков
           const newPlayers = new Map();
+          const playersArray = [];
           for (const p of data.players) {
             const existing = state.players.get(p[0]);
             if (existing) {
@@ -576,6 +741,7 @@
             } else {
               newPlayers.set(p[0], new Player(p));
             }
+            playersArray.push(p);
           }
           state.players = newPlayers;
           
@@ -590,6 +756,9 @@
               state.myStats.deaths = myStats[2];
             }
           }
+          
+          // Обновление лидерборда
+          updateLeaderboard(data.players);
           break;
           
         case 'event':
@@ -616,8 +785,15 @@
             if (victim) {
               createDeathEffect(victim.x, victim.y);
               playKillSound();
+              // Если я убил — получаю золото
               if (data.event.killerId === myId) {
-                showNotification('KILL!', 'notify-kill');
+                state.gold += 150;
+                showNotification('KILL! +150💰', 'notify-kill');
+              }
+              // Если я ассистировал — тоже золото
+              if (data.event.assistIds?.includes(myId)) {
+                state.gold += 50;
+                showNotification('ASSIST! +50💰', 'notify-save');
               }
             }
           }
@@ -869,6 +1045,7 @@
       }
       document.getElementById('kills').textContent = state.myStats.kills;
       document.getElementById('deaths').textContent = state.myStats.deaths;
+      document.getElementById('gold').textContent = state.gold;
       
       // Обновляем кулдаун хука
       updateHookCooldown();

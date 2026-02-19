@@ -156,11 +156,16 @@ wss.on('connection', (ws) => {
     speed: GAME.PLAYER_SPEED,
     ws,
     hookCooldown: 0,
+    hookCooldownTime: GAME.HOOK_COOLDOWN,
+    hookRange: GAME.HOOK_RANGE,
+    hookSpeed: GAME.HOOK_SPEED,
+    hookDamage: GAME.HOOK_DAMAGE,
     isDead: false,
     respawnTime: 0,
     kills: 0,
     deaths: 0,
-    angle: 0
+    angle: 0,
+    gold: 600
   };
   
   players.set(player.id, player);
@@ -179,7 +184,11 @@ wss.on('connection', (ws) => {
   ws.on('message', (data) => {
     try {
       const msg = JSON.parse(data);
-      handlePlayerMessage(player, msg);
+      if (msg.type === 'setName' && msg.name) {
+        player.name = msg.name.substring(0, 20);
+      } else {
+        handlePlayerMessage(player, msg);
+      }
     } catch (e) {
       // Неверный формат - игнорируем
     }
@@ -198,15 +207,22 @@ wss.on('connection', (ws) => {
 
 /**
  * Преобразование игрока в массив для сети
+ * [id, x, y, team, health, maxHealth, gold, level, kills, deaths, isDead, name]
  */
 function playerToData(player) {
   return [
     player.id,
-    player.x,
-    player.y,
+    Math.round(player.x * 100) / 100,
+    Math.round(player.y * 100) / 100,
     player.team,
-    player.health,
-    player.maxHealth
+    Math.round(player.health),
+    player.maxHealth,
+    player.gold || 0,
+    player.level || 1,
+    player.kills || 0,
+    player.deaths || 0,
+    player.isDead,
+    player.name || `Pudge_${player.id}`
   ];
 }
 
@@ -238,7 +254,38 @@ function handlePlayerMessage(player, msg) {
     case 'hook':
       handleHook(player, msg);
       break;
+      
+    case 'upgrade':
+      handleUpgrade(player, msg);
+      break;
   }
+}
+
+/**
+ * Обработка прокачки характеристик хука
+ */
+function handleUpgrade(player, msg) {
+  const { upgradeType, value } = msg;
+  
+  if (!upgradeType || typeof value !== 'number') return;
+  
+  // Применяем апгрейд к игроку
+  switch (upgradeType) {
+    case 'range':
+      player.hookRange = value;
+      break;
+    case 'speed':
+      player.hookSpeed = value;
+      break;
+    case 'damage':
+      player.hookDamage = value;
+      break;
+    case 'cooldown':
+      player.hookCooldownTime = value;
+      break;
+  }
+  
+  console.log(`[UPGRADE] Player ${player.id} upgraded ${upgradeType} to ${value}`);
 }
 
 /**
@@ -275,14 +322,19 @@ function handleMove(player, msg) {
  */
 function handleHook(player, msg) {
   const now = Date.now();
-
-  // Проверка кулдауна
+  
+  // Проверка кулдауна (с учётом апгрейдов)
+  const cooldownTime = player.hookCooldownTime || GAME.HOOK_COOLDOWN;
   if (now < player.hookCooldown) return;
-
+  
   const angle = msg.angle || 0;
-  const targetX = player.x + Math.cos(angle) * GAME.HOOK_RANGE;
-  const targetY = player.y + Math.sin(angle) * GAME.HOOK_RANGE;
-
+  const hookRange = player.hookRange || GAME.HOOK_RANGE;
+  const hookSpeed = player.hookSpeed || GAME.HOOK_SPEED;
+  const hookDamage = player.hookDamage || GAME.HOOK_DAMAGE;
+  
+  const targetX = player.x + Math.cos(angle) * hookRange;
+  const targetY = player.y + Math.sin(angle) * hookRange;
+  
   // Создаем хук
   const hook = {
     id: `hook_${player.id}_${now}`,
@@ -292,18 +344,20 @@ function handleHook(player, msg) {
     targetY,
     ownerId: player.id,
     owner: player,
-    vx: Math.cos(angle) * GAME.HOOK_SPEED,
-    vy: Math.sin(angle) * GAME.HOOK_SPEED,
+    vx: Math.cos(angle) * hookSpeed,
+    vy: Math.sin(angle) * hookSpeed,
     traveled: 0,
     state: 'flying',
     targetId: null,
-    damage: GAME.HOOK_DAMAGE
+    damage: hookDamage,
+    range: hookRange,
+    speed: hookSpeed
   };
-
+  
   hooks.push(hook);
-  player.hookCooldown = now + GAME.HOOK_COOLDOWN;
-
-  console.log(`[HOOK] Player ${player.id} fired hook`);
+  player.hookCooldown = now + cooldownTime;
+  
+  console.log(`[HOOK] Player ${player.id} fired hook (dmg:${hookDamage}, range:${hookRange})`);
   
   // Отправляем событие всем клиентам для отображения кулдауна
   broadcastEvent({
@@ -337,20 +391,24 @@ function updateHooks() {
  * Обновление одного хука
  */
 function updateSingleHook(hook, now) {
+  const hookSpeed = hook.speed || GAME.HOOK_SPEED;
+  const hookRange = hook.range || GAME.HOOK_RANGE;
+  const HOOK_PULL_SPEED = GAME.HOOK_PULL_SPEED;
+  
   if (hook.state === 'flying') {
     // Движение вперед
     hook.x += hook.vx;
     hook.y += hook.vy;
-    hook.traveled += GAME.HOOK_SPEED;
-    
+    hook.traveled += hookSpeed;
+
     // Проверка достижения максимума
-    if (hook.traveled >= GAME.HOOK_RANGE) {
+    if (hook.traveled >= hookRange) {
       hook.state = 'returning';
     }
-    
+
     // Проверка попадания в игроков
     checkHookCollision(hook);
-    
+
   } else if (hook.state === 'returning' || hook.state === 'pulling') {
     // Возвращение к владельцу
     const owner = hook.owner;
@@ -358,15 +416,14 @@ function updateSingleHook(hook, now) {
       const dx = owner.x - hook.x;
       const dy = owner.y - hook.y;
       const dist = Math.hypot(dx, dy);
-      
+
       if (dist < 10) {
         hook.state = 'done';
       } else {
         // Движение к владельцу
-        const speed = GAME.HOOK_PULL_SPEED;
-        hook.x += (dx / dist) * speed;
-        hook.y += (dy / dist) * speed;
-        
+        hook.x += (dx / dist) * HOOK_PULL_SPEED;
+        hook.y += (dy / dist) * HOOK_PULL_SPEED;
+
         // Если тащим цель
         if (hook.state === 'pulling' && hook.targetId !== null) {
           const target = players.get(hook.targetId);
