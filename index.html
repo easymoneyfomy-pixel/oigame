@@ -411,6 +411,18 @@
           ctx.arc(screenX, screenY, CONFIG.PLAYER_RADIUS * 2, 0, Math.PI * 2);
           ctx.fill();
         }
+        
+        // Индикатор низкого здоровья (красная аура)
+        const hpPercent = this.health / this.maxHealth;
+        if (hpPercent < 0.3 && this.id !== myId) {
+          const dangerGradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, CONFIG.PLAYER_RADIUS * 2.5);
+          dangerGradient.addColorStop(0, 'rgba(255, 0, 0, 0.4)');
+          dangerGradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+          ctx.fillStyle = dangerGradient;
+          ctx.beginPath();
+          ctx.arc(screenX, screenY, CONFIG.PLAYER_RADIUS * 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         // Тело
         ctx.beginPath();
@@ -1084,6 +1096,16 @@
       const player = state.players.get(myId);
       if (player) {
         document.getElementById('health').textContent = Math.round(player.health);
+        
+        // Индикатор низкого здоровья
+        const hpPercent = player.health / player.maxHealth;
+        if (hpPercent < 0.25) {
+          document.getElementById('health').style.color = '#f00';
+          document.getElementById('health').style.animation = 'timerPulse 0.5s infinite';
+        } else {
+          document.getElementById('health').style.color = '#e74c3c';
+          document.getElementById('health').style.animation = '';
+        }
       }
       document.getElementById('kills').textContent = state.myStats.kills;
       document.getElementById('deaths').textContent = state.myStats.deaths;
