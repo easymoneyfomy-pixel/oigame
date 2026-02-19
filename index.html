@@ -35,6 +35,22 @@
     #hookCooldownBar { position: fixed; bottom: 55px; left: 50%; transform: translateX(-50%); width: 150px; height: 6px; background: rgba(0,0,0,0.7); border-radius: 3px; overflow: hidden; z-index: 100; display: none; }
     #hookCooldownFill { height: 100%; background: linear-gradient(90deg, #e74c3c, #f39c12); width: 100%; transition: width 0.05s linear; }
     
+    /* Таймер матча */
+    #matchTimer { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 2px solid #e74c3c; border-radius: 8px; padding: 8px 20px; color: #fff; font-size: 18px; font-weight: bold; z-index: 100; }
+    #matchTimer.urgent { border-color: #f00; color: #f00; animation: timerPulse 0.5s infinite; }
+    @keyframes timerPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+    
+    /* Экран конца игры */
+    #gameOverScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
+    #gameOverScreen.show { display: flex; }
+    #gameOverScreen h1 { font-size: 64px; margin-bottom: 20px; }
+    #gameOverScreen.victory h1 { color: #2ecc71; text-shadow: 0 0 30px rgba(46,204,113,0.6); }
+    #gameOverScreen.defeat h1 { color: #e74c3c; text-shadow: 0 0 30px rgba(231,76,60,0.6); }
+    #gameOverScreen p { color: #aaa; font-size: 18px; margin-bottom: 30px; }
+    #gameOverScreen .finalScore { font-size: 24px; color: #f1c40f; margin-bottom: 20px; }
+    #restartBtn { padding: 15px 40px; font-size: 18px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #e74c3c, #c0392b); border: none; border-radius: 8px; cursor: pointer; }
+    #restartBtn:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(231,76,60,0.5); }
+    
     /* Панель прокачки */
     #upgrades { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 2px solid #e74c3c; border-radius: 12px; padding: 10px 15px; z-index: 100; display: flex; gap: 10px; align-items: center; }
     #upgrades h3 { color: #e74c3c; font-size: 12px; margin: 0 10px 0 0; text-transform: uppercase; }
@@ -104,6 +120,15 @@
   
   <div id="hookIndicator" class="ready">🪝 HOOK READY</div>
   <div id="hookCooldownBar"><div id="hookCooldownFill"></div></div>
+  <div id="matchTimer">⏱️ 7:00</div>
+  
+  <!-- Экран конца игры -->
+  <div id="gameOverScreen">
+    <h1 id="gameOverTitle">🏆 VICTORY!</h1>
+    <p class="finalScore" id="finalScore">Radiant: 10 - Dire: 8</p>
+    <p id="gameOverReason">Match ended</p>
+    <button id="restartBtn">Play Again</button>
+  </div>
   
   <!-- Панель прокачки -->
   <div id="upgrades">
@@ -203,6 +228,13 @@
     const hookCooldownState = {
       onCooldown: false,
       cooldownEnd: 0
+    };
+    
+    // Таймер матча
+    const matchState = {
+      duration: 420000, // 7 минут
+      startTime: 0,
+      remaining: 420000
     };
     
     // Система частиц
@@ -594,6 +626,10 @@
       document.getElementById('soundToggle').textContent = audioEnabled ? '🔊' : '🔇';
     });
     
+    document.getElementById('restartBtn').addEventListener('click', () => {
+      location.reload();
+    });
+    
     document.getElementById('upgRange').addEventListener('click', () => buyUpgrade('range'));
     document.getElementById('upgSpeed').addEventListener('click', () => buyUpgrade('speed'));
     document.getElementById('upgDamage').addEventListener('click', () => buyUpgrade('damage'));
@@ -745,6 +781,8 @@
           myId = data.playerId;
           myTeam = data.team;
           state.myTeam = data.team;
+          matchState.remaining = data.matchTime || matchState.duration;
+          matchState.startTime = Date.now();
           for (const p of data.players) {
             state.players.set(p[0], new Player(p));
           }
@@ -774,6 +812,11 @@
               state.myStats.kills = myStats[1];
               state.myStats.deaths = myStats[2];
             }
+          }
+          
+          // Обновляем таймер если есть
+          if (data.matchTime !== undefined) {
+            matchState.remaining = data.matchTime;
           }
           
           updateLeaderboard(data.players);
@@ -816,6 +859,10 @@
               playSaveSound();
               showNotification('SAVE!', 'notify-save');
             }
+          }
+          if (data.event.type === 'matchEnd') {
+            const victory = data.event.winner === myTeam;
+            showGameOver(victory, data.event.radiantKills, data.event.direKills);
           }
           break;
       }
@@ -1042,6 +1089,34 @@
       document.getElementById('deaths').textContent = state.myStats.deaths;
       document.getElementById('gold').textContent = state.gold;
       updateHookCooldown();
+      updateMatchTimer();
+    }
+    
+    function updateMatchTimer() {
+      const minutes = Math.floor(matchState.remaining / 60000);
+      const seconds = Math.floor((matchState.remaining % 60000) / 1000);
+      const timerEl = document.getElementById('matchTimer');
+      timerEl.textContent = `⏱️ ${minutes}:${seconds.toString().padStart(2, '0')}`;
+      
+      // Мигание когда осталось меньше 1 минуты
+      if (matchState.remaining < 60000) {
+        timerEl.classList.add('urgent');
+      } else {
+        timerEl.classList.remove('urgent');
+      }
+    }
+    
+    function showGameOver(victory, radiantKills, direKills) {
+      const screen = document.getElementById('gameOverScreen');
+      const title = document.getElementById('gameOverTitle');
+      const score = document.getElementById('finalScore');
+      
+      screen.classList.add('show');
+      screen.className = victory ? 'victory' : 'defeat';
+      title.textContent = victory ? '🏆 VICTORY!' : '💀 DEFEAT';
+      score.textContent = `Radiant: ${radiantKills} - Dire: ${direKills}`;
+      
+      playKillSound();
     }
 
     // ==========================================

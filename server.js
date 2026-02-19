@@ -46,6 +46,7 @@ const players = new Map();     // Все игроки
 const hooks = [];              // Активные крюки
 let nextPlayerId = 1;          // Генератор ID
 let matchStartTime = Date.now();
+const MATCH_DURATION = 420000; // 7 минут
 
 // ============================================
 // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
@@ -175,6 +176,7 @@ wss.on('connection', (ws) => {
     type: 'welcome',
     playerId: player.id,
     team: player.team,
+    matchTime: Math.max(0, MATCH_DURATION - (Date.now() - matchStartTime)),
     players: [...players.values()].map(p => playerToData(p))
   }));
   
@@ -599,6 +601,52 @@ function checkRespawn() {
   }
 }
 
+/**
+ * Конец матча
+ */
+function endMatch() {
+  // Подсчитываем убийства команд
+  const radiantKills = [...players.values()]
+    .filter(p => p.team === 'radiant')
+    .reduce((sum, p) => sum + p.kills, 0);
+  const direKills = [...players.values()]
+    .filter(p => p.team === 'dire')
+    .reduce((sum, p) => sum + p.kills, 0);
+  
+  const winner = radiantKills > direKills ? 'radiant' : (direKills > radiantKills ? 'dire' : 'draw');
+  
+  console.log(`[MATCH END] Winner: ${winner} (${radiantKills} - ${direKills})`);
+  
+  // Отправляем событие всем
+  broadcastEvent({
+    type: 'matchEnd',
+    winner,
+    radiantKills,
+    direKills
+  });
+  
+  // Перезапуск через 10 секунд
+  setTimeout(() => {
+    matchStartTime = Date.now();
+    
+    // Сброс игроков
+    for (const player of players.values()) {
+      const pos = getSpawnPosition(player.team);
+      player.x = pos.x;
+      player.y = pos.y;
+      player.health = player.maxHealth;
+      player.isDead = false;
+      player.kills = 0;
+      player.deaths = 0;
+      player.gold = 600;
+    }
+    
+    hooks.length = 0;
+    
+    console.log('[MATCH] New match started');
+  }, 10000);
+}
+
 // ============================================
 // ИГРОВОЙ ЦИКЛ
 // ============================================
@@ -619,15 +667,18 @@ function broadcastEvent(event) {
  * Рассылка состояния всем игрокам
  */
 function broadcastState() {
+  const matchTime = Math.max(0, MATCH_DURATION - (Date.now() - matchStartTime));
+  
   const state = {
     type: 'state',
+    matchTime,
     players: [...players.values()].map(p => playerToData(p)),
     hooks: hooks.map(h => hookToData(h)),
     stats: [...players.values()].map(p => [p.id, p.kills, p.deaths])
   };
-  
+
   const data = JSON.stringify(state);
-  
+
   for (const player of players.values()) {
     if (player.ws.readyState === WebSocket.OPEN) {
       player.ws.send(data);
@@ -637,6 +688,14 @@ function broadcastState() {
 
 // Основной игровой цикл
 const gameLoop = setInterval(() => {
+  const matchElapsed = Date.now() - matchStartTime;
+  
+  // Проверка конца матча по времени
+  if (matchElapsed >= MATCH_DURATION) {
+    endMatch();
+    return;
+  }
+  
   // Физика хуков
   updateHooks();
   
