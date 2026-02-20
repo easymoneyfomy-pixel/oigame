@@ -8,7 +8,7 @@
     "dev": "node --watch server.js",
     "prod": "NODE_ENV=production node server.js",
     "lint": "eslint . --ext .js",
-    "test": "echo \"Tests coming soon\" && exit 0"
+    "test": "node test/server.test.js"
   },
   "engines": {
     "node": ">=18.0.0"
