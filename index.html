@@ -526,12 +526,16 @@ resize();
 // ============================================
 document.addEventListener('keydown', (e) => {
   input.keys[e.code] = true;
+  console.log('[DEBUG] Key DOWN:', e.code, 'gameRunning:', gameRunning, 'ws:', ws?.readyState);
   if (e.code === 'KeyQ') input.hookRequested = true;
   if (e.code === 'KeyE') input.rotRequested = true;
   if (e.code === 'KeyR') input.dismemberRequested = true;
 });
 
-document.addEventListener('keyup', (e) => { input.keys[e.code] = false; });
+document.addEventListener('keyup', (e) => { 
+  input.keys[e.code] = false; 
+  console.log('[DEBUG] Key UP:', e.code);
+});
 document.addEventListener('mousemove', (e) => { input.mouseX = e.clientX; input.mouseY = e.clientY; });
 document.addEventListener('mousedown', (e) => {
   if (e.button === 0 && gameRunning) input.hookRequested = true;
@@ -942,7 +946,13 @@ function draw() {
 // ============================================
 // ИГРОВОЙ ЦИКЛ
 // ============================================
+let frameCount = 0;
 function gameLoop() {
+  frameCount++;
+  if (frameCount % 60 === 0) {
+    console.log('[DEBUG] Loop | gameRunning:', gameRunning, 'ws:', ws?.readyState, 'keys:', Object.keys(input.keys).filter(k => input.keys[k]));
+  }
+  
   if (gameRunning) {
     sendInput();
     draw();
