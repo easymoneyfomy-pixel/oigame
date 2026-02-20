@@ -1,42 +1,18 @@
 {
   "name": "pudge-wars",
-  "version": "1.8.0",
-  "description": "Multiplayer .io game - Pudge Wars clone (Warcraft 3)",
+  "version": "2.0.0",
+  "description": "Multiplayer .io game - Pudge Wars clone with full abilities",
   "main": "server.js",
-  "type": "commonjs",
-  "bin": {
-    "pudge-wars": "./server.js"
-  },
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "prod": "NODE_ENV=production node server.js",
-    "lint": "eslint . --ext .js",
-    "test": "node test/server.test.js",
-    "generate-textures": "node generate_textures.js",
-    "healthcheck": "curl -f http://localhost:8080/health || exit 1",
-    "postinstall": "node scripts/postinstall.js",
-    "verify": "npm run lint && npm run test",
-    "clean": "rm -rf node_modules package-lock.json",
-    "build": "echo 'Build complete' && npm run verify",
-    "predeploy": "npm run build",
-    "deploy": "git push origin main"
+    "prod": "NODE_ENV=production node server.js"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+    "node": ">=18.0.0"
   },
-  "os": [
-    "win32",
-    "linux",
-    "darwin"
-  ],
   "dependencies": {
-    "ws": "^8.14.2",
-    "canvas": "^2.11.2"
-  },
-  "devDependencies": {
-    "eslint": "^8.56.0"
+    "ws": "^8.14.2"
   },
   "keywords": [
     "websocket",
@@ -45,19 +21,8 @@
     "io",
     "pudge",
     "dota",
-    "warcraft3",
-    "render",
-    "html5",
-    "canvas"
+    "warcraft3"
   ],
   "author": "",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/pudge-wars.git"
-  },
-  "bugs": {
-    "url": "https://github.com/yourusername/pudge-wars/issues"
-  },
-  "homepage": "https://github.com/yourusername/pudge-wars#readme"
+  "license": "MIT"
 }
