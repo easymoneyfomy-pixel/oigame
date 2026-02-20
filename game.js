@@ -121,6 +121,7 @@ class Player {
   draw(ctx, camX, camY) {
     const sx = this.x - camX;
     const sy = this.y - camY;
+    console.log(`[DRAW Player ${this.id}] pos=(${this.x},${this.y}) cam=(${camX},${camY}) screen=(${sx},${sy}) team=${this.team}`);
 
     // Rot эффект
     if (this.isRotting) {
