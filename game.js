@@ -18,30 +18,31 @@ const CONFIG = {
   BASE_AGI: 14,
   BASE_INT: 16,
   
-  // Q - Meat Hook
-  HOOK_RANGE: 1200,
+  // Q - Meat Hook (Dota 2 values)
+  HOOK_RANGE: 1050,
   HOOK_SPEED: 30,
-  HOOK_RADIUS: 15,
-  HOOK_COOLDOWN: 12000,
-  HOOK_MANA_COST: 120,
+  HOOK_RADIUS: 40,
+  HOOK_COOLDOWN: 14000,
+  HOOK_DAMAGE: 180,
+  HOOK_MANA_COST: 110,
   
-  // E - Rot
-  ROT_DAMAGE: 40,
-  ROT_SLOW: 0.3,
-  ROT_DURATION: 8000,
-  ROT_COOLDOWN: 8000,
-  ROT_MANA_COST: 70,
-  ROT_RADIUS: 200,
+  // E - Rot (Dota 2 values)
+  ROT_DAMAGE: 30,
+  ROT_SLOW: 0.2,
+  ROT_RADIUS: 250,
+  ROT_COOLDOWN: 0,
+  ROT_MANA_COST: 0,
   
-  // R - Dismember
-  DISMEMBER_DAMAGE: 80,
-  DISMEMBER_DURATION: 3000,
-  DISMEMBER_COOLDOWN: 20000,
-  DISMEMBER_MANA_COST: 150,
-  DISMEMBER_RANGE: 150,
+  // R - Dismember (Dota 2 values)
+  DISMEMBER_DAMAGE: 100,
+  DISMEMBER_DURATION: 2750,
+  DISMEMBER_COOLDOWN: 30000,
+  DISMEMBER_MANA_COST: 100,
+  DISMEMBER_RANGE: 160,
   
-  // Пассивка - Flesh Heap
-  FLESH_HEAP_PER_KILL: 1.5
+  // Пассивка - Flesh Heap (Dota 2 values)
+  FLESH_HEAP_PER_KILL: 1.4,
+  FLESH_HEAP_RADIUS: 450
 };
 
 let ws = null, myId = null, gameRunning = false;
