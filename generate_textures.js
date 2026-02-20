@@ -1,345 +1,145 @@
 /**
- * 🎨 Pudge Wars Texture Generator (Node.js)
- * Генерирует текстуры в стиле Warcraft 3
- * 
- * Использование:
- *   node generate_textures.js
- *   npm run generate-textures
+ * Генерация текстур для карты
+ * Создаёт PNG файлы для земли, воды и стен
  */
 
 const fs = require('fs');
 const path = require('path');
 const { createCanvas } = require('canvas');
 
-const TEXTURE_SIZE = 512;
-const OUTPUT_DIR = path.join(__dirname, 'assets');
+const assetsDir = path.join(__dirname, 'assets');
+const TILE_SIZE = 64;
 
-// Создаём папку assets если нет
-if (!fs.existsSync(OUTPUT_DIR)) {
-  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-  console.log('📁 Created assets/ directory');
+// Создаём директорию если нет
+if (!fs.existsSync(assetsDir)) {
+  fs.mkdirSync(assetsDir, { recursive: true });
 }
 
-/**
- * Утилита для создания бесшовного паттерна
- */
-function makeTileable(canvas, ctx) {
-  const size = canvas.width;
-  const edgeBlend = 64;
-  
-  // Копируем края для бесшовности
-  const tempCanvas = createCanvas(size, size);
-  const tempCtx = tempCanvas.getContext('2d');
-  tempCtx.drawImage(canvas, 0, 0);
-  
-  // Blend левый и правый края
-  for (let x = 0; x < edgeBlend; x++) {
-    const alpha = x / edgeBlend;
-    tempCtx.globalAlpha = alpha;
-    tempCtx.drawImage(canvas, size - edgeBlend + x, 0, edgeBlend, size, x, 0, edgeBlend, size);
-  }
-  
-  // Blend верхний и нижний края
-  for (let y = 0; y < edgeBlend; y++) {
-    const alpha = y / edgeBlend;
-    tempCtx.globalAlpha = alpha;
-    tempCtx.drawImage(canvas, 0, size - edgeBlend, size, edgeBlend, 0, y, size, edgeBlend);
-  }
-  
-  // Углы
-  tempCtx.globalAlpha = 1;
-  const cornerSize = edgeBlend;
-  tempCtx.drawImage(canvas, size - cornerSize, size - cornerSize, cornerSize, cornerSize, 0, 0, cornerSize, cornerSize);
-  
-  ctx.drawImage(tempCanvas, 0, 0);
+console.log('🎨 Generating textures...');
+
+// 1. Земля (коричневая с шумом)
+const groundCanvas = createCanvas(TILE_SIZE, TILE_SIZE);
+const groundCtx = groundCanvas.getContext('2d');
+
+// Базовый цвет
+groundCtx.fillStyle = '#3a2e2e';
+groundCtx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+
+// Добавляем "шум" - случайные точки
+for (let i = 0; i < 200; i++) {
+  const x = Math.random() * TILE_SIZE;
+  const y = Math.random() * TILE_SIZE;
+  const size = Math.random() * 2 + 1;
+  const alpha = Math.random() * 0.3 + 0.1;
+  groundCtx.fillStyle = `rgba(93, 64, 55, ${alpha})`;
+  groundCtx.beginPath();
+  groundCtx.arc(x, y, size, 0, Math.PI * 2);
+  groundCtx.fill();
 }
 
-/**
- * Генерация текстуры земли (потрескавшаяся грязь с травой)
- */
-function generateGroundTexture() {
-  console.log('🎨 Generating ground texture...');
-  
-  const canvas = createCanvas(TEXTURE_SIZE, TEXTURE_SIZE);
-  const ctx = canvas.getContext('2d');
-  
-  // Base layer - dark mud
-  ctx.fillStyle = '#3a2e2e';
-  ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
-  
-  // Add noise and variation
-  for (let i = 0; i < 5000; i++) {
-    const x = Math.random() * TEXTURE_SIZE;
-    const y = Math.random() * TEXTURE_SIZE;
-    const shade = Math.random();
-    
-    if (shade > 0.7) {
-      ctx.fillStyle = `rgba(58, 46, 46, ${Math.random() * 0.3})`;
-    } else if (shade > 0.4) {
-      ctx.fillStyle = `rgba(74, 58, 42, ${Math.random() * 0.3})`;
+// Линии "трещин"
+groundCtx.strokeStyle = 'rgba(93, 64, 55, 0.5)';
+groundCtx.lineWidth = 0.5;
+for (let i = 0; i < 5; i++) {
+  groundCtx.beginPath();
+  groundCtx.moveTo(Math.random() * TILE_SIZE, Math.random() * TILE_SIZE);
+  groundCtx.lineTo(Math.random() * TILE_SIZE, Math.random() * TILE_SIZE);
+  groundCtx.stroke();
+}
+
+fs.writeFileSync(
+  path.join(assetsDir, 'ground_texture.png'),
+  groundCanvas.toBuffer('image/png')
+);
+console.log('✓ ground_texture.png');
+
+// 2. Вода (синяя с волнами)
+const waterCanvas = createCanvas(TILE_SIZE, TILE_SIZE);
+const waterCtx = waterCanvas.getContext('2d');
+
+// Градиент
+const gradient = waterCtx.createLinearGradient(0, 0, TILE_SIZE, TILE_SIZE);
+gradient.addColorStop(0, '#1e3c50');
+gradient.addColorStop(0.5, '#2a5269');
+gradient.addColorStop(1, '#1e3c50');
+waterCtx.fillStyle = gradient;
+waterCtx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+
+// Волны
+waterCtx.strokeStyle = 'rgba(100, 200, 255, 0.3)';
+waterCtx.lineWidth = 1.5;
+for (let y = 10; y < TILE_SIZE; y += 12) {
+  waterCtx.beginPath();
+  for (let x = 0; x < TILE_SIZE; x += 5) {
+    const waveY = y + Math.sin(x * 0.3) * 3;
+    if (x === 0) {
+      waterCtx.moveTo(x, waveY);
     } else {
-      ctx.fillStyle = `rgba(42, 32, 28, ${Math.random() * 0.3})`;
-    }
-    
-    ctx.beginPath();
-    ctx.arc(x, y, Math.random() * 3 + 1, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  
-  // Add cracks
-  ctx.strokeStyle = '#2a1e1e';
-  ctx.lineWidth = 1.5;
-  for (let i = 0; i < 30; i++) {
-    ctx.beginPath();
-    let x = Math.random() * TEXTURE_SIZE;
-    let y = Math.random() * TEXTURE_SIZE;
-    ctx.moveTo(x, y);
-    
-    for (let j = 0; j < 10; j++) {
-      x += (Math.random() - 0.5) * 40;
-      y += (Math.random() - 0.5) * 40;
-      ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-  }
-  
-  // Add dry grass patches
-  ctx.fillStyle = '#4a5a3a';
-  for (let i = 0; i < 200; i++) {
-    const x = Math.random() * TEXTURE_SIZE;
-    const y = Math.random() * TEXTURE_SIZE;
-    const grassSize = Math.random() * 8 + 2;
-    
-    ctx.beginPath();
-    ctx.ellipse(x, y, grassSize, grassSize * 0.3, Math.random() * Math.PI, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  
-  // Add small stones
-  ctx.fillStyle = '#6a6a6a';
-  for (let i = 0; i < 100; i++) {
-    const x = Math.random() * TEXTURE_SIZE;
-    const y = Math.random() * TEXTURE_SIZE;
-    const stoneSize = Math.random() * 4 + 2;
-    
-    ctx.beginPath();
-    ctx.arc(x, y, stoneSize, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Stone highlight
-    ctx.fillStyle = 'rgba(120, 120, 120, 0.5)';
-    ctx.beginPath();
-    ctx.arc(x - 1, y - 1, stoneSize * 0.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#6a6a6a';
-  }
-  
-  // Add moss patches
-  ctx.fillStyle = 'rgba(74, 90, 58, 0.4)';
-  for (let i = 0; i < 50; i++) {
-    const x = Math.random() * TEXTURE_SIZE;
-    const y = Math.random() * TEXTURE_SIZE;
-    const mossSize = Math.random() * 20 + 10;
-    
-    ctx.beginPath();
-    ctx.arc(x, y, mossSize, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  
-  // Save
-  const buffer = canvas.toBuffer('image/png');
-  fs.writeFileSync(path.join(OUTPUT_DIR, 'ground_texture.png'), buffer);
-  console.log('✅ ground_texture.png generated');
-}
-
-/**
- * Генерация текстуры воды (мутная болотная)
- */
-function generateWaterTexture() {
-  console.log('🎨 Generating water texture...');
-  
-  const canvas = createCanvas(TEXTURE_SIZE, TEXTURE_SIZE);
-  const ctx = canvas.getContext('2d');
-  
-  // Base layer - deep murky water
-  const gradient = ctx.createLinearGradient(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
-  gradient.addColorStop(0, '#1a3a4a');
-  gradient.addColorStop(0.5, '#2a4a5a');
-  gradient.addColorStop(1, '#1a3a4a');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
-  
-  // Add wave patterns
-  ctx.strokeStyle = 'rgba(42, 74, 90, 0.6)';
-  ctx.lineWidth = 2;
-  
-  for (let y = 0; y < TEXTURE_SIZE; y += 20) {
-    ctx.beginPath();
-    for (let x = 0; x < TEXTURE_SIZE; x += 5) {
-      const waveY = y + Math.sin(x * 0.05) * 5 + Math.cos(x * 0.02) * 3;
-      if (x === 0) {
-        ctx.moveTo(x, waveY);
-      } else {
-        ctx.lineTo(x, waveY);
-      }
-    }
-    ctx.stroke();
-  }
-  
-  // Add ripples
-  ctx.strokeStyle = 'rgba(58, 90, 110, 0.4)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 50; i++) {
-    const x = Math.random() * TEXTURE_SIZE;
-    const y = Math.random() * TEXTURE_SIZE;
-    const rippleSize = Math.random() * 30 + 10;
-    
-    ctx.beginPath();
-    ctx.arc(x, y, rippleSize, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  
-  // Add foam/bubbles
-  ctx.fillStyle = 'rgba(100, 140, 160, 0.3)';
-  for (let i = 0; i < 300; i++) {
-    const x = Math.random() * TEXTURE_SIZE;
-    const y = Math.random() * TEXTURE_SIZE;
-    const bubbleSize = Math.random() * 3 + 1;
-    
-    ctx.beginPath();
-    ctx.arc(x, y, bubbleSize, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  
-  // Add depth variation
-  ctx.fillStyle = 'rgba(20, 50, 70, 0.3)';
-  for (let i = 0; i < 100; i++) {
-    const x = Math.random() * TEXTURE_SIZE;
-    const y = Math.random() * TEXTURE_SIZE;
-    const depthSize = Math.random() * 40 + 20;
-    
-    ctx.beginPath();
-    ctx.ellipse(x, y, depthSize, depthSize * 0.5, Math.random() * Math.PI, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  
-  // Add surface reflection highlights
-  ctx.fillStyle = 'rgba(150, 180, 200, 0.15)';
-  for (let i = 0; i < 100; i++) {
-    const x = Math.random() * TEXTURE_SIZE;
-    const y = Math.random() * TEXTURE_SIZE;
-    const highlightWidth = Math.random() * 20 + 5;
-    const highlightHeight = Math.random() * 3 + 1;
-    
-    ctx.beginPath();
-    ctx.ellipse(x, y, highlightWidth, highlightHeight, Math.random() * Math.PI, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  
-  // Save
-  const buffer = canvas.toBuffer('image/png');
-  fs.writeFileSync(path.join(OUTPUT_DIR, 'water_texture.png'), buffer);
-  console.log('✅ water_texture.png generated');
-}
-
-/**
- * Генерация текстуры стены (каменные блоки со мхом)
- */
-function generateWallTexture() {
-  console.log('🎨 Generating wall texture...');
-  
-  const canvas = createCanvas(TEXTURE_SIZE, TEXTURE_SIZE);
-  const ctx = canvas.getContext('2d');
-  const blockSize = 64;
-  
-  // Base layer - mortar
-  ctx.fillStyle = '#3a3a3a';
-  ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
-  
-  // Draw stone blocks
-  for (let y = 0; y < TEXTURE_SIZE; y += blockSize) {
-    const offset = (y / blockSize) % 2 === 0 ? 0 : blockSize / 2;
-    
-    for (let x = -blockSize; x < TEXTURE_SIZE; x += blockSize) {
-      // Stone base color with variation
-      const stoneShade = Math.random() * 20 - 10;
-      const stoneColor = `rgb(${80 + stoneShade}, ${70 + stoneShade}, ${65 + stoneShade})`;
-      
-      ctx.fillStyle = stoneColor;
-      ctx.fillRect(x + offset + 2, y + 2, blockSize - 4, blockSize - 4);
-      
-      // Add stone texture
-      for (let i = 0; i < 50; i++) {
-        const tx = x + offset + Math.random() * blockSize;
-        const ty = y + Math.random() * blockSize;
-        ctx.fillStyle = `rgba(${60 + Math.random() * 30}, ${50 + Math.random() * 30}, ${45 + Math.random() * 30}, 0.5)`;
-        ctx.beginPath();
-        ctx.arc(tx, ty, Math.random() * 2 + 1, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      
-      // Add cracks in stone
-      ctx.strokeStyle = 'rgba(40, 35, 30, 0.6)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      let cx = x + offset + Math.random() * blockSize;
-      let cy = y + Math.random() * blockSize;
-      ctx.moveTo(cx, cy);
-      for (let j = 0; j < 5; j++) {
-        cx += (Math.random() - 0.5) * 20;
-        cy += (Math.random() - 0.5) * 20;
-        ctx.lineTo(cx, cy);
-      }
-      ctx.stroke();
-      
-      // Add moss on edges
-      if (Math.random() > 0.5) {
-        ctx.fillStyle = 'rgba(74, 90, 58, 0.4)';
-        ctx.beginPath();
-        ctx.arc(x + offset + Math.random() * blockSize, y + Math.random() * blockSize, Math.random() * 15 + 5, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      waterCtx.lineTo(x, waveY);
     }
   }
-  
-  // Add mortar lines
-  ctx.strokeStyle = '#2a2a2a';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
-  
-  // Add weathering
-  ctx.fillStyle = 'rgba(30, 30, 30, 0.3)';
-  for (let i = 0; i < 200; i++) {
-    const x = Math.random() * TEXTURE_SIZE;
-    const y = Math.random() * TEXTURE_SIZE;
-    ctx.beginPath();
-    ctx.arc(x, y, Math.random() * 5 + 2, 0, Math.PI * 2);
-    ctx.fill();
+  waterCtx.stroke();
+}
+
+// Блеск
+waterCtx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+for (let i = 0; i < 30; i++) {
+  const x = Math.random() * TILE_SIZE;
+  const y = Math.random() * TILE_SIZE;
+  waterCtx.beginPath();
+  waterCtx.ellipse(x, y, Math.random() * 8 + 2, Math.random() * 2 + 1, Math.random() * Math.PI, 0, Math.PI * 2);
+  waterCtx.fill();
+}
+
+fs.writeFileSync(
+  path.join(assetsDir, 'water_texture.png'),
+  waterCanvas.toBuffer('image/png')
+);
+console.log('✓ water_texture.png');
+
+// 3. Стена (каменная текстура)
+const wallCanvas = createCanvas(TILE_SIZE, TILE_SIZE);
+const wallCtx = wallCanvas.getContext('2d');
+
+// Базовый цвет
+wallCtx.fillStyle = '#5d4037';
+wallCtx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+
+// Кирпичи
+wallCtx.fillStyle = '#4a3a2a';
+for (let row = 0; row < 4; row++) {
+  const y = row * 16;
+  const offset = (row % 2) * 16;
+  for (let col = -1; col < 5; col++) {
+    const x = col * 32 + offset;
+    wallCtx.fillRect(x + 1, y + 1, 30, 14);
   }
-  
-  // Save
-  const buffer = canvas.toBuffer('image/png');
-  fs.writeFileSync(path.join(OUTPUT_DIR, 'wall_texture.png'), buffer);
-  console.log('✅ wall_texture.png generated');
 }
 
-// Main
-console.log('🎨 Pudge Wars Texture Generator\n');
-console.log('Generating textures in style of Warcraft 3...\n');
-
-try {
-  generateGroundTexture();
-  generateWaterTexture();
-  generateWallTexture();
-  
-  console.log('\n✅ All textures generated successfully!');
-  console.log(`📁 Output directory: ${OUTPUT_DIR}`);
-  console.log('\n📝 Files created:');
-  console.log('   - ground_texture.png (512x512)');
-  console.log('   - water_texture.png (512x512)');
-  console.log('   - wall_texture.png (512x512)');
-  console.log('\n🚀 To use: commit and push to Render');
-} catch (error) {
-  console.error('❌ Error generating textures:', error.message);
-  process.exit(1);
+// Раствор между кирпичами
+wallCtx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+wallCtx.lineWidth = 1;
+for (let row = 0; row <= 4; row++) {
+  const y = row * 16;
+  wallCtx.beginPath();
+  wallCtx.moveTo(0, y);
+  wallCtx.lineTo(TILE_SIZE, y);
+  wallCtx.stroke();
 }
+
+for (let col = 0; col <= 2; col++) {
+  const x = col * 32;
+  wallCtx.beginPath();
+  wallCtx.moveTo(x, 0);
+  wallCtx.lineTo(x, TILE_SIZE);
+  wallCtx.stroke();
+}
+
+fs.writeFileSync(
+  path.join(assetsDir, 'wall_texture.png'),
+  wallCanvas.toBuffer('image/png')
+);
+console.log('✓ wall_texture.png');
+
+console.log('\n✅ All textures generated successfully!');
+console.log(`📁 Saved to: ${assetsDir}`);
