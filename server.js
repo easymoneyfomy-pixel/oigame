@@ -158,9 +158,20 @@ function handlePlayerMessage(player, msg) {
     case 'move':
       // Не даём двигаться если под дизмембером
       if (player.isDismemberTarget) return;
-      if (msg.x && msg.y) {
-        player.x = clamp(msg.x, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
-        player.y = clamp(msg.y, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
+      if (msg.x && msg.y && !player.isDead) {
+        // Плавное движение к точке
+        const dx = msg.x - player.x;
+        const dy = msg.y - player.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 5) {
+          const moveDist = Math.min(dist, GAME.PLAYER_SPEED);
+          player.x += (dx / dist) * moveDist;
+          player.y += (dy / dist) * moveDist;
+          player.x = clamp(player.x, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
+          player.y = clamp(player.y, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
+          // Поворот в сторону движения
+          player.angle = Math.atan2(dy, dx);
+        }
       }
       break;
 
