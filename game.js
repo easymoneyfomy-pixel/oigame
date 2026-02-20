@@ -121,7 +121,6 @@ class Player {
   draw(ctx, camX, camY) {
     const sx = this.x - camX;
     const sy = this.y - camY;
-    console.log(`[PLAYER.draw] id=${this.id} pos=(${this.x},${this.y}) cam=(${camX},${camY}) screen=(${sx},${sy})`);
 
     // Rot эффект
     if (this.isRotting) {
@@ -729,9 +728,7 @@ function draw() {
   drawGrid(cameraX, cameraY);
   drawRiver(cameraX, cameraY);
 
-  console.log('[DRAW] players=', state.players.size, 'myId=', myId, 'camera=', cameraX, cameraY);
   for (const player of state.players.values()) {
-    console.log('[DRAW player]', player.id, player.x, player.y, player.team);
     player.update();
     player.draw(ctx, cameraX, cameraY);
   }
