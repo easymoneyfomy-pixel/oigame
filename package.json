@@ -8,13 +8,15 @@
     "dev": "node --watch server.js",
     "prod": "NODE_ENV=production node server.js",
     "lint": "eslint . --ext .js",
-    "test": "node test/server.test.js"
+    "test": "node test/server.test.js",
+    "generate-textures": "node generate_textures.js"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "ws": "^8.14.2"
+    "ws": "^8.14.2",
+    "canvas": "^2.11.2"
   },
   "devDependencies": {
     "eslint": "^8.56.0"

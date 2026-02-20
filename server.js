@@ -80,6 +80,39 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   let pathname = url.pathname;
 
+  // Health check для мониторинга
+  if (pathname === '/health' || pathname === '/api/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'ok',
+      players: players.size,
+      uptime: Math.floor((Date.now() - matchStartTime) / 1000)
+    }));
+    return;
+  }
+
+  // Статистика игры (публичный API)
+  if (pathname === '/api/stats') {
+    const radiantKills = [...players.values()]
+      .filter(p => p.team === 'radiant')
+      .reduce((sum, p) => sum + (p.kills || 0), 0);
+    const direKills = [...players.values()]
+      .filter(p => p.team === 'dire')
+      .reduce((sum, p) => sum + (p.kills || 0), 0);
+
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache'
+    });
+    res.end(JSON.stringify({
+      players: players.size,
+      radiant: { players: [...players.values()].filter(p => p.team === 'radiant').length, kills: radiantKills },
+      dire: { players: [...players.values()].filter(p => p.team === 'dire').length, kills: direKills },
+      matchTime: Math.max(0, MATCH_DURATION - (Date.now() - matchStartTime))
+    }));
+    return;
+  }
+
   const mimeTypes = {
     '.html': 'text/html; charset=utf-8',
     '.js': 'application/javascript; charset=utf-8',

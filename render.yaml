@@ -6,6 +6,8 @@ services:
     startCommand: node server.js
     plan: free
     region: frankfurt
+    healthCheckPath: /health
+    healthCheckTimeout: 30
     envVars:
       - key: NODE_ENV
         value: production
