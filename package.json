@@ -1,7 +1,7 @@
 {
-  "name": "parasite-arena",
+  "name": "pudge-wars",
   "version": "1.0.0",
-  "description": "Multiplayer WebSocket game - Parasite Arena",
+  "description": "Multiplayer WebSocket game - Pudge Wars clone",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -13,7 +13,7 @@
   "dependencies": {
     "ws": "^8.14.2"
   },
-  "keywords": ["websocket", "game", "multiplayer"],
+  "keywords": ["websocket", "game", "multiplayer", "io"],
   "author": "",
   "license": "MIT"
 }
