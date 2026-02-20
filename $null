@@ -1,7 +1,0 @@
-At line:1 char:145
-+ ... ; cd g:\213333333333333333333333333333333333333333333333\MVP)\1\gam_o ...
-+                                                                 ~
-Unexpected token ')' in expression or statement.
-    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
-    + FullyQualifiedErrorId : UnexpectedToken
- 

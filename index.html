@@ -588,7 +588,6 @@ function connect() {
     console.log('[DEBUG] WebSocket connected');
     document.getElementById('connectionStatus').textContent = 'Connected ✓';
     document.getElementById('connectionStatus').style.color = '#2ecc71';
-    gameRunning = true;
   };
   ws.onmessage = (e) => handleServerMessage(JSON.parse(e.data));
   ws.onclose = () => {
