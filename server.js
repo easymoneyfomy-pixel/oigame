@@ -1,6 +1,6 @@
 /**
- * PUDGE WARS - AAA Edition
- * Complete Dota 2 Mechanics
+ * PUDGE WARS - Warcraft 3 Original Mechanics
+ * Классическая версия из Warcraft 3
  */
 
 const WebSocket = require('ws');
@@ -322,6 +322,9 @@ function handleMove(player, msg) {
     if (!isInRiver(newY, GAME.PLAYER_RADIUS)) {
       player.x = newX;
       player.y = newY;
+    } else {
+      // Разрешаем движение вдоль реки (по X)
+      player.x = newX;
     }
   }
 }
@@ -487,27 +490,53 @@ function updateHook(hook) {
 function checkHookPlayerCollision(hook) {
   for (const [id, player] of players) {
     if (id === hook.ownerId || player.isDead) continue;
-    
+
     if (pointInCircle(hook.x, hook.y, player.x, player.y, GAME.PLAYER_RADIUS + GAME.HOOK_RADIUS)) {
       if (player.team === hook.owner.team) {
-        // Спасение союзника
         hook.state = 'pulling';
         hook.targetId = player.id;
         broadcastEvent({ type: 'allySaved', playerId: hook.ownerId, allyId: player.id });
       } else {
-        // Попадание во врага
         player.health -= hook.damage;
         hook.state = 'pulling';
         hook.targetId = player.id;
-        
+
         console.log(`[HOOK HIT] Player ${hook.ownerId} -> Player ${player.id} for ${hook.damage} PURE damage`);
         broadcastEvent({ type: 'hookHit', targetId: player.id, hitterId: hook.ownerId, damage: hook.damage });
-        
+
         if (player.health <= 0 && !player.isDead) {
           killPlayer(player, hook.owner);
         }
       }
       return;
+    }
+  }
+}
+
+function checkHookToHookCollision() {
+  for (let i = 0; i < hooks.length; i++) {
+    for (let j = i + 1; j < hooks.length; j++) {
+      const h1 = hooks[i];
+      const h2 = hooks[j];
+
+      if (h1.state !== 'flying' || h2.state !== 'flying') continue;
+
+      const dist = distance(h1, h2);
+      if (dist < GAME.HOOK_RADIUS * 2) {
+        const dx = h2.x - h1.x;
+        const dy = h2.y - h1.y;
+        const bounceFactor = 0.5;
+
+        h1.vx = -h1.vx * bounceFactor;
+        h1.vy = -h1.vy * bounceFactor;
+        h2.vx = -h2.vx * bounceFactor;
+        h2.vy = -h2.vy * bounceFactor;
+
+        h1.x -= (dx / dist) * 5;
+        h1.y -= (dy / dist) * 5;
+        h2.x += (dx / dist) * 5;
+        h2.y += (dy / dist) * 5;
+      }
     }
   }
 }
@@ -848,20 +877,20 @@ const gameLoop = setInterval(() => {
 // ============================================
 server.listen(PORT, '0.0.0.0', () => {
   console.log('========================================');
-  console.log('  🥩 PUDGE WARS - AAA EDITION');
+  console.log('  🥩 PUDGE WARS - WARCRAFT 3 ORIGINAL');
   console.log('========================================');
   console.log(`  Port: ${PORT}`);
   console.log(`  Field: ${FIELD_SIZE}x${FIELD_SIZE}`);
-  console.log(`  Tick Rate: ${TICK_RATE} TPS (Dota 2 standard)`);
+  console.log(`  Tick Rate: ${TICK_RATE} TPS`);
   console.log(`  River at Y: ${GAME.RIVER_Y}`);
   console.log('========================================');
   console.log(`  Open: http://localhost:${PORT}`);
   console.log('========================================');
-  console.log('  ABILITIES (Dota 2 Original Values):');
-  console.log('  Q - Meat Hook (90/180/270/360 pure dmg)');
-  console.log('  E - Rot (30/40/50/60 dmg/sec + slow)');
-  console.log('  R - Dismember (75/100/125 + 75% STR)');
-  console.log('  Passive - Flesh Heap (+STR per kill)');
+  console.log('  ABILITIES (Warcraft 3 Values):');
+  console.log('  Q - Meat Hook (100/200/300/400 dmg)');
+  console.log('  E - Rot (40/80/120/160 dmg/sec + slow)');
+  console.log('  R - Dismember (80/120/160 + STR)');
+  console.log('  Passive - Flesh Heap (+1/1.5/2/2.5 STR)');
   console.log('========================================');
 });
 

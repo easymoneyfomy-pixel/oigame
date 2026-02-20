@@ -240,40 +240,13 @@ class Player {
     this.isDead = false;
     this.dismembered = false;
     this.name = data[24] || `Pudge_${this.id}`;
-    this.prevX = data[25] !== undefined ? data[25] : data[1];
-    this.prevY = data[26] !== undefined ? data[26] : data[2];
-    this.prevHealth = data[4];
-    this.prevMana = data[6];
-    this.lastUpdateTime = Date.now();
-    this.interpolationDelay = 100;
   }
 
   update() {
     if (this.id === myId) {
       this.angle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2);
     }
-
-    const now = Date.now();
-    if (this.lastUpdateTime) {
-      const elapsed = now - this.lastUpdateTime;
-      const t = Math.min(elapsed / this.interpolationDelay, 1);
-
-      if (this.prevX !== undefined && this.prevY !== undefined) {
-        this.x = this.lerp(this.prevX, this.x, t);
-        this.y = this.lerp(this.prevY, this.y, t);
-      }
-
-      if (this.prevHealth !== undefined) {
-        this.health = this.lerp(this.prevHealth, this.health, t);
-      }
-      if (this.prevMana !== undefined) {
-        this.mana = this.lerp(this.prevMana, this.mana, t);
-      }
-    }
-  }
-
-  lerp(start, end, t) {
-    return start + (end - start) * t;
+    // Позиции обновляются напрямую из server state
   }
 
   draw(ctx, cameraX, cameraY) {
@@ -526,9 +499,9 @@ resize();
 // ============================================
 document.addEventListener('keydown', (e) => {
   input.keys[e.code] = true;
-  if (e.code === 'KeyQ') input.hookRequested = true;
-  if (e.code === 'KeyE') input.rotRequested = true;
-  if (e.code === 'KeyR') input.dismemberRequested = true;
+  if (e.code === 'KeyQ' && gameRunning) input.hookRequested = true;
+  if (e.code === 'KeyE' && gameRunning) input.rotRequested = true;
+  if (e.code === 'KeyR' && gameRunning) input.dismemberRequested = true;
 });
 
 document.addEventListener('keyup', (e) => { input.keys[e.code] = false; });
@@ -580,37 +553,22 @@ function handleServerMessage(data) {
 
     case 'state':
       const newPlayers = new Map();
-      const now = Date.now();
 
       for (const p of data.players) {
         const existing = state.players.get(p[0]);
-        const prevX = p[25] !== undefined ? p[25] : p[1];
-        const prevY = p[26] !== undefined ? p[26] : p[2];
 
         if (existing) {
-          existing.prevX = existing.x;
-          existing.prevY = existing.y;
-          existing.prevHealth = existing.health;
-          existing.prevMana = existing.mana;
-
           Object.assign(existing, {
             x: p[1], y: p[2], team: p[3], health: p[4], maxHealth: p[5],
             mana: p[6], maxMana: p[7], level: p[8], str: p[9], agi: p[10],
             int: p[11], damage: p[12], armor: p[13], kills: p[14], deaths: p[15],
             fleshHeapStacks: p[16], rotActive: p[17], gold: p[18],
             hookLevel: p[19], rotLevel: p[20], dismemberLevel: p[21],
-            hasAghanim: p[22], magicResist: p[23],
-            prevX: prevX,
-            prevY: prevY,
-            lastUpdateTime: now
+            hasAghanim: p[22], magicResist: p[23]
           });
           newPlayers.set(p[0], existing);
         } else {
-          const player = new Player(p);
-          player.prevX = p[1];
-          player.prevY = p[2];
-          player.lastUpdateTime = now;
-          newPlayers.set(p[0], player);
+          newPlayers.set(p[0], new Player(p));
         }
       }
       state.players = newPlayers;
@@ -619,6 +577,7 @@ function handleServerMessage(data) {
         const myStats = data.stats.find(s => s[0] === myId);
         if (myStats) {
           state.myPlayer = newPlayers.get(myId);
+          abilityPoints.count = myStats[6] || 0;
         }
       }
       if (data.matchStartTime) state.matchStartTime = data.matchStartTime;
@@ -682,9 +641,8 @@ function sendInput() {
   if (dx !== 0 || dy !== 0) {
     const len = Math.hypot(dx, dy);
     dx /= len; dy /= len;
+    ws.send(JSON.stringify({ type: 'move', dx, dy }));
   }
-
-  ws.send(JSON.stringify({ type: 'move', dx, dy }));
 
   if (input.hookRequested) {
     ws.send(JSON.stringify({
