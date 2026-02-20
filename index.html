@@ -7,24 +7,27 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { overflow: hidden; background: #0a0a0a; font-family: 'Segoe UI', sans-serif; }
-    canvas { display: block; }
-
+    
+    /* FIXED: Canvas под интерфейсом */
+    canvas { display: block; position: fixed; top: 0; left: 0; z-index: 1; pointer-events: none; }
+    
+    /* FIXED: Интерфейс над canvas */
     #ui { position: fixed; top: 10px; left: 10px; color: #fff; z-index: 100; pointer-events: none; }
     #ui h1 { font-size: 28px; color: #e74c3c; text-shadow: 0 0 15px rgba(231,76,60,0.6); }
 
-    #stats { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.85); border: 2px solid #e74c3c; border-radius: 8px; padding: 12px 16px; color: #fff; z-index: 100; min-width: 220px; }
+    #stats { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.85); border: 2px solid #e74c3c; border-radius: 8px; padding: 12px 16px; color: #fff; z-index: 100; min-width: 220px; pointer-events: auto; }
     #stats h3 { color: #e74c3c; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; }
     .stat-row { display: flex; justify-content: space-between; margin: 4px 0; font-size: 12px; }
     .stat-label { color: #aaa; }
     .stat-value { color: #e74c3c; font-weight: bold; }
 
-    #attributes { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 2px solid #f39c12; border-radius: 8px; padding: 10px 20px; color: #fff; z-index: 100; display: flex; gap: 20px; }
+    #attributes { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 2px solid #f39c12; border-radius: 8px; padding: 10px 20px; color: #fff; z-index: 100; display: flex; gap: 20px; pointer-events: none; }
     .attr { text-align: center; }
     .attr-icon { font-size: 22px; display: block; }
     .attr-value { color: #f39c12; font-weight: bold; font-size: 16px; }
     .attr-label { font-size: 10px; color: #888; text-transform: uppercase; }
 
-    #bars { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: 500px; z-index: 100; }
+    #bars { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: 500px; z-index: 100; pointer-events: none; }
     .bar-container { background: rgba(0,0,0,0.8); border: 2px solid #333; border-radius: 4px; margin: 3px 0; overflow: hidden; position: relative; }
     .bar { height: 25px; transition: width 0.1s; }
     #healthBar { background: linear-gradient(90deg, #c0392b, #e74c3c); width: 100%; }
@@ -40,7 +43,7 @@
     .ability-cd { position: absolute; bottom: 3px; font-size: 10px; color: #fff; background: rgba(0,0,0,0.9); padding: 2px 6px; border-radius: 4px; font-weight: bold; }
     .ability-level { position: absolute; top: 3px; right: 6px; font-size: 10px; color: #f39c12; background: rgba(0,0,0,0.8); padding: 2px 5px; border-radius: 4px; }
 
-    #ultimate { position: fixed; bottom: 20px; right: 200px; width: 90px; height: 90px; background: rgba(0,0,0,0.85); border: 3px solid #9b59b6; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: all 0.2s; }
+    #ultimate { position: fixed; bottom: 20px; right: 200px; width: 90px; height: 90px; background: rgba(0,0,0,0.85); border: 3px solid #9b59b6; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: all 0.2s; z-index: 100; }
     #ultimate:hover { transform: scale(1.1); border-color: #8e44ad; box-shadow: 0 0 30px rgba(142,68,173,0.6); }
     #ultimate.on-cooldown { opacity: 0.6; cursor: not-allowed; border-color: #666; }
     #ultimate .ability-icon { font-size: 40px; }
@@ -55,7 +58,7 @@
     #startBtn { padding: 18px 60px; font-size: 22px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #e74c3c, #c0392b); border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; box-shadow: 0 0 30px rgba(231,76,60,0.5); }
     #startBtn:hover { transform: scale(1.05); box-shadow: 0 0 50px rgba(231,76,60,0.8); }
 
-    #controls { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 12px; border-radius: 8px; color: #888; font-size: 11px; z-index: 100; }
+    #controls { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 12px; border-radius: 8px; color: #888; font-size: 11px; z-index: 100; pointer-events: none; }
     #controls kbd { background: #333; padding: 3px 8px; border-radius: 4px; color: #fff; margin: 0 2px; font-weight: bold; }
 
     #notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 56px; font-weight: bold; text-align: center; z-index: 2000; pointer-events: none; text-shadow: 0 0 40px rgba(0,0,0,0.8); animation: notifyPop 0.5s ease-out forwards; }
@@ -250,36 +253,14 @@ class Player {
     this.isDead = false;
     this.dismembered = false;
     this.name = data[24] || `Pudge_${this.id}`;
-    this.prevX = data[25] !== undefined ? data[25] : data[1];
-    this.prevY = data[26] !== undefined ? data[26] : data[2];
-    this.prevHealth = data[4];
-    this.prevMana = data[6];
-    this.lastUpdateTime = Date.now();
-    this.interpolationDelay = 100;
   }
 
   update() {
     if (this.id === myId) {
       this.angle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2);
     }
-
-    const now = Date.now();
-    if (this.lastUpdateTime) {
-      const elapsed = now - this.lastUpdateTime;
-      const t = Math.min(elapsed / this.interpolationDelay, 1);
-
-      if (this.prevX !== undefined && this.prevY !== undefined) {
-        this.x = this.lerp(this.prevX, this.x, t);
-        this.y = this.lerp(this.prevY, this.y, t);
-      }
-
-      if (this.prevHealth !== undefined) {
-        this.health = this.lerp(this.prevHealth, this.health, t);
-      }
-      if (this.prevMana !== undefined) {
-        this.mana = this.lerp(this.prevMana, this.mana, t);
-      }
-    }
+    // FIXED: Убрал интерполяцию - она вызывала моргание
+    // Позиции обновляются напрямую из server state
   }
 
   lerp(start, end, t) {
@@ -606,37 +587,22 @@ function handleServerMessage(data) {
 
     case 'state':
       const newPlayers = new Map();
-      const now = Date.now();
 
       for (const p of data.players) {
         const existing = state.players.get(p[0]);
-        const prevX = p[25] !== undefined ? p[25] : p[1];
-        const prevY = p[26] !== undefined ? p[26] : p[2];
 
         if (existing) {
-          existing.prevX = existing.x;
-          existing.prevY = existing.y;
-          existing.prevHealth = existing.health;
-          existing.prevMana = existing.mana;
-
           Object.assign(existing, {
             x: p[1], y: p[2], team: p[3], health: p[4], maxHealth: p[5],
             mana: p[6], maxMana: p[7], level: p[8], str: p[9], agi: p[10],
             int: p[11], damage: p[12], armor: p[13], kills: p[14], deaths: p[15],
             fleshHeapStacks: p[16], rotActive: p[17], gold: p[18],
             hookLevel: p[19], rotLevel: p[20], dismemberLevel: p[21],
-            hasAghanim: p[22], magicResist: p[23],
-            prevX: prevX,
-            prevY: prevY,
-            lastUpdateTime: now
+            hasAghanim: p[22], magicResist: p[23]
           });
           newPlayers.set(p[0], existing);
         } else {
-          const player = new Player(p);
-          player.prevX = p[1];
-          player.prevY = p[2];
-          player.lastUpdateTime = now;
-          newPlayers.set(p[0], player);
+          newPlayers.set(p[0], new Player(p));
         }
       }
       state.players = newPlayers;
@@ -645,10 +611,7 @@ function handleServerMessage(data) {
         const myStats = data.stats.find(s => s[0] === myId);
         if (myStats) {
           state.myPlayer = newPlayers.get(myId);
-          // XP и ability points: [id, kills, deaths, gold, level, xp, abilityPoints]
-          if (myStats.length >= 7) {
-            abilityPoints.count = myStats[6] || 0;
-          }
+          abilityPoints.count = myStats[6] || 0;
         }
       }
       if (data.matchStartTime) state.matchStartTime = data.matchStartTime;
@@ -853,8 +816,6 @@ function showGameOver(victory, radiantKills, direKills) {
 // ============================================
 // КАМЕРА
 // ============================================
-const cameraState = { x: 0, y: 0, targetX: 0, targetY: 0 };
-
 function updateCamera() {
   const player = state.players.get(myId);
   if (!player) return { x: 0, y: 0 };
@@ -862,20 +823,13 @@ function updateCamera() {
   const halfCanvasX = canvas.width / 2;
   const halfCanvasY = canvas.height / 2;
 
-  // Целевая позиция камеры
-  cameraState.targetX = player.x - halfCanvasX;
-  cameraState.targetY = player.y - halfCanvasY;
+  const cameraX = player.x - halfCanvasX;
+  const cameraY = player.y - halfCanvasY;
 
-  // Ограничение границ
-  cameraState.targetX = Math.max(0, Math.min(cameraState.targetX, CONFIG.FIELD_SIZE - canvas.width));
-  cameraState.targetY = Math.max(0, Math.min(cameraState.targetY, CONFIG.FIELD_SIZE - canvas.height));
-
-  // Плавное движение (lerp)
-  const lerpFactor = 0.15;
-  cameraState.x += (cameraState.targetX - cameraState.x) * lerpFactor;
-  cameraState.y += (cameraState.targetY - cameraState.y) * lerpFactor;
-
-  return { x: cameraState.x, y: cameraState.y };
+  return { 
+    x: cameraX, 
+    y: cameraY 
+  };
 }
 
 // ============================================
@@ -899,30 +853,23 @@ function drawMap(cameraX, cameraY) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
   }
 
-  // FIXED: Река отрисовывается ровно по центру арены (Y = 1000)
-  const riverY = CONFIG.RIVER_Y - cameraY;
-  const riverTop = riverY - CONFIG.RIVER_WIDTH / 2;
-  const riverGrad = ctx.createLinearGradient(0, riverTop, 0, riverTop + CONFIG.RIVER_WIDTH);
+  // FIXED: Река рисуется в мировых координатах (Y = 1000)
+  const riverScreenY = CONFIG.RIVER_Y - cameraY - CONFIG.RIVER_WIDTH / 2;
+  const riverGrad = ctx.createLinearGradient(0, riverScreenY, 0, riverScreenY + CONFIG.RIVER_WIDTH);
   riverGrad.addColorStop(0, 'rgba(52,152,219,0.3)');
   riverGrad.addColorStop(0.5, 'rgba(52,152,219,0.5)');
   riverGrad.addColorStop(1, 'rgba(52,152,219,0.3)');
   ctx.fillStyle = riverGrad;
-  // FIXED: Река рисуется только в пределах арены
-  ctx.fillRect(
-    Math.max(0, -cameraX),
-    riverTop,
-    Math.min(CONFIG.FIELD_SIZE + cameraX, canvas.width),
-    CONFIG.RIVER_WIDTH
-  );
+  ctx.fillRect(0, riverScreenY, canvas.width, CONFIG.RIVER_WIDTH);
 
   // FIXED: Красная рамка границ арены - рисуется в мировых координатах
   ctx.strokeStyle = '#e74c3c';
   ctx.lineWidth = 4;
   ctx.strokeRect(
-    -cameraX,           // Левый верхний угол X
-    -cameraY,           // Левый верхний угол Y
-    CONFIG.FIELD_SIZE,  // Ширина
-    CONFIG.FIELD_SIZE   // Высота
+    -cameraX,
+    -cameraY,
+    CONFIG.FIELD_SIZE,
+    CONFIG.FIELD_SIZE
   );
 }
 
