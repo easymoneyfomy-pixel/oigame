@@ -92,10 +92,10 @@
 
   <div id="abilities">
     <div class="ability" id="abilityQ"><span class="ability-key">Q</span><span class="ability-icon">🪝</span><span class="ability-cd" id="qCd"></span></div>
-    <div class="ability" id="abilityW"><span class="ability-key">W</span><span class="ability-icon">☠️</span><span class="ability-cd" id="wCd"></span></div>
+    <div class="ability" id="abilityE"><span class="ability-key">E</span><span class="ability-icon">☠️</span><span class="ability-cd" id="eCd"></span></div>
   </div>
 
-  <div id="controls"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;|&nbsp; <kbd>MOUSE</kbd> Aim &nbsp;|&nbsp; <kbd>Q</kbd> Hook &nbsp;|&nbsp; <kbd>W</kbd> Rot</div>
+  <div id="controls"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;|&nbsp; <kbd>MOUSE</kbd> Aim &nbsp;|&nbsp; <kbd>Q</kbd> Hook &nbsp;|&nbsp; <kbd>E</kbd> Rot</div>
 
   <div id="startScreen">
     <h1>🥩 PUDGE WARS</h1>
@@ -336,7 +336,7 @@ resize();
 document.addEventListener('keydown', (e) => {
   input.keys[e.code] = true;
   if (e.code === 'KeyQ') input.hookRequested = true;
-  if (e.code === 'KeyW') input.rotRequested = true;
+  if (e.code === 'KeyE') input.rotRequested = true;
 });
 
 document.addEventListener('keyup', (e) => { input.keys[e.code] = false; });
@@ -350,7 +350,7 @@ document.getElementById('startBtn').addEventListener('click', () => {
 });
 
 document.getElementById('abilityQ').addEventListener('click', () => { if (gameRunning) input.hookRequested = true; });
-document.getElementById('abilityW').addEventListener('click', () => { if (gameRunning) input.rotRequested = true; });
+document.getElementById('abilityE').addEventListener('click', () => { if (gameRunning) input.rotRequested = true; });
 
 // ============================================
 // NETWORKING
@@ -495,7 +495,7 @@ function updateCooldowns() {
     hookCdEl.textContent = '';
   }
 
-  const rotEl = document.getElementById('abilityW'), rotCdEl = document.getElementById('wCd');
+  const rotEl = document.getElementById('abilityE'), rotCdEl = document.getElementById('eCd');
   if (cooldowns.rot > now) {
     rotEl.classList.add('on-cooldown');
     rotCdEl.textContent = ((cooldowns.rot - now) / 1000).toFixed(1);
