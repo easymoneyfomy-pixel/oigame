@@ -539,7 +539,6 @@ document.addEventListener('mousedown', (e) => {
 
 document.getElementById('startBtn').addEventListener('click', () => {
   document.getElementById('startScreen').classList.add('hidden');
-  gameRunning = true;
   connect();
 });
 
@@ -557,6 +556,7 @@ function connect() {
   ws.onopen = () => {
     document.getElementById('connectionStatus').textContent = 'Connected';
     document.getElementById('connectionStatus').style.color = '#2ecc71';
+    gameRunning = true;
   };
 
   ws.onmessage = (e) => handleServerMessage(JSON.parse(e.data));
