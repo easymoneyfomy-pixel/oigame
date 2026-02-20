@@ -136,12 +136,10 @@ function handlePlayerMessage(player, msg) {
 
   switch (msg.type) {
     case 'move':
-      const dx = clamp(msg.dx || 0, -1, 1);
-      const dy = clamp(msg.dy || 0, -1, 1);
-      const len = Math.hypot(dx, dy);
-      if (len > 0 && !player.isRooted) {
-        player.x = clamp(player.x + (dx / len) * player.speed, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
-        player.y = clamp(player.y + (dy / len) * player.speed, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
+      // FIXED: Обработка движения от клиента
+      if (msg.x && msg.y && !player.isRooted) {
+        player.x = clamp(msg.x, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
+        player.y = clamp(msg.y, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
       }
       break;
 

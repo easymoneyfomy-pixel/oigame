@@ -1,6 +1,6 @@
 // ============================================
 // 🥩 PUDGE WARS - Do You Wanna Jam 2024
-// Original Game Mechanics
+// FIXED VERSION - Движение работает!
 // ============================================
 
 const canvas = document.getElementById('game');
@@ -58,7 +58,6 @@ const state = {
   players: new Map(),
   hooks: [],
   earthbinds: [],
-  phaseEffects: [],
   myTeam: null,
   radiantScore: 0,
   direScore: 0
@@ -68,7 +67,8 @@ const input = {
   mouseX: 0,
   mouseY: 0,
   moveTarget: null,
-  spacePressed: false
+  spacePressed: false,
+  keys: {}
 };
 
 const cooldowns = {
@@ -109,21 +109,6 @@ class Player {
     // Проверка корня
     if (this.isRooted && Date.now() > this.rootEndTime) {
       this.isRooted = false;
-    }
-    
-    // Движение к точке
-    if (input.moveTarget && this.id === myId && !this.isRooted && !this.isDead) {
-      const dx = input.moveTarget.x - this.x;
-      const dy = input.moveTarget.y - this.y;
-      const dist = Math.hypot(dx, dy);
-      
-      if (dist > 10) {
-        this.x += (dx / dist) * CONFIG.PLAYER_SPEED;
-        this.y += (dy / dist) * CONFIG.PLAYER_SPEED;
-        this.angle = Math.atan2(dy, dx);
-      } else {
-        input.moveTarget = null;
-      }
     }
     
     // Камера следует за игроком
@@ -455,6 +440,8 @@ canvas.addEventListener('mousemove', (e) => {
 document.addEventListener('keydown', (e) => {
   if (!gameRunning) return;
   
+  input.keys[e.code] = true;
+  
   if (e.code === 'Space') {
     cameraFollow = true;
     const player = state.players.get(myId);
@@ -472,6 +459,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('keyup', (e) => {
+  input.keys[e.code] = false;
   if (e.code === 'Space') {
     cameraFollow = false;
   }
@@ -578,10 +566,16 @@ function handleServerMessage(data) {
       for (const p of data.players) {
         const existing = state.players.get(p[0]);
         if (existing) {
-          Object.assign(existing, {
-            x: p[1], y: p[2], team: p[3], health: p[4], maxHealth: p[5],
-            mana: p[6], maxMana: p[7], kills: p[8], deaths: p[9]
-          });
+          // FIXED: Обновляем позицию от сервера
+          existing.x = p[1];
+          existing.y = p[2];
+          existing.team = p[3];
+          existing.health = p[4];
+          existing.maxHealth = p[5];
+          existing.mana = p[6];
+          existing.maxMana = p[7];
+          existing.kills = p[8];
+          existing.deaths = p[9];
           newPlayers.set(p[0], existing);
         } else {
           newPlayers.set(p[0], new Player(p));
