@@ -89,11 +89,45 @@
     #startScreen input::placeholder { color: #644; }
     #startBtn { padding: 15px 40px; font-size: 18px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #e74c3c, #c0392b); border: none; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
     #startBtn:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(231,76,60,0.5); }
+    #startBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    #loadingStatus { color: #888; font-size: 12px; margin-top: 15px; display: flex; align-items: center; gap: 8px; }
+    #loadingStatus .spinner { width: 16px; height: 16px; border: 2px solid #444; border-top-color: #e74c3c; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loadingStatus.ready { color: #2ecc71; }
+    #loadingStatus.error { color: #e74c3c; }
     
     #controls { position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; color: #888; font-size: 11px; z-index: 100; }
     #controls kbd { background: #333; padding: 2px 6px; border-radius: 3px; color: #fff; }
   </style>
   <script src="js/map_renderer.js"></script>
+  <script>
+    // Инициализация загрузочного статуса
+    const loadingStatusEl = document.getElementById('loadingStatus');
+    const startBtn = document.getElementById('startBtn');
+
+    // Запуск предзагрузки текстур
+    if (window.assetManager) {
+      assetManager.preload()
+        .then(() => {
+          console.log('[ASSETS] All textures loaded.');
+          loadingStatusEl.classList.add('ready');
+          loadingStatusEl.innerHTML = '✓ Assets ready';
+          startBtn.disabled = false;
+        })
+        .catch(err => {
+          console.error('[ASSETS] Failed to load:', err);
+          loadingStatusEl.classList.add('error');
+          loadingStatusEl.innerHTML = '⚠ Assets failed - starting anyway';
+          // Разрешаем старт через 3 секунды даже с ошибкой
+          setTimeout(() => { startBtn.disabled = false; }, 3000);
+        });
+    } else {
+      // Fallback если assetManager не загружен
+      loadingStatusEl.textContent = '⚠ Renderer not loaded';
+      loadingStatusEl.classList.add('error');
+      setTimeout(() => { startBtn.disabled = false; }, 2000);
+    }
+  </script>
 </head>
 <body>
   <canvas id="game"></canvas>
@@ -165,6 +199,7 @@
     <p>Hook enemies • Pull allies • Dominate the river</p>
     <input type="text" id="playerNameInput" placeholder="Enter your name..." maxlength="20" autocomplete="off">
     <button id="startBtn">Start Game</button>
+    <div id="loadingStatus"><div class="spinner"></div> <span>Loading assets...</span></div>
   </div>
 
   <script>
@@ -626,10 +661,6 @@
     });
 
     document.getElementById('startBtn').addEventListener('click', () => {
-      if (!window.assetManager?.isReady) {
-        alert('⚠️ Textures still loading... Please wait a few seconds.');
-        return;
-      }
       const nameInput = document.getElementById('playerNameInput');
       const playerName = nameInput.value.trim() || `Pudge_${Math.floor(Math.random() * 1000)}`;
 

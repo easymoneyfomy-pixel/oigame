@@ -109,21 +109,50 @@ function getSpawnPosition(team) {
 }
 
 // ============================================
-// HTTP СЕРВЕР (раздача клиента)
+// HTTP СЕРВЕР (раздача клиента + статика)
 // ============================================
 const server = http.createServer((req, res) => {
-  // Раздаем index.html из корня проекта
-  const clientPath = path.join(__dirname, 'index.html');
-  
-  fs.readFile(clientPath, (err, data) => {
-    if (err) {
-      res.writeHead(500);
-      res.end('Error loading game');
-      return;
-    }
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(data);
-  });
+  const url = new URL(req.url, `http://localhost:${PORT}`);
+  let pathname = url.pathname;
+
+  // MIME типы для статики
+  const mimeTypes = {
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.png': 'image/png',
+    '.svg': 'image/svg+xml; charset=utf-8',
+    '.json': 'application/json; charset=utf-8'
+  };
+
+  // Маршруты
+  if (pathname === '/' || pathname === '/index.html') {
+    const clientPath = path.join(__dirname, 'index.html');
+    fs.readFile(clientPath, (err, data) => {
+      if (err) {
+        res.writeHead(500);
+        res.end('Error loading game');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(data);
+    });
+  } else {
+    // Раздача статики (js/, assets/)
+    const filePath = path.join(__dirname, pathname);
+    const ext = path.extname(filePath).toLowerCase();
+    const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        res.writeHead(404);
+        res.end('File not found');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': contentType });
+      res.end(data);
+    });
+  }
 });
 
 // ============================================

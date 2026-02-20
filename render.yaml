@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: pudge-wars
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free
+    region: frankfurt
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
