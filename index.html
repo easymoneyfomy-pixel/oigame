@@ -9,25 +9,21 @@
     body { overflow: hidden; background: #0a0a0a; font-family: 'Segoe UI', sans-serif; }
     canvas { display: block; }
 
-    /* UI */
     #ui { position: fixed; top: 10px; left: 10px; color: #fff; z-index: 100; pointer-events: none; }
     #ui h1 { font-size: 28px; color: #e74c3c; text-shadow: 0 0 15px rgba(231,76,60,0.6); }
 
-    /* Stats */
     #stats { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.85); border: 2px solid #e74c3c; border-radius: 8px; padding: 12px 16px; color: #fff; z-index: 100; min-width: 220px; }
     #stats h3 { color: #e74c3c; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; }
     .stat-row { display: flex; justify-content: space-between; margin: 4px 0; font-size: 12px; }
     .stat-label { color: #aaa; }
     .stat-value { color: #e74c3c; font-weight: bold; }
 
-    /* Attributes */
     #attributes { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 2px solid #f39c12; border-radius: 8px; padding: 10px 20px; color: #fff; z-index: 100; display: flex; gap: 20px; }
     .attr { text-align: center; }
     .attr-icon { font-size: 22px; display: block; }
     .attr-value { color: #f39c12; font-weight: bold; font-size: 16px; }
     .attr-label { font-size: 10px; color: #888; text-transform: uppercase; }
 
-    /* Bars */
     #bars { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: 500px; z-index: 100; }
     .bar-container { background: rgba(0,0,0,0.8); border: 2px solid #333; border-radius: 4px; margin: 3px 0; overflow: hidden; position: relative; }
     .bar { height: 25px; transition: width 0.1s; }
@@ -35,7 +31,6 @@
     #manaBar { background: linear-gradient(90deg, #2980b9, #3498db); width: 100%; }
     .bar-text { position: absolute; color: #fff; font-size: 12px; font-weight: bold; text-shadow: 1px 1px 2px #000; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 
-    /* Abilities */
     #abilities { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 12px; z-index: 100; }
     .ability { width: 70px; height: 70px; background: rgba(0,0,0,0.85); border: 3px solid #e74c3c; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: all 0.2s; }
     .ability:hover { transform: scale(1.08); border-color: #f39c12; box-shadow: 0 0 20px rgba(243,156,18,0.5); }
@@ -45,7 +40,6 @@
     .ability-cd { position: absolute; bottom: 3px; font-size: 10px; color: #fff; background: rgba(0,0,0,0.9); padding: 2px 6px; border-radius: 4px; font-weight: bold; }
     .ability-level { position: absolute; top: 3px; right: 6px; font-size: 10px; color: #f39c12; background: rgba(0,0,0,0.8); padding: 2px 5px; border-radius: 4px; }
 
-    /* Ultimate */
     #ultimate { position: fixed; bottom: 20px; right: 200px; width: 90px; height: 90px; background: rgba(0,0,0,0.85); border: 3px solid #9b59b6; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: all 0.2s; }
     #ultimate:hover { transform: scale(1.1); border-color: #8e44ad; box-shadow: 0 0 30px rgba(142,68,173,0.6); }
     #ultimate.on-cooldown { opacity: 0.6; cursor: not-allowed; border-color: #666; }
@@ -54,7 +48,6 @@
     #ultimate .ability-cd { bottom: 4px; font-size: 11px; }
     #ultimate .ability-level { top: 4px; right: 8px; font-size: 10px; color: #f39c12; }
 
-    /* Start Screen */
     #startScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
     #startScreen.hidden { display: none; }
     #startScreen h1 { font-size: 64px; color: #e74c3c; margin-bottom: 10px; text-shadow: 0 0 40px rgba(231,76,60,0.8); }
@@ -62,11 +55,9 @@
     #startBtn { padding: 18px 60px; font-size: 22px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #e74c3c, #c0392b); border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; box-shadow: 0 0 30px rgba(231,76,60,0.5); }
     #startBtn:hover { transform: scale(1.05); box-shadow: 0 0 50px rgba(231,76,60,0.8); }
 
-    /* Controls */
     #controls { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 12px; border-radius: 8px; color: #888; font-size: 11px; z-index: 100; }
     #controls kbd { background: #333; padding: 3px 8px; border-radius: 4px; color: #fff; margin: 0 2px; font-weight: bold; }
 
-    /* Notifications */
     #notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 56px; font-weight: bold; text-align: center; z-index: 2000; pointer-events: none; text-shadow: 0 0 40px rgba(0,0,0,0.8); animation: notifyPop 0.5s ease-out forwards; }
     @keyframes notifyPop { 0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
     .notify-hit { color: #e74c3c; }
@@ -75,10 +66,8 @@
     .notify-firstblood { color: #e74c3c; text-shadow: 0 0 50px rgba(231,76,60,0.8); }
     .notify-rampage { color: #9b59b6; text-shadow: 0 0 50px rgba(155,89,182,0.8); }
 
-    /* Minimap */
     #minimap { position: fixed; bottom: 10px; right: 10px; width: 180px; height: 180px; background: rgba(0,0,0,0.8); border: 2px solid #444; border-radius: 8px; z-index: 100; }
   </style>
-  <script src="js/map_renderer.js"></script>
 </head>
 <body>
   <canvas id="game"></canvas>
@@ -154,35 +143,31 @@
 
   <script>
 // ============================================
-// DOTA 2 ORIGINAL VALUES
+// КОНФИГУРАЦИЯ
 // ============================================
 const CONFIG = {
   FIELD_SIZE: 2000, RIVER_Y: 1000, RIVER_WIDTH: 180,
   PLAYER_RADIUS: 24, PLAYER_SPEED: 3.6,
   BASE_HEALTH: 700, BASE_MANA: 291, BASE_DAMAGE: 52, BASE_ARMOR: 1,
   BASE_STR: 25, BASE_AGI: 14, BASE_INT: 16,
-  
-  // Q - Meat Hook
+
   HOOK_RANGE: [1000, 1100, 1200, 1300],
   HOOK_SPEED: 25,
   HOOK_RADIUS: 12,
   HOOK_COOLDOWN: [14000, 13000, 12000, 11000],
-  HOOK_DAMAGE: [90, 180, 270, 360], // PURE DAMAGE
+  HOOK_DAMAGE: [90, 180, 270, 360],
   HOOK_MANA_COST: [110, 120, 130, 140],
   HOOK_PULL_SPEED: 10,
-  
-  // E - Rot
-  ROT_DAMAGE: [30, 40, 50, 60], // PER SECOND
+
+  ROT_DAMAGE: [30, 40, 50, 60],
   ROT_RADIUS: 250,
   ROT_SLOW: [0.20, 0.25, 0.30, 0.35],
   ROT_TICK_RATE: 100,
-  
-  // Passive - Flesh Heap
+
   FLESH_HEAP_STR_PER_STACK: [0.8, 1.0, 1.2, 1.4],
   FLESH_HEAP_RANGE: 450,
   FLESH_HEAP_MAGIC_RESIST: [0.08, 0.12, 0.16, 0.20],
-  
-  // R - Dismember
+
   DISMEMBER_DAMAGE: [75, 100, 125],
   DISMEMBER_DURATION: 3000,
   DISMEMBER_COOLDOWN: [30000, 25000, 20000],
@@ -193,28 +178,26 @@ const CONFIG = {
 };
 
 // ============================================
-// GAME STATE
+// СОСТОЯНИЕ ИГРЫ
 // ============================================
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-let ws = null, myId = null, gameRunning = false, lastTime = 0;
+let ws = null, myId = null, gameRunning = false;
 
-const state = { 
-  players: new Map(), 
-  hooks: [], 
-  myTeam: null, 
+const state = {
+  players: new Map(),
+  hooks: [],
+  myTeam: null,
   myPlayer: null,
-  rotActive: false,
-  dismemberActive: false,
   matchStartTime: Date.now()
 };
 
-const input = { 
-  keys: {}, 
-  mouseX: 0, 
-  mouseY: 0, 
-  hookRequested: false, 
+const input = {
+  keys: {},
+  mouseX: 0,
+  mouseY: 0,
+  hookRequested: false,
   rotRequested: false,
   dismemberRequested: false
 };
@@ -225,38 +208,78 @@ const particles = [];
 const floatingTexts = [];
 
 // ============================================
-// CLASSES
+// КЛАССЫ
 // ============================================
 class Player {
   constructor(data) {
-    this.id = data[0]; this.x = data[1]; this.y = data[2]; this.team = data[3];
-    this.health = data[4]; this.maxHealth = data[5];
-    this.mana = data[6]; this.maxMana = data[7];
+    this.id = data[0];
+    this.x = data[1];
+    this.y = data[2];
+    this.team = data[3];
+    this.health = data[4];
+    this.maxHealth = data[5];
+    this.mana = data[6];
+    this.maxMana = data[7];
     this.level = data[8];
-    this.str = data[9]; this.agi = data[10]; this.int = data[11];
-    this.damage = data[12]; this.armor = data[13];
-    this.kills = data[14]; this.deaths = data[15];
-    this.fleshHeapStacks = data[16]; this.rotActive = data[17]; this.gold = data[18];
+    this.str = data[9];
+    this.agi = data[10];
+    this.int = data[11];
+    this.damage = data[12];
+    this.armor = data[13];
+    this.kills = data[14];
+    this.deaths = data[15];
+    this.fleshHeapStacks = data[16];
+    this.rotActive = data[17];
+    this.gold = data[18];
     this.hookLevel = data[19] || 1;
     this.rotLevel = data[20] || 1;
     this.dismemberLevel = data[21] || 0;
     this.hasAghanim = data[22] === 1;
     this.magicResist = data[23] || 0;
-    this.angle = 0; this.isDead = false;
+    this.angle = 0;
+    this.isDead = false;
     this.dismembered = false;
     this.name = data[24] || `Pudge_${this.id}`;
+    this.prevX = data[25] !== undefined ? data[25] : data[1];
+    this.prevY = data[26] !== undefined ? data[26] : data[2];
+    this.prevHealth = data[4];
+    this.prevMana = data[6];
+    this.lastUpdateTime = Date.now();
+    this.interpolationDelay = 100;
   }
 
   update() {
     if (this.id === myId) {
       this.angle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2);
     }
+
+    const now = Date.now();
+    if (this.lastUpdateTime) {
+      const elapsed = now - this.lastUpdateTime;
+      const t = Math.min(elapsed / this.interpolationDelay, 1);
+
+      if (this.prevX !== undefined && this.prevY !== undefined) {
+        this.x = this.lerp(this.prevX, this.x, t);
+        this.y = this.lerp(this.prevY, this.y, t);
+      }
+
+      if (this.prevHealth !== undefined) {
+        this.health = this.lerp(this.prevHealth, this.health, t);
+      }
+      if (this.prevMana !== undefined) {
+        this.mana = this.lerp(this.prevMana, this.mana, t);
+      }
+    }
+  }
+
+  lerp(start, end, t) {
+    return start + (end - start) * t;
   }
 
   draw(ctx, cameraX, cameraY) {
-    const sx = this.x - cameraX, sy = this.y - cameraY;
+    const sx = this.x - cameraX;
+    const sy = this.y - cameraY;
 
-    // Glow for own player
     if (this.id === myId) {
       const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, CONFIG.PLAYER_RADIUS * 3);
       g.addColorStop(0, 'rgba(241, 196, 15, 0.5)');
@@ -267,7 +290,6 @@ class Player {
       ctx.fill();
     }
 
-    // Rot aura - GREEN (Dota 2 original)
     if (this.rotActive) {
       const rg = ctx.createRadialGradient(sx, sy, 0, sx, sy, CONFIG.ROT_RADIUS);
       rg.addColorStop(0, 'rgba(46, 204, 113, 0.5)');
@@ -279,7 +301,6 @@ class Player {
       ctx.fill();
     }
 
-    // Dismember effect
     if (this.dismembered) {
       const dg = ctx.createRadialGradient(sx, sy, 0, sx, sy, CONFIG.PLAYER_RADIUS * 2);
       dg.addColorStop(0, 'rgba(155, 89, 155, 0.6)');
@@ -290,7 +311,6 @@ class Player {
       ctx.fill();
     }
 
-    // Body
     ctx.beginPath();
     ctx.arc(sx, sy, CONFIG.PLAYER_RADIUS, 0, Math.PI * 2);
     ctx.fillStyle = this.team === 'radiant' ? '#2ecc71' : '#e74c3c';
@@ -299,13 +319,11 @@ class Player {
     ctx.strokeStyle = this.id === myId ? '#f1c40f' : '#2c3e50';
     ctx.stroke();
 
-    // Inner circle
     ctx.beginPath();
     ctx.arc(sx, sy, CONFIG.PLAYER_RADIUS * 0.7, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.fill();
 
-    // Direction
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.lineTo(sx + Math.cos(this.angle) * CONFIG.PLAYER_RADIUS * 1.8, sy + Math.sin(this.angle) * CONFIG.PLAYER_RADIUS * 1.8);
@@ -313,7 +331,6 @@ class Player {
     ctx.lineWidth = 4;
     ctx.stroke();
 
-    // YOU
     if (this.id === myId) {
       ctx.fillStyle = '#f1c40f';
       ctx.font = 'bold 14px Arial';
@@ -321,14 +338,12 @@ class Player {
       ctx.fillText('YOU', sx, sy - CONFIG.PLAYER_RADIUS - 15);
     }
 
-    // Health bar
     const hpPercent = this.health / this.maxHealth;
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(sx - 30, sy + CONFIG.PLAYER_RADIUS + 8, 60, 6);
     ctx.fillStyle = hpPercent > 0.5 ? '#2ecc71' : hpPercent > 0.25 ? '#f39c12' : '#e74c3c';
     ctx.fillRect(sx - 30, sy + CONFIG.PLAYER_RADIUS + 8, 60 * hpPercent, 6);
 
-    // Name
     ctx.fillStyle = '#fff';
     ctx.font = '11px Arial';
     ctx.textAlign = 'center';
@@ -338,11 +353,18 @@ class Player {
 
 class Hook {
   constructor(data) {
-    this.id = data[0]; this.x = data[1]; this.y = data[2];
-    this.targetX = data[3]; this.targetY = data[4]; this.ownerId = data[5];
+    this.id = data[0];
+    this.x = data[1];
+    this.y = data[2];
+    this.targetX = data[3];
+    this.targetY = data[4];
+    this.ownerId = data[5];
     this.state = data[6] || 'flying';
-    this.targetId = null; this.trail = [];
-    const dx = this.targetX - this.x, dy = this.targetY - this.y;
+    this.targetId = null;
+    this.trail = [];
+
+    const dx = this.targetX - this.x;
+    const dy = this.targetY - this.y;
     const dist = Math.hypot(dx, dy);
     this.vx = (dx / dist) * CONFIG.HOOK_SPEED;
     this.vy = (dy / dist) * CONFIG.HOOK_SPEED;
@@ -352,13 +374,17 @@ class Hook {
   update() {
     if (this.state === 'flying') {
       this.trail.push({ x: this.x, y: this.y, life: 15 });
-      this.x += this.vx; this.y += this.vy;
+      this.x += this.vx;
+      this.y += this.vy;
       this.traveled += CONFIG.HOOK_SPEED;
-      if (this.traveled >= CONFIG.HOOK_RANGE[abilityLevels.hook - 1]) this.state = 'returning';
+      if (this.traveled >= CONFIG.HOOK_RANGE[abilityLevels.hook - 1]) {
+        this.state = 'returning';
+      }
     } else if (this.state === 'returning' || this.state === 'pulling') {
       const owner = state.players.get(this.ownerId);
       if (owner) {
-        const dx = owner.x - this.x, dy = owner.y - this.y;
+        const dx = owner.x - this.x;
+        const dy = owner.y - this.y;
         const dist = Math.hypot(dx, dy);
         if (dist < 15) {
           this.state = 'done';
@@ -367,7 +393,10 @@ class Hook {
           this.y += (dy / dist) * CONFIG.HOOK_PULL_SPEED;
           if (this.state === 'pulling' && this.targetId !== null) {
             const target = state.players.get(this.targetId);
-            if (target) { target.x = this.x; target.y = this.y; }
+            if (target) {
+              target.x = this.x;
+              target.y = this.y;
+            }
           }
         }
       } else {
@@ -382,13 +411,14 @@ class Hook {
   }
 
   draw(ctx, cameraX, cameraY) {
-    const sx = this.x - cameraX, sy = this.y - cameraY;
+    const sx = this.x - cameraX;
+    const sy = this.y - cameraY;
     const owner = state.players.get(this.ownerId);
     if (!owner) return;
 
-    const ox = owner.x - cameraX, oy = owner.y - cameraY;
+    const ox = owner.x - cameraX;
+    const oy = owner.y - cameraY;
 
-    // Trail
     for (const point of this.trail) {
       const alpha = point.life / 15;
       ctx.globalAlpha = alpha;
@@ -399,7 +429,6 @@ class Hook {
     }
     ctx.globalAlpha = 1;
 
-    // Chain
     ctx.beginPath();
     ctx.moveTo(ox, oy);
     ctx.lineTo(sx, sy);
@@ -409,7 +438,6 @@ class Hook {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Hook
     ctx.beginPath();
     ctx.arc(sx, sy, CONFIG.HOOK_RADIUS, 0, Math.PI * 2);
     ctx.fillStyle = this.state === 'pulling' ? '#f39c12' : '#e74c3c';
@@ -418,7 +446,6 @@ class Hook {
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Shine
     ctx.beginPath();
     ctx.arc(sx - 3, sy - 3, CONFIG.HOOK_RADIUS * 0.35, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
@@ -426,23 +453,25 @@ class Hook {
   }
 }
 
-// ============================================
-// PARTICLES
-// ============================================
 class Particle {
   constructor(x, y, color, speed, life) {
-    this.x = x; this.y = y; this.color = color;
+    this.x = x;
+    this.y = y;
+    this.color = color;
     this.angle = Math.random() * Math.PI * 2;
     this.speed = speed * (0.5 + Math.random() * 0.5);
     this.vx = Math.cos(this.angle) * this.speed;
     this.vy = Math.sin(this.angle) * this.speed;
-    this.life = life; this.maxLife = life;
+    this.life = life;
+    this.maxLife = life;
     this.size = 4 + Math.random() * 4;
   }
 
   update() {
-    this.x += this.vx; this.y += this.vy;
-    this.vx *= 0.96; this.vy *= 0.96;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vx *= 0.96;
+    this.vy *= 0.96;
     this.life--;
   }
 
@@ -457,6 +486,9 @@ class Particle {
   }
 }
 
+// ============================================
+// ЭФФЕКТЫ
+// ============================================
 function createHitEffect(x, y, color) {
   for (let i = 0; i < 20; i++) particles.push(new Particle(x, y, color, 6, 35));
 }
@@ -480,7 +512,7 @@ function showFloatingText(x, y, text, color) {
 }
 
 // ============================================
-// INIT
+// ИНИЦИАЛИЗАЦИЯ
 // ============================================
 function resize() {
   canvas.width = window.innerWidth;
@@ -490,7 +522,7 @@ window.addEventListener('resize', resize);
 resize();
 
 // ============================================
-// INPUT
+// УПРАВЛЕНИЕ
 // ============================================
 document.addEventListener('keydown', (e) => {
   input.keys[e.code] = true;
@@ -516,7 +548,7 @@ document.getElementById('abilityE').addEventListener('click', () => { if (gameRu
 document.getElementById('ultimate').addEventListener('click', () => { if (gameRunning) input.dismemberRequested = true; });
 
 // ============================================
-// NETWORKING
+// СЕТЬ
 // ============================================
 function connect() {
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -548,20 +580,37 @@ function handleServerMessage(data) {
 
     case 'state':
       const newPlayers = new Map();
+      const now = Date.now();
+
       for (const p of data.players) {
         const existing = state.players.get(p[0]);
+        const prevX = p[25] !== undefined ? p[25] : p[1];
+        const prevY = p[26] !== undefined ? p[26] : p[2];
+
         if (existing) {
-          Object.assign(existing, { 
-            x: p[1], y: p[2], team: p[3], health: p[4], maxHealth: p[5], 
-            mana: p[6], maxMana: p[7], level: p[8], str: p[9], agi: p[10], 
-            int: p[11], damage: p[12], armor: p[13], kills: p[14], deaths: p[15], 
+          existing.prevX = existing.x;
+          existing.prevY = existing.y;
+          existing.prevHealth = existing.health;
+          existing.prevMana = existing.mana;
+
+          Object.assign(existing, {
+            x: p[1], y: p[2], team: p[3], health: p[4], maxHealth: p[5],
+            mana: p[6], maxMana: p[7], level: p[8], str: p[9], agi: p[10],
+            int: p[11], damage: p[12], armor: p[13], kills: p[14], deaths: p[15],
             fleshHeapStacks: p[16], rotActive: p[17], gold: p[18],
             hookLevel: p[19], rotLevel: p[20], dismemberLevel: p[21],
-            hasAghanim: p[22], magicResist: p[23]
+            hasAghanim: p[22], magicResist: p[23],
+            prevX: prevX,
+            prevY: prevY,
+            lastUpdateTime: now
           });
           newPlayers.set(p[0], existing);
         } else {
-          newPlayers.set(p[0], new Player(p));
+          const player = new Player(p);
+          player.prevX = p[1];
+          player.prevY = p[2];
+          player.lastUpdateTime = now;
+          newPlayers.set(p[0], player);
         }
       }
       state.players = newPlayers;
@@ -586,7 +635,7 @@ function handleEvent(evt) {
     startCooldown('hook');
     createHookHitEffect(state.players.get(myId)?.x || 0, state.players.get(myId)?.y || 0, '#e74c3c');
   }
-  
+
   if (evt.type === 'hookHit') {
     const target = state.players.get(evt.targetId);
     if (target) {
@@ -595,7 +644,7 @@ function handleEvent(evt) {
       if (target.id === myId) showNotification('HOOKED!', 'notify-hit');
     }
   }
-  
+
   if (evt.type === 'rotToggle') {
     const p = state.players.get(evt.playerId);
     if (p) {
@@ -603,7 +652,7 @@ function handleEvent(evt) {
       if (evt.playerId === myId) startCooldown('rot');
     }
   }
-  
+
   if (evt.type === 'playerKill') {
     const victim = state.players.get(evt.victimId);
     if (victim) {
@@ -614,7 +663,7 @@ function handleEvent(evt) {
       }
     }
   }
-  
+
   if (evt.type === 'allySaved') showNotification('SAVE!', 'notify-save');
   if (evt.type === 'matchEnd') showGameOver(evt.winner === myTeam, evt.radiantKills, evt.direKills);
   if (evt.type === 'levelUp') showNotification(`LEVEL ${evt.level}!`, 'notify-kill');
@@ -638,8 +687,8 @@ function sendInput() {
   ws.send(JSON.stringify({ type: 'move', dx, dy }));
 
   if (input.hookRequested) {
-    ws.send(JSON.stringify({ 
-      type: 'hook', 
+    ws.send(JSON.stringify({
+      type: 'hook',
       angle: Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2),
       abilityLevel: abilityLevels.hook
     }));
@@ -652,8 +701,8 @@ function sendInput() {
   }
 
   if (input.dismemberRequested) {
-    ws.send(JSON.stringify({ 
-      type: 'dismember', 
+    ws.send(JSON.stringify({
+      type: 'dismember',
       angle: Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2),
       abilityLevel: abilityLevels.dismember
     }));
@@ -662,7 +711,7 @@ function sendInput() {
 }
 
 // ============================================
-// COOLDOWNS & UI
+// UI
 // ============================================
 function startCooldown(ability) {
   const now = Date.now();
@@ -670,7 +719,7 @@ function startCooldown(ability) {
     cooldowns.hook = now + CONFIG.HOOK_COOLDOWN[abilityLevels.hook - 1];
   }
   if (ability === 'rot') {
-    cooldowns.rot = now + 100; // Rot has no cooldown, just toggle
+    cooldowns.rot = now + 100;
   }
   if (ability === 'dismember') {
     cooldowns.dismember = now + CONFIG.DISMEMBER_COOLDOWN[abilityLevels.dismember - 1];
@@ -679,8 +728,9 @@ function startCooldown(ability) {
 
 function updateCooldowns() {
   const now = Date.now();
-  
-  const hookEl = document.getElementById('abilityQ'), hookCdEl = document.getElementById('qCd');
+
+  const hookEl = document.getElementById('abilityQ');
+  const hookCdEl = document.getElementById('qCd');
   if (cooldowns.hook > now) {
     hookEl.classList.add('on-cooldown');
     hookCdEl.textContent = ((cooldowns.hook - now) / 1000).toFixed(1);
@@ -689,11 +739,11 @@ function updateCooldowns() {
     hookCdEl.textContent = '';
   }
 
-  const rotEl = document.getElementById('abilityE'), rotCdEl = document.getElementById('eCd');
-  // Rot has no cooldown, just show level
+  const rotEl = document.getElementById('abilityE');
   rotCdEl.textContent = '';
 
-  const ultiEl = document.getElementById('ultimate'), ultiCdEl = document.getElementById('rCd');
+  const ultiEl = document.getElementById('ultimate');
+  const ultiCdEl = document.getElementById('rCd');
   if (cooldowns.dismember > now) {
     ultiEl.classList.add('on-cooldown');
     ultiCdEl.textContent = ((cooldowns.dismember - now) / 1000).toFixed(1);
@@ -707,7 +757,6 @@ function updateUI() {
   const player = state.players.get(myId);
   if (!player) return;
 
-  // Bars
   const hpPercent = (player.health / player.maxHealth) * 100;
   const manaPercent = (player.mana / player.maxMana) * 100;
   document.getElementById('healthBar').style.width = hpPercent + '%';
@@ -715,14 +764,12 @@ function updateUI() {
   document.getElementById('healthText').textContent = `${Math.round(player.health)}/${Math.round(player.maxHealth)}`;
   document.getElementById('manaText').textContent = `${Math.round(player.mana)}/${Math.round(player.maxMana)}`;
 
-  // Stats
   document.getElementById('level').textContent = player.level;
   document.getElementById('kills').textContent = player.kills;
   document.getElementById('deaths').textContent = player.deaths;
   document.getElementById('fleshStacks').textContent = player.fleshHeapStacks || 0;
   document.getElementById('gold').textContent = Math.round(player.gold || 0);
 
-  // Attributes
   const fleshBonus = (player.fleshHeapStacks || 0) * CONFIG.FLESH_HEAP_STR_PER_STACK[Math.min(player.fleshHeapStacks > 0 ? 1 : 0, 3)];
   document.getElementById('str').textContent = Math.round(player.str + fleshBonus);
   document.getElementById('agi').textContent = Math.round(player.agi);
@@ -730,7 +777,6 @@ function updateUI() {
   document.getElementById('damageAttr').textContent = Math.round(player.damage);
   document.getElementById('armorAttr').textContent = Math.round((player.armor || 1) * 100) / 100;
 
-  // Ability levels
   document.getElementById('qLvl').textContent = player.hookLevel || 1;
   document.getElementById('eLvl').textContent = player.rotLevel || 1;
   document.getElementById('rLvl').textContent = player.dismemberLevel || 0;
@@ -758,7 +804,7 @@ function showGameOver(victory, radiantKills, direKills) {
 }
 
 // ============================================
-// CAMERA
+// КАМЕРА
 // ============================================
 function updateCamera() {
   const player = state.players.get(myId);
@@ -767,13 +813,12 @@ function updateCamera() {
 }
 
 // ============================================
-// RENDERING
+// РЕНДЕРИНГ
 // ============================================
 function drawMap(cameraX, cameraY) {
   ctx.fillStyle = '#1a1a2e';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Grid
   ctx.strokeStyle = 'rgba(255,255,255,0.03)';
   ctx.lineWidth = 1;
   const gridSize = 100;
@@ -787,7 +832,6 @@ function drawMap(cameraX, cameraY) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
   }
 
-  // River
   const riverY = CONFIG.RIVER_Y - cameraY;
   const riverGrad = ctx.createLinearGradient(0, riverY - CONFIG.RIVER_WIDTH/2, 0, riverY + CONFIG.RIVER_WIDTH/2);
   riverGrad.addColorStop(0, 'rgba(52,152,219,0.3)');
@@ -796,7 +840,6 @@ function drawMap(cameraX, cameraY) {
   ctx.fillStyle = riverGrad;
   ctx.fillRect(0, riverY - CONFIG.RIVER_WIDTH/2, canvas.width, CONFIG.RIVER_WIDTH);
 
-  // Boundary
   ctx.strokeStyle = '#e74c3c';
   ctx.lineWidth = 4;
   ctx.strokeRect(-cameraX, -cameraY, CONFIG.FIELD_SIZE, CONFIG.FIELD_SIZE);
@@ -810,11 +853,9 @@ function drawMinimap() {
   mmCtx.fillStyle = 'rgba(0,0,0,0.9)';
   mmCtx.fillRect(0, 0, 180, 180);
 
-  // River
   mmCtx.fillStyle = 'rgba(52,152,219,0.5)';
   mmCtx.fillRect(0, (CONFIG.RIVER_Y - CONFIG.RIVER_WIDTH/2) * SCALE, 180, CONFIG.RIVER_WIDTH * SCALE);
 
-  // Players
   for (const p of state.players.values()) {
     mmCtx.fillStyle = p.team === 'radiant' ? '#2ecc71' : '#e74c3c';
     const size = p.id === myId ? 6 : 4;
@@ -823,7 +864,6 @@ function drawMinimap() {
     mmCtx.fill();
   }
 
-  // Viewport
   const player = state.players.get(myId);
   if (player) {
     mmCtx.strokeStyle = '#fff';
@@ -838,6 +878,9 @@ function drawMinimap() {
 }
 
 function updateAndDrawParticles(cameraX, cameraY) {
+  const MAX_PARTICLES = 500;
+  const MAX_FLOATING_TEXTS = 50;
+
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.update();
@@ -845,7 +888,10 @@ function updateAndDrawParticles(cameraX, cameraY) {
     if (p.life <= 0) particles.splice(i, 1);
   }
 
-  // Floating texts
+  if (particles.length > MAX_PARTICLES) {
+    particles.splice(0, particles.length - MAX_PARTICLES);
+  }
+
   for (let i = floatingTexts.length - 1; i >= 0; i--) {
     const ft = floatingTexts[i];
     ft.y -= 1;
@@ -858,6 +904,10 @@ function updateAndDrawParticles(cameraX, cameraY) {
     ctx.globalAlpha = 1;
     if (ft.life <= 0) floatingTexts.splice(i, 1);
   }
+
+  if (floatingTexts.length > MAX_FLOATING_TEXTS) {
+    floatingTexts.splice(0, floatingTexts.length - MAX_FLOATING_TEXTS);
+  }
 }
 
 function draw() {
@@ -865,12 +915,10 @@ function draw() {
   drawMap(camera.x, camera.y);
   updateAndDrawParticles(camera.x, camera.y);
 
-  // Hooks
   for (const hook of state.hooks) {
     hook.draw(ctx, camera.x, camera.y);
   }
 
-  // Players
   for (const player of state.players.values()) {
     player.update();
     player.draw(ctx, camera.x, camera.y);
@@ -881,7 +929,7 @@ function draw() {
 }
 
 // ============================================
-// GAME LOOP
+// ИГРОВОЙ ЦИКЛ
 // ============================================
 function gameLoop() {
   if (gameRunning) {

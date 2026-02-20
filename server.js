@@ -1,6 +1,6 @@
 /**
  * PUDGE WARS - Dota 2 Original Mechanics
- * Точная копия всех способностей Pudge из Dota 2
+ * Оптимизированная версия сервера
  */
 
 const WebSocket = require('ws');
@@ -9,19 +9,18 @@ const path = require('path');
 const fs = require('fs');
 
 // ============================================
-// КОНФИГУРАЦИЯ - ОРИГИНАЛЬНЫЕ ЗНАЧЕНИЯ DOTA 2
+// КОНФИГУРАЦИЯ
 // ============================================
 const PORT = process.env.PORT || 8080;
-const TICK_RATE = 64; // Как в Dota 2
+const TICK_RATE = 64;
 const FIELD_SIZE = 2000;
 const MATCH_DURATION = 420000;
 
 const GAME = {
-  // === BASE STATS ===
   PLAYER_RADIUS: 24,
-  PLAYER_SPEED: 3.6, // 285 MS в Dota 2
-  BASE_HEALTH: 700, // 25 STR * 20 + 200
-  BASE_MANA: 291, // 16 INT * 12 + 75
+  PLAYER_SPEED: 3.6,
+  BASE_HEALTH: 700,
+  BASE_MANA: 291,
   BASE_DAMAGE: 52,
   BASE_ARMOR: 1,
   BASE_STR: 25,
@@ -30,49 +29,42 @@ const GAME = {
   STR_GAIN: 3.2,
   AGI_GAIN: 1.4,
   INT_GAIN: 1.8,
-  
-  // === Q - MEAT HOOK (Оригинал Dota 2) ===
-  HOOK_RANGE: [1000, 1100, 1200, 1300], // Увеличено для баланса .io
-  HOOK_SPEED: 25, // ~1600 юнитов/сек
+
+  HOOK_RANGE: [1000, 1100, 1200, 1300],
+  HOOK_SPEED: 25,
   HOOK_RADIUS: 12,
-  HOOK_COOLDOWN: [14, 13, 12, 11], // СЕК
-  HOOK_DAMAGE: [90, 180, 270, 360], // ЧИСТЫЙ УРОН
+  HOOK_COOLDOWN: [14, 13, 12, 11],
+  HOOK_DAMAGE: [90, 180, 270, 360],
   HOOK_MANA_COST: [110, 120, 130, 140],
   HOOK_PULL_SPEED: 10,
-  HOOK_PULL_DURATION: 0.75, // Сек тащить
-  
-  // === E - ROT (Оригинал Dota 2) ===
-  ROT_DAMAGE: [30, 40, 50, 60], // УРОН В СЕКУНДУ
+
+  ROT_DAMAGE: [30, 40, 50, 60],
   ROT_RADIUS: 250,
-  ROT_SLOW: [0.20, 0.25, 0.30, 0.35], // 20%/25%/30%/35%
-  ROT_SELF_DAMAGE: true, // Rot бьёт и по Pudge
-  ROT_TICK_RATE: 100, // Тик урона каждые 100мс
-  
-  // === Пассивка - FLESH HEAP (Оригинал Dota 2) ===
+  ROT_SLOW: [0.20, 0.25, 0.30, 0.35],
+  ROT_SELF_DAMAGE: true,
+  ROT_TICK_RATE: 100,
+
   FLESH_HEAP_STR_PER_STACK: [0.8, 1.0, 1.2, 1.4],
   FLESH_HEAP_RANGE: 450,
-  FLESH_HEAP_MAGIC_RESIST: [0.08, 0.12, 0.16, 0.20], // 8%/12%/16%/20%
-  
-  // === R - DISMEMBER (Ультимейт, Оригинал Dota 2) ===
+  FLESH_HEAP_MAGIC_RESIST: [0.08, 0.12, 0.16, 0.20],
+
   DISMEMBER_DAMAGE_PER_SEC: [75, 100, 125],
-  DISMEMBER_DURATION: 3000, // 3 сек
-  DISMEMBER_COOLDOWN: [30, 25, 20], // СЕК
+  DISMEMBER_DURATION: 3000,
+  DISMEMBER_COOLDOWN: [30, 25, 20],
   DISMEMBER_MANA_COST: [175, 250, 325],
   DISMEMBER_RANGE: 200,
-  DISMEMBER_HEAL_FACTOR: 0.75, // 75% от урона лечит
-  DISMEMBER_STR_DAMAGE: 0.75, // +75% от силы
-  
-  // === СИСТЕМА ===
+  DISMEMBER_HEAL_FACTOR: 0.75,
+  DISMEMBER_STR_DAMAGE: 0.75,
+
   RESPAWN_TIME: 5000,
   GOLD_PER_KILL: 150,
   GOLD_PER_ASSIST: 50,
   GOLD_PER_CREEP: 15,
   RIVER_Y: 1000,
   RIVER_WIDTH: 180,
-  
-  // === Aghanim's Scepter ===
-  AGHANIM_HOOK_DAMAGE: 1.5, // x1.5 урон
-  AGHANIM_HOOK_RANGE: 1.3, // +30% дальности
+
+  AGHANIM_HOOK_DAMAGE: 1.5,
+  AGHANIM_HOOK_RANGE: 1.3,
   AGHANIM_COST: 4200
 };
 
@@ -103,8 +95,7 @@ function pointInCircle(px, py, cx, cy, radius) {
 }
 
 function circleCollision(c1, r1, c2, r2) {
-  const dist = distance(c1, c2);
-  return dist < (r1 + r2);
+  return distance(c1, c2) < (r1 + r2);
 }
 
 function clamp(value, min, max) {
@@ -119,7 +110,7 @@ function isInRiver(y, radius) {
 
 function getSpawnPosition(team) {
   const x = 500 + Math.random() * 1000;
-  return team === 'radiant' 
+  return team === 'radiant'
     ? { x, y: 200 + Math.random() * 300 }
     : { x, y: 1500 + Math.random() * 300 };
 }
@@ -130,16 +121,13 @@ function calculatePlayerStats(player) {
   const agiBonus = player.agi * 0.15;
   const intBonus = player.int * 12;
 
-  player.maxHealth = GAME.BASE_HEALTH + (levelBonus * 20) + strBonus;
-  player.maxMana = GAME.BASE_MANA + (levelBonus * 15) + intBonus;
+  player.maxHealth = GAME.BASE_HEALTH + levelBonus * 20 + strBonus;
+  player.maxMana = GAME.BASE_MANA + levelBonus * 15 + intBonus;
   player.armor = GAME.BASE_ARMOR + agiBonus;
-  player.damage = GAME.BASE_DAMAGE + (player.str * 0.5);
-  
-  // Flesh Heap бонусы
-  const fleshStrBonus = player.fleshHeapStacks * player.fleshHeapStrPerStack * 20;
-  player.maxHealth += fleshStrBonus;
-  
-  // Magic resist от Flesh Heap
+  player.damage = GAME.BASE_DAMAGE + player.str * 0.5;
+
+  const fleshBonus = player.fleshHeapStacks * player.fleshHeapStrPerStack * 20;
+  player.maxHealth += fleshBonus;
   player.magicResist = player.fleshHeapMagicResist;
 }
 
@@ -148,24 +136,24 @@ function calculatePlayerStats(player) {
 // ============================================
 function playerToData(p) {
   return [
-    p.id, 
-    Math.round(p.x * 100) / 100, 
-    Math.round(p.y * 100) / 100, 
+    p.id,
+    Math.round(p.x * 100) / 100,
+    Math.round(p.y * 100) / 100,
     p.team,
-    Math.round(p.health), 
-    p.maxHealth, 
-    Math.round(p.mana), 
+    Math.round(p.health),
+    p.maxHealth,
+    Math.round(p.mana),
     p.maxMana,
-    p.level, 
-    Math.round(p.str), 
-    Math.round(p.agi), 
+    p.level,
+    Math.round(p.str),
+    Math.round(p.agi),
     Math.round(p.int),
-    Math.round(p.damage), 
+    Math.round(p.damage),
     Math.round(p.armor * 100) / 100,
-    p.kills, 
-    p.deaths, 
-    p.fleshHeapStacks, 
-    p.rotActive, 
+    p.kills,
+    p.deaths,
+    p.fleshHeapStacks,
+    p.rotActive,
     p.gold || 0,
     p.abilityLevels.hook,
     p.abilityLevels.rot,
@@ -198,38 +186,32 @@ function createPlayer(ws) {
     maxMana: GAME.BASE_MANA,
     speed: GAME.PLAYER_SPEED,
     ws,
-    
-    // Кулдауны
-    hookCooldown: 0, 
-    rotCooldown: 0, 
+
+    hookCooldown: 0,
+    rotCooldown: 0,
     dismemberCooldown: 0,
-    
-    // Rot состояние
-    rotActive: false, 
+
+    rotActive: false,
     rotEndTime: 0,
     rotLevel: 1,
-    
-    // Hook параметры
+
     hookRange: GAME.HOOK_RANGE[0],
     hookSpeed: GAME.HOOK_SPEED,
     hookDamage: GAME.HOOK_DAMAGE[0],
     hookCooldownTime: GAME.HOOK_COOLDOWN[0],
     hookManaCost: GAME.HOOK_MANA_COST[0],
     hookLevel: 1,
-    
-    // Flesh Heap
+
     fleshHeapStacks: 0,
     fleshHeapStrPerStack: GAME.FLESH_HEAP_STR_PER_STACK[0],
     fleshHeapMagicResist: GAME.FLESH_HEAP_MAGIC_RESIST[0],
     fleshHeapLevel: 1,
-    
-    // Dismember
+
     dismemberDamage: GAME.DISMEMBER_DAMAGE_PER_SEC[0],
     dismemberCooldownTime: GAME.DISMEMBER_COOLDOWN[0],
     dismemberManaCost: GAME.DISMEMBER_MANA_COST[0],
     dismemberLevel: 1,
-    
-    // Статы
+
     isDead: false,
     respawnTime: 0,
     kills: 0,
@@ -243,19 +225,17 @@ function createPlayer(ws) {
     level: 1,
     gold: 600,
     xp: 0,
-    
-    // Способности
+
     abilityLevels: { hook: 1, rot: 1, dismember: 0, fleshHeap: 1 },
     abilityPoints: 0,
-    
-    // Предметы
+
     hasAghanim: false,
     items: []
   };
 }
 
 // ============================================
-// УБИЙСТВО И РЕСПАВН
+// БОЕВАЯ СИСТЕМА
 // ============================================
 function killPlayer(victim, killer) {
   victim.isDead = true;
@@ -265,12 +245,9 @@ function killPlayer(victim, killer) {
   if (killer) {
     killer.kills++;
     killer.gold += GAME.GOLD_PER_KILL;
-    killer.xp += 500; // XP за килл
-    
-    // Проверяем уровень
+    killer.xp += 500;
     checkLevelUp(killer);
-    
-    // Flesh Heap стек
+
     const dist = distance(victim, killer);
     if (dist < GAME.FLESH_HEAP_RANGE) {
       addFleshHeapStack(killer);
@@ -285,8 +262,7 @@ function addFleshHeapStack(player) {
   player.fleshHeapStacks++;
   player.str += player.fleshHeapStrPerStack;
   calculatePlayerStats(player);
-  
-  console.log(`[FLESH HEAP] Player ${player.id} now has ${player.fleshHeapStacks} stacks, STR: ${player.str}`);
+  console.log(`[FLESH HEAP] Player ${player.id}: ${player.fleshHeapStacks} stacks, STR: ${player.str}`);
 }
 
 function checkLevelUp(player) {
@@ -295,18 +271,15 @@ function checkLevelUp(player) {
     player.level++;
     player.xp -= xpNeeded;
     player.abilityPoints++;
-    
-    // Бонус статы за уровень
     player.str += GAME.STR_GAIN;
     player.agi += GAME.AGI_GAIN;
     player.int += GAME.INT_GAIN;
-    
     calculatePlayerStats(player);
-    
-    console.log(`[LEVEL UP] Player ${player.id} reached level ${player.level}`);
-    broadcastEvent({ 
-      type: 'levelUp', 
-      playerId: player.id, 
+
+    console.log(`[LEVEL UP] Player ${player.id} -> ${player.level}`);
+    broadcastEvent({
+      type: 'levelUp',
+      playerId: player.id,
       level: player.level,
       str: player.str,
       agi: player.agi,
@@ -366,21 +339,16 @@ function handleHook(player, msg) {
   const now = Date.now();
   const abilityLevel = msg.abilityLevel || player.abilityLevels.hook;
   const cooldownIndex = Math.min(abilityLevel - 1, GAME.HOOK_COOLDOWN.length - 1);
-  
-  // Проверка кулдауна и маны
-  if (now < player.hookCooldown) return;
-  if (player.mana < GAME.HOOK_MANA_COST[cooldownIndex]) return;
+
+  if (now < player.hookCooldown || player.mana < GAME.HOOK_MANA_COST[cooldownIndex]) return;
 
   const angle = msg.angle || 0;
-  
-  // Базовая дальность
   let hookRange = GAME.HOOK_RANGE[cooldownIndex];
-  
-  // Aghanim's Scepter бонус
+
   if (player.hasAghanim) {
     hookRange *= GAME.AGHANIM_HOOK_RANGE;
   }
-  
+
   const targetX = player.x + Math.cos(angle) * hookRange;
   const targetY = player.y + Math.sin(angle) * hookRange;
 
@@ -398,9 +366,9 @@ function handleHook(player, msg) {
     isAghanim: player.hasAghanim
   });
 
-  player.hookCooldown = now + (GAME.HOOK_COOLDOWN[cooldownIndex] * 1000);
+  player.hookCooldown = now + GAME.HOOK_COOLDOWN[cooldownIndex] * 1000;
   player.mana -= GAME.HOOK_MANA_COST[cooldownIndex];
-  
+
   console.log(`[HOOK] Player ${player.id} fired (lvl ${abilityLevel}, dmg ${GAME.HOOK_DAMAGE[cooldownIndex]})`);
   broadcastEvent({ type: 'hookFire', playerId: player.id, angle });
 }
@@ -410,15 +378,13 @@ function handleHook(player, msg) {
 // ============================================
 function handleRot(player, msg) {
   const now = Date.now();
-  
-  // Rot можно включать/выключать без кулдауна
   player.rotActive = !player.rotActive;
   player.rotEndTime = player.rotActive ? now + 5000 : 0;
-  
+
   const abilityLevel = player.abilityLevels.rot;
   player.rotDamage = GAME.ROT_DAMAGE[Math.min(abilityLevel - 1, GAME.ROT_DAMAGE.length - 1)];
   player.rotSlow = GAME.ROT_SLOW[Math.min(abilityLevel - 1, GAME.ROT_SLOW.length - 1)];
-  
+
   console.log(`[ROT] Player ${player.id} ${player.rotActive ? 'ON' : 'OFF'}`);
   broadcastEvent({ type: 'rotToggle', playerId: player.id, active: player.rotActive });
 }
@@ -427,41 +393,31 @@ function updateRot() {
   const now = Date.now();
 
   for (const player of players.values()) {
-    // FIXED: Проверка на существование и активность
     if (!player || !player.rotActive) continue;
 
-    // Rot урон по себе
     if (GAME.ROT_SELF_DAMAGE && player.health !== undefined) {
-      const magicDmg = player.rotDamage / 10; // Тик каждые 100мс
+      const magicDmg = player.rotDamage / 10;
       player.health -= magicDmg;
-      
-      // FIXED: Проверка на смерть от Rot
+
       if (player.health <= 0 && !player.isDead) {
-        killPlayer(player, null); // Самоубийство от Rot
+        killPlayer(player, null);
       }
     }
 
-    // Проверка времени
     if (now >= player.rotEndTime) {
       player.rotActive = false;
       continue;
     }
 
-    // Rot урон по врагам + замедление
     for (const other of players.values()) {
-      // FIXED: Проверка на существование
       if (!other || other.team === player.team || other.isDead) continue;
 
-      // FIXED: Используем оптимизированную проверку расстояния
       const distSq = distanceSquared(player, other);
       const radiusSum = GAME.ROT_RADIUS + GAME.PLAYER_RADIUS;
-      
-      if (distSq < radiusSum * radiusSum) {
-        // Магический урон (игнорирует часть брони)
-        const magicDmg = player.rotDamage / 10; // Тик каждые 100мс
-        other.health -= magicDmg;
 
-        // Замедление
+      if (distSq < radiusSum * radiusSum) {
+        const magicDmg = player.rotDamage / 10;
+        other.health -= magicDmg;
         other.speed = GAME.PLAYER_SPEED * (1 - player.rotSlow);
         other.rotSlowEndTime = now + 500;
 
@@ -471,7 +427,6 @@ function updateRot() {
       }
     }
 
-    // Восстановление скорости после замедления
     if (player.rotSlowEndTime && now > player.rotSlowEndTime) {
       player.speed = GAME.PLAYER_SPEED;
       player.rotSlowEndTime = null;
@@ -480,28 +435,26 @@ function updateRot() {
 }
 
 // ============================================
-// R - DISMEMBER (ULTIMATE)
+// R - DISMEMBER
 // ============================================
 function handleDismember(player, msg) {
   const now = Date.now();
   const abilityLevel = msg.abilityLevel || player.abilityLevels.dismember;
   const cooldownIndex = Math.min(abilityLevel - 1, GAME.DISMEMBER_COOLDOWN.length - 1);
-  
-  if (now < player.dismemberCooldown) return;
-  if (player.mana < GAME.DISMEMBER_MANA_COST[cooldownIndex]) return;
-  if (abilityLevel < 1) return; // Ульта недоступна
+
+  if (now < player.dismemberCooldown ||
+      player.mana < GAME.DISMEMBER_MANA_COST[cooldownIndex] ||
+      abilityLevel < 1) return;
 
   const angle = msg.angle || 0;
   const range = GAME.DISMEMBER_RANGE;
   const targetX = player.x + Math.cos(angle) * range;
   const targetY = player.y + Math.sin(angle) * range;
 
-  // Поиск цели
   for (const other of players.values()) {
     if (other.team === player.team || other.isDead) continue;
-    
+
     if (pointInCircle(targetX, targetY, other.x, other.y, GAME.PLAYER_RADIUS + 30)) {
-      // Начало канала
       dismembers.push({
         id: `dismember_${player.id}_${now}`,
         caster: player,
@@ -513,14 +466,14 @@ function handleDismember(player, msg) {
         healFactor: GAME.DISMEMBER_HEAL_FACTOR,
         strDamage: GAME.DISMEMBER_STR_DAMAGE
       });
-      
+
       other.dismembered = true;
       other.dismemberer = player;
       other.dismemberEndTime = now + GAME.DISMEMBER_DURATION;
-      
-      player.dismemberCooldown = now + (GAME.DISMEMBER_COOLDOWN[cooldownIndex] * 1000);
+
+      player.dismemberCooldown = now + GAME.DISMEMBER_COOLDOWN[cooldownIndex] * 1000;
       player.mana -= GAME.DISMEMBER_MANA_COST[cooldownIndex];
-      
+
       console.log(`[DISMEMBER] Player ${player.id} -> Player ${other.id}`);
       broadcastEvent({ type: 'dismemberStart', casterId: player.id, targetId: other.id });
       return;
@@ -533,12 +486,9 @@ function updateDismember() {
 
   for (let i = dismembers.length - 1; i >= 0; i--) {
     const dis = dismembers[i];
-
-    // FIXED: Проверка на существование caster и target
     const casterExists = dis.caster && players.has(dis.caster.id) && !dis.caster.isDead;
     const targetExists = dis.target && players.has(dis.target.id) && !dis.target.isDead;
 
-    // Проверка окончания
     if (now >= dis.endTime || !casterExists || !targetExists) {
       if (dis.target && players.has(dis.target.id)) {
         dis.target.dismembered = false;
@@ -548,17 +498,15 @@ function updateDismember() {
       continue;
     }
 
-    // FIXED: Защита от NaN и некорректных значений
-    const totalDamage = dis.tickDamage + ((dis.caster.str || 0) * dis.strDamage / 10);
-    
+    const totalDamage = dis.tickDamage + (dis.caster.str || 0) * dis.strDamage / 10;
+
     if (typeof dis.target.health === 'number') {
       dis.target.health -= totalDamage;
 
-      // Лечение Pudge
       if (typeof dis.caster.health === 'number' && typeof dis.caster.maxHealth === 'number') {
         dis.caster.health = Math.min(
           dis.caster.maxHealth,
-          dis.caster.health + (totalDamage * (dis.healFactor || 0))
+          dis.caster.health + totalDamage * dis.healFactor
         );
       }
 
@@ -574,31 +522,29 @@ function updateDismember() {
 // ============================================
 function handleUpgrade(player, msg) {
   const { ability } = msg;
-  
+
   if (!ability || player.abilityPoints <= 0) return;
-  
+
   const maxLevel = ability === 'dismember' ? 3 : 4;
-  
   if (player.abilityLevels[ability] >= maxLevel) return;
-  if (ability === 'dismember' && player.level < 6) return; // Ульта с 6 уровня
-  
+  if (ability === 'dismember' && player.level < 6) return;
+
   player.abilityLevels[ability]++;
   player.abilityPoints--;
-  
-  // Пересчёт статов
+
   if (ability === 'fleshHeap') {
     player.fleshHeapStrPerStack = GAME.FLESH_HEAP_STR_PER_STACK[player.abilityLevels.fleshHeap - 1];
     player.fleshHeapMagicResist = GAME.FLESH_HEAP_MAGIC_RESIST[player.abilityLevels.fleshHeap - 1];
   }
-  
+
   calculatePlayerStats(player);
-  
+
   console.log(`[UPGRADE] Player ${player.id} upgraded ${ability} to level ${player.abilityLevels[ability]}`);
-  broadcastEvent({ 
-    type: 'abilityUpgrade', 
-    playerId: player.id, 
-    ability, 
-    level: player.abilityLevels[ability] 
+  broadcastEvent({
+    type: 'abilityUpgrade',
+    playerId: player.id,
+    ability,
+    level: player.abilityLevels[ability]
   });
 }
 
@@ -619,11 +565,11 @@ function updateHook(hook) {
     hook.x += hook.vx;
     hook.y += hook.vy;
     hook.traveled += hook.speed;
-    
+
     if (hook.traveled >= hook.range) {
       hook.state = 'returning';
     }
-    
+
     checkHookPlayerCollision(hook);
   } else if (hook.state === 'returning' || hook.state === 'pulling') {
     const owner = hook.owner;
@@ -631,13 +577,13 @@ function updateHook(hook) {
       const dx = owner.x - hook.x;
       const dy = owner.y - hook.y;
       const dist = Math.hypot(dx, dy);
-      
+
       if (dist < 15) {
         hook.state = 'done';
       } else {
         hook.x += (dx / dist) * GAME.HOOK_PULL_SPEED;
         hook.y += (dy / dist) * GAME.HOOK_PULL_SPEED;
-        
+
         if (hook.state === 'pulling' && hook.targetId !== null) {
           const target = players.get(hook.targetId);
           if (target) {
@@ -653,11 +599,9 @@ function updateHook(hook) {
 }
 
 function checkHookPlayerCollision(hook) {
-  // FIXED: Проверка с предотвращением туннелирования через проверку отрезка и круга
   for (const [id, player] of players) {
     if (id === hook.ownerId || player.isDead) continue;
 
-    // FIXED: Используем проверку коллизии линии с кругом для предотвращения туннелирования
     const collided = checkLineCircleCollision(
       hook.prevX || hook.x, hook.prevY || hook.y,
       hook.x, hook.y,
@@ -667,12 +611,10 @@ function checkHookPlayerCollision(hook) {
 
     if (collided) {
       if (player.team === hook.owner.team) {
-        // Спасение союзника
         hook.state = 'pulling';
         hook.targetId = player.id;
         broadcastEvent({ type: 'allySaved', playerId: hook.ownerId, allyId: player.id });
       } else {
-        // Попадание во врага - ЧИСТЫЙ УРОН
         player.health -= hook.damage;
         hook.state = 'pulling';
         hook.targetId = player.id;
@@ -689,8 +631,6 @@ function checkHookPlayerCollision(hook) {
   }
 }
 
-// FIXED: Проверка коллизии линии (траектории хука) с кругом (игроком)
-// Предотвращает туннелирование при высокой скорости хука
 function checkLineCircleCollision(x1, y1, x2, y2, cx, cy, radius) {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -703,15 +643,12 @@ function checkLineCircleCollision(x1, y1, x2, y2, cx, cy, radius) {
 
   let discriminant = b * b - 4 * a * c;
 
-  if (discriminant < 0) {
-    return false;
-  }
+  if (discriminant < 0) return false;
 
   discriminant = Math.sqrt(discriminant);
   const t1 = (-b - discriminant) / (2 * a);
   const t2 = (-b + discriminant) / (2 * a);
 
-  // FIXED: Проверяем, находится ли пересечение на отрезке [0, 1]
   return (t1 >= 0 && t1 <= 1) || (t2 >= 0 && t2 <= 1);
 }
 
@@ -720,21 +657,20 @@ function checkHookToHookCollision() {
     for (let j = i + 1; j < hooks.length; j++) {
       const h1 = hooks[i];
       const h2 = hooks[j];
-      
+
       if (h1.state !== 'flying' || h2.state !== 'flying') continue;
-      
+
       if (circleCollision(h1, GAME.HOOK_RADIUS, h2, GAME.HOOK_RADIUS)) {
-        // Отскок хуков
         const dx = h2.x - h1.x;
         const dy = h2.y - h1.y;
         const dist = Math.hypot(dx, dy) || 1;
         const bounceFactor = 0.5;
-        
+
         h1.vx = -h1.vx * bounceFactor;
         h1.vy = -h1.vy * bounceFactor;
         h2.vx = -h2.vx * bounceFactor;
         h2.vy = -h2.vy * bounceFactor;
-        
+
         h1.x -= (dx / dist) * 5;
         h1.y -= (dy / dist) * 5;
         h2.x += (dx / dist) * 5;
@@ -745,7 +681,7 @@ function checkHookToHookCollision() {
 }
 
 // ============================================
-// СИСТЕМА
+// СИСТЕМНЫЕ ФУНКЦИИ
 // ============================================
 function checkRespawn() {
   const now = Date.now();
@@ -759,7 +695,6 @@ function checkRespawn() {
 function updatePlayerSpeed() {
   const now = Date.now();
   for (const player of players.values()) {
-    // Восстановление скорости после замедления от Rot
     if (player.rotSlowEndTime && now > player.rotSlowEndTime) {
       player.speed = GAME.PLAYER_SPEED;
       player.rotSlowEndTime = null;
@@ -815,65 +750,107 @@ function broadcastEvent(event) {
 
 function broadcastState() {
   const matchTime = Math.max(0, MATCH_DURATION - (Date.now() - matchStartTime));
+  const playersArray = [...players.values()];
 
   const state = {
     type: 'state',
     matchTime,
     matchStartTime,
-    players: [...players.values()].map(playerToData),
+    players: playersArray.map(p => {
+      const data = playerToData(p);
+      return [...data, p.prevX || p.x, p.prevY || p.y];
+    }),
     hooks: hooks.map(hookToData),
-    stats: [...players.values()].map(p => [p.id, p.kills, p.deaths, p.gold || 0, p.level, p.xp])
+    stats: playersArray.map(p => [p.id, p.kills, p.deaths, p.gold || 0, p.level, p.xp])
   };
 
   const data = JSON.stringify(state);
-  for (const player of players.values()) {
+  for (const player of playersArray) {
     if (player.ws.readyState === WebSocket.OPEN) {
       player.ws.send(data);
     }
   }
 }
 
+function handlePlayerDisconnect(player) {
+  if (!player) return;
+
+  for (let i = hooks.length - 1; i >= 0; i--) {
+    if (hooks[i].ownerId === player.id) {
+      hooks.splice(i, 1);
+    }
+  }
+
+  for (let i = dismembers.length - 1; i >= 0; i--) {
+    const dis = dismembers[i];
+    if (dis.caster?.id === player.id || dis.target?.id === player.id) {
+      if (dis.target && dis.target.id !== player.id) {
+        dis.target.dismembered = false;
+        dis.target.dismemberer = null;
+      }
+      dismembers.splice(i, 1);
+    }
+  }
+
+  players.delete(player.id);
+  broadcastEvent({ type: 'playerLeave', playerId: player.id });
+}
+
+// ============================================
+// ИГРОВОЙ ЦИКЛ
+// ============================================
+const gameLoop = setInterval(() => {
+  try {
+    const matchElapsed = Date.now() - matchStartTime;
+
+    if (matchElapsed >= MATCH_DURATION) {
+      endMatch();
+      return;
+    }
+
+    updateHooks();
+    updateRot();
+    updateDismember();
+    updatePlayerSpeed();
+    checkRespawn();
+    broadcastState();
+  } catch (err) {
+    console.error('[GAME LOOP ERROR]', err);
+  }
+}, 1000 / TICK_RATE);
+
 // ============================================
 // HTTP СЕРВЕР
 // ============================================
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
-  let pathname = url.pathname;
+  const pathname = url.pathname;
 
-  // Health check
   if (pathname === '/health' || pathname === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ 
-      status: 'ok', 
-      players: players.size, 
+    res.end(JSON.stringify({
+      status: 'ok',
+      players: players.size,
       uptime: Math.floor((Date.now() - matchStartTime) / 1000),
       tickRate: TICK_RATE
     }));
     return;
   }
 
-  // Stats API
   if (pathname === '/api/stats') {
     const radiantKills = [...players.values()].filter(p => p.team === 'radiant').reduce((s, p) => s + p.kills, 0);
     const direKills = [...players.values()].filter(p => p.team === 'dire').reduce((s, p) => s + p.kills, 0);
-    
+
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
     res.end(JSON.stringify({
       players: players.size,
-      radiant: { 
-        players: [...players.values()].filter(p => p.team === 'radiant').length, 
-        kills: radiantKills 
-      },
-      dire: { 
-        players: [...players.values()].filter(p => p.team === 'dire').length, 
-        kills: direKills 
-      },
+      radiant: { players: [...players.values()].filter(p => p.team === 'radiant').length, kills: radiantKills },
+      dire: { players: [...players.values()].filter(p => p.team === 'dire').length, kills: direKills },
       matchTime: Math.max(0, MATCH_DURATION - (Date.now() - matchStartTime))
     }));
     return;
   }
 
-  // Serve files
   const mimeTypes = {
     '.html': 'text/html; charset=utf-8',
     '.js': 'application/javascript; charset=utf-8',
@@ -909,14 +886,13 @@ const wss = new WebSocket.Server({ server, maxPayload: 1024, perMessageDeflate: 
 
 wss.on('connection', (ws) => {
   const player = createPlayer(ws);
-  
-  // FIXED: Проверка на успешное создание игрока
+
   if (!player) {
     console.warn('[CONNECTION] Failed to create player');
     ws.close();
     return;
   }
-  
+
   players.set(player.id, player);
 
   ws.send(JSON.stringify({
@@ -932,24 +908,20 @@ wss.on('connection', (ws) => {
   ws.on('message', (data) => {
     try {
       const msg = JSON.parse(data);
-      // FIXED: Валидация сообщения
-      if (!msg || typeof msg !== 'object') {
-        return;
-      }
+      if (!msg || typeof msg !== 'object') return;
+
       if (msg.type === 'setName' && msg.name) {
         player.name = msg.name.substring(0, 20);
       } else {
         handlePlayerMessage(player, msg);
       }
     } catch (e) {
-      // FIXED: Логирование ошибок парсинга
       console.warn(`[PARSE ERROR] Player ${player.id}:`, e.message);
     }
   });
 
   ws.on('close', () => {
     console.log(`[LEAVE] Player ${player.id} disconnected`);
-    // FIXED: Корректное удаление игрока и очистка связанных объектов
     handlePlayerDisconnect(player);
   });
 
@@ -958,56 +930,6 @@ wss.on('connection', (ws) => {
     handlePlayerDisconnect(player);
   });
 });
-
-// FIXED: Функция корректного отключения игрока
-function handlePlayerDisconnect(player) {
-  if (!player) return;
-  
-  // Удаляем все хуки этого игрока
-  for (let i = hooks.length - 1; i >= 0; i--) {
-    if (hooks[i].ownerId === player.id) {
-      hooks.splice(i, 1);
-    }
-  }
-  
-  // Удаляем все дисмемберы с участием этого игрока
-  for (let i = dismembers.length - 1; i >= 0; i--) {
-    const dis = dismembers[i];
-    if (dis.caster?.id === player.id || dis.target?.id === player.id) {
-      // Сбрасываем флаги у цели
-      if (dis.target && dis.target.id !== player.id) {
-        dis.target.dismembered = false;
-        dis.target.dismemberer = null;
-      }
-      dismembers.splice(i, 1);
-    }
-  }
-  
-  // Удаляем игрока из списка
-  players.delete(player.id);
-  
-  // Уведомляем остальных игроков
-  broadcastEvent({ type: 'playerLeave', playerId: player.id });
-}
-
-// ============================================
-// ИГРОВОЙ ЦИКЛ (64 TPS)
-// ============================================
-const gameLoop = setInterval(() => {
-  const matchElapsed = Date.now() - matchStartTime;
-
-  if (matchElapsed >= MATCH_DURATION) {
-    endMatch();
-    return;
-  }
-
-  updateHooks();
-  updateRot();
-  updateDismember();
-  updatePlayerSpeed();
-  checkRespawn();
-  broadcastState();
-}, 1000 / TICK_RATE);
 
 // ============================================
 // ЗАПУСК
@@ -1018,13 +940,13 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('========================================');
   console.log(`  Port: ${PORT}`);
   console.log(`  Field: ${FIELD_SIZE}x${FIELD_SIZE}`);
-  console.log(`  Tick Rate: ${TICK_RATE} TPS (Dota 2 standard)`);
+  console.log(`  Tick Rate: ${TICK_RATE} TPS`);
   console.log(`  River at Y: ${GAME.RIVER_Y}`);
   console.log('========================================');
   console.log(`  Open: http://localhost:${PORT}`);
   console.log('========================================');
-  console.log('  ABILITIES (Dota 2 Original Values):');
-  console.log('  Q - Meat Hook (90/180/270/360 pure dmg)');
+  console.log('  ABILITIES:');
+  console.log('  Q - Meat Hook (90/180/270/360 pure)');
   console.log('  E - Rot (30/40/50/60 dmg/sec + slow)');
   console.log('  R - Dismember (75/100/125 + 75% STR)');
   console.log('  Passive - Flesh Heap (+STR per kill)');
