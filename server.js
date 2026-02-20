@@ -1,8 +1,7 @@
 /**
- * 🥩 PUDGE WARS - Do You Wanna Jam 2024
- * Server with Original Abilities
+ * 🥩 PUDGE WARS - Jam 2024 Server
+ * 5 Abilities: Hook/Phase/Earthbind/Blink/Rearm
  */
-
 const WebSocket = require('ws');
 const http = require('http');
 const path = require('path');
@@ -50,23 +49,13 @@ let matchStartTime = Date.now();
 let radiantScore = 0;
 let direScore = 0;
 
-function distance(a, b) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-function pointInCircle(px, py, cx, cy, radius) {
-  return Math.hypot(px - cx, py - cy) < radius;
-}
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
+function distance(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function pointInCircle(px, py, cx, cy, radius) { return Math.hypot(px - cx, py - cy) < radius; }
+function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 
 function getSpawnPosition(team) {
   const x = 500 + Math.random() * 1000;
-  return team === 'radiant'
-    ? { x, y: 200 + Math.random() * 300 }
-    : { x, y: 1500 + Math.random() * 300 };
+  return team === 'radiant' ? { x, y: 200 + Math.random() * 300 } : { x, y: 1500 + Math.random() * 300 };
 }
 
 function createPlayer(ws) {
@@ -74,31 +63,16 @@ function createPlayer(ws) {
   const direCount = [...players.values()].filter(p => p.team === 'dire').length;
   const team = radiantCount <= direCount ? 'radiant' : 'dire';
   const pos = getSpawnPosition(team);
-
   return {
-    id: nextPlayerId++,
-    x: pos.x, y: pos.y,
-    team,
-    health: GAME.BASE_HEALTH,
-    maxHealth: GAME.BASE_HEALTH,
-    mana: GAME.BASE_MANA,
-    maxMana: GAME.BASE_MANA,
-    speed: GAME.PLAYER_SPEED,
-    ws,
-    hookCooldown: 0,
-    phaseCooldown: 0,
-    earthbindCooldown: 0,
-    blinkCooldown: 0,
-    rearmCooldown: 0,
-    isPhasing: false,
-    phaseEndTime: 0,
-    isRooted: false,
-    rootEndTime: 0,
-    isDead: false,
-    respawnTime: 0,
-    kills: 0,
-    deaths: 0,
-    gold: 600
+    id: nextPlayerId++, x: pos.x, y: pos.y, team,
+    health: GAME.BASE_HEALTH, maxHealth: GAME.BASE_HEALTH,
+    mana: GAME.BASE_MANA, maxMana: GAME.BASE_MANA,
+    speed: GAME.PLAYER_SPEED, ws,
+    hookCooldown: 0, phaseCooldown: 0, earthbindCooldown: 0, blinkCooldown: 0, rearmCooldown: 0,
+    isPhasing: false, phaseEndTime: 0,
+    isRooted: false, rootEndTime: 0,
+    isDead: false, respawnTime: 0,
+    kills: 0, deaths: 0, gold: 600
   };
 }
 
@@ -106,37 +80,29 @@ function killPlayer(victim, killer) {
   victim.isDead = true;
   victim.respawnTime = Date.now() + GAME.RESPAWN_TIME;
   victim.deaths++;
-
   if (killer) {
     killer.kills++;
     killer.gold += GAME.GOLD_PER_KILL;
-    
-    if (killer.team === 'radiant') radiantScore++;
-    else direScore++;
+    if (killer.team === 'radiant') radiantScore++; else direScore++;
   }
-
   console.log(`[KILL] ${killer?.id || 'unknown'} -> ${victim.id}`);
   broadcastEvent({ type: 'playerKill', victimId: victim.id, killerId: killer?.id });
 }
 
 function respawnPlayer(player) {
   const pos = getSpawnPosition(player.team);
-  player.x = pos.x;
-  player.y = pos.y;
-  player.health = player.maxHealth;
-  player.mana = player.maxMana;
+  player.x = pos.x; player.y = pos.y;
+  player.health = player.maxHealth; player.mana = player.maxMana;
   player.isDead = false;
   console.log(`[RESPAWN] Player ${player.id}`);
 }
 
 function handlePlayerMessage(player, msg) {
   if (player.isDead || player.isPhasing) return;
-
   const now = Date.now();
 
   switch (msg.type) {
     case 'move':
-      // FIXED: Обработка движения от клиента
       if (msg.x && msg.y && !player.isRooted) {
         player.x = clamp(msg.x, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
         player.y = clamp(msg.y, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
@@ -147,18 +113,13 @@ function handlePlayerMessage(player, msg) {
       if (now < player.hookCooldown || player.mana < GAME.HOOK_MANA_COST) return;
       const angle = msg.angle || 0;
       hooks.push({
-        id: `hook_${player.id}_${now}`,
-        x: player.x, y: player.y,
+        id: `hook_${player.id}_${now}`, x: player.x, y: player.y,
         targetX: msg.targetX || player.x + Math.cos(angle) * GAME.HOOK_RANGE,
         targetY: msg.targetY || player.y + Math.sin(angle) * GAME.HOOK_RANGE,
-        ownerId: player.id,
-        owner: player,
+        ownerId: player.id, owner: player,
         vx: Math.cos(angle) * GAME.HOOK_SPEED,
         vy: Math.sin(angle) * GAME.HOOK_SPEED,
-        traveled: 0,
-        state: 'flying',
-        targetId: null,
-        damage: GAME.HOOK_DAMAGE
+        traveled: 0, state: 'flying', targetId: null, damage: GAME.HOOK_DAMAGE
       });
       player.hookCooldown = now + GAME.HOOK_COOLDOWN;
       player.mana -= GAME.HOOK_MANA_COST;
@@ -184,17 +145,10 @@ function handlePlayerMessage(player, msg) {
       if (now < player.earthbindCooldown || player.mana < GAME.EARTHBIND_MANA_COST) return;
       const ex = msg.x || player.x;
       const ey = msg.y || player.y;
-      earthbinds.push({
-        id: `eb_${player.id}_${now}`,
-        x: ex, y: ey,
-        radius: GAME.EARTHBIND_RADIUS,
-        ownerId: player.id
-      });
+      earthbinds.push({ id: `eb_${player.id}_${now}`, x: ex, y: ey, radius: GAME.EARTHBIND_RADIUS, ownerId: player.id });
       player.earthbindCooldown = now + GAME.EARTHBIND_COOLDOWN;
       player.mana -= GAME.EARTHBIND_MANA_COST;
       broadcastEvent({ type: 'earthbindCast', playerId: player.id, x: ex, y: ey });
-      
-      // Проверка попадания
       setTimeout(() => {
         for (const other of players.values()) {
           if (other.team !== player.team && !other.isDead && !other.isPhasing) {
@@ -213,8 +167,7 @@ function handlePlayerMessage(player, msg) {
       if (now < player.blinkCooldown || player.mana < GAME.BLINK_MANA_COST) return;
       const bx = Math.max(GAME.PLAYER_RADIUS, Math.min(FIELD_SIZE - GAME.PLAYER_RADIUS, msg.x || player.x));
       const by = Math.max(GAME.PLAYER_RADIUS, Math.min(FIELD_SIZE - GAME.PLAYER_RADIUS, msg.y || player.y));
-      player.x = bx;
-      player.y = by;
+      player.x = bx; player.y = by;
       player.blinkCooldown = now + GAME.BLINK_COOLDOWN;
       player.mana -= GAME.BLINK_MANA_COST;
       broadcastEvent({ type: 'blinkCast', playerId: player.id, x: bx, y: by });
@@ -236,28 +189,18 @@ function handlePlayerMessage(player, msg) {
 function updateHooks() {
   for (let i = hooks.length - 1; i >= 0; i--) {
     const hook = hooks[i];
-    
     if (hook.state === 'flying') {
-      hook.x += hook.vx;
-      hook.y += hook.vy;
-      hook.traveled += GAME.HOOK_SPEED;
-
-      if (hook.traveled >= GAME.HOOK_RANGE) {
-        hook.state = 'returning';
-      }
-
-      // Проверка попадания
+      hook.x += hook.vx; hook.y += hook.vy; hook.traveled += GAME.HOOK_SPEED;
+      if (hook.traveled >= GAME.HOOK_RANGE) hook.state = 'returning';
       for (const [id, player] of players) {
         if (id === hook.ownerId || player.isDead || player.isPhasing) continue;
         if (pointInCircle(hook.x, hook.y, player.x, player.y, GAME.PLAYER_RADIUS + GAME.HOOK_RADIUS)) {
           if (player.team === hook.owner.team) {
-            hook.state = 'pulling';
-            hook.targetId = player.id;
+            hook.state = 'pulling'; hook.targetId = player.id;
             broadcastEvent({ type: 'allySaved', playerId: hook.ownerId, allyId: player.id });
           } else {
             player.health -= hook.damage;
-            hook.state = 'pulling';
-            hook.targetId = player.id;
+            hook.state = 'pulling'; hook.targetId = player.id;
             broadcastEvent({ type: 'hookHit', targetId: player.id, hitterId: hook.ownerId, damage: hook.damage });
             if (player.health <= 0 && !player.isDead) killPlayer(player, hook.owner);
           }
@@ -267,27 +210,18 @@ function updateHooks() {
     } else if (hook.state === 'pulling') {
       const owner = hook.owner;
       if (owner && !owner.isDead) {
-        const dx = owner.x - hook.x;
-        const dy = owner.y - hook.y;
+        const dx = owner.x - hook.x, dy = owner.y - hook.y;
         const dist = Math.hypot(dx, dy);
-        if (dist < 20) {
-          hook.state = 'done';
-        } else {
-          hook.x += (dx / dist) * 12;
-          hook.y += (dy / dist) * 12;
+        if (dist < 20) { hook.state = 'done'; }
+        else {
+          hook.x += (dx / dist) * 12; hook.y += (dy / dist) * 12;
           if (hook.targetId !== null) {
             const target = players.get(hook.targetId);
-            if (target && !target.isDead) {
-              target.x = hook.x;
-              target.y = hook.y;
-            }
+            if (target && !target.isDead) { target.x = hook.x; target.y = hook.y; }
           }
         }
-      } else {
-        hook.state = 'done';
-      }
+      } else { hook.state = 'done'; }
     }
-
     if (hook.state === 'done') hooks.splice(i, 1);
   }
 }
@@ -302,61 +236,40 @@ function updateEarthbinds() {
 function checkRespawn() {
   const now = Date.now();
   for (const player of players.values()) {
-    if (player.isDead && now >= player.respawnTime) {
-      respawnPlayer(player);
-    }
+    if (player.isDead && now >= player.respawnTime) respawnPlayer(player);
   }
 }
 
 function broadcastEvent(event) {
   const data = JSON.stringify({ type: 'event', event });
   for (const player of players.values()) {
-    if (player.ws.readyState === WebSocket.OPEN) {
-      player.ws.send(data);
-    }
+    if (player.ws.readyState === WebSocket.OPEN) player.ws.send(data);
   }
 }
 
 function broadcastState() {
   const matchTime = Math.max(0, MATCH_DURATION - (Date.now() - matchStartTime));
-
   const state = {
-    type: 'state',
-    matchTime,
-    players: [...players.values()].map(p => [
-      p.id, Math.round(p.x * 100) / 100, Math.round(p.y * 100) / 100, p.team,
-      Math.round(p.health), p.maxHealth, Math.round(p.mana), p.maxMana,
-      p.kills, p.deaths
-    ]),
+    type: 'state', matchTime,
+    players: [...players.values()].map(p => [p.id, Math.round(p.x * 100) / 100, Math.round(p.y * 100) / 100, p.team, Math.round(p.health), p.maxHealth, Math.round(p.mana), p.maxMana, p.kills, p.deaths, p.name]),
     hooks: hooks.map(h => [h.id, h.x, h.y, h.targetX, h.targetY, h.ownerId, h.state]),
     earthbinds: earthbinds.map(e => [e.id, e.x, e.y, e.radius]),
     scores: [radiantScore, direScore]
   };
-
   const data = JSON.stringify(state);
   for (const player of players.values()) {
-    if (player.ws.readyState === WebSocket.OPEN) {
-      player.ws.send(data);
-    }
+    if (player.ws.readyState === WebSocket.OPEN) player.ws.send(data);
   }
 }
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   let pathname = url.pathname;
-
   if (pathname === '/health' || pathname === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      status: 'ok',
-      players: players.size,
-      uptime: Math.floor((Date.now() - matchStartTime) / 1000),
-      radiantScore,
-      direScore
-    }));
+    res.end(JSON.stringify({ status: 'ok', players: players.size, uptime: Math.floor((Date.now() - matchStartTime) / 1000), radiantScore, direScore }));
     return;
   }
-
   if (pathname === '/' || pathname === '/index.html') {
     const filePath = pathname === '/' ? '/index.html' : pathname;
     const clientPath = path.join(__dirname, filePath);
@@ -368,13 +281,8 @@ const server = http.createServer((req, res) => {
   } else {
     const filePath = path.join(__dirname, pathname);
     const ext = path.extname(filePath).toLowerCase();
-    const mimeTypes = {
-      '.html': 'text/html; charset=utf-8',
-      '.js': 'application/javascript; charset=utf-8',
-      '.css': 'text/css; charset=utf-8'
-    };
+    const mimeTypes = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
     const contentType = mimeTypes[ext] || 'application/octet-stream';
-
     fs.readFile(filePath, (err, data) => {
       if (err) { res.writeHead(404); res.end('Not found'); return; }
       res.writeHead(200, { 'Content-Type': contentType });
@@ -388,38 +296,21 @@ const wss = new WebSocket.Server({ server, maxPayload: 1024, perMessageDeflate: 
 wss.on('connection', (ws) => {
   const player = createPlayer(ws);
   if (!player) { ws.close(); return; }
-  
   players.set(player.id, player);
-
   ws.send(JSON.stringify({
-    type: 'welcome',
-    playerId: player.id,
-    team: player.team,
+    type: 'welcome', playerId: player.id, team: player.team,
     matchTime: Math.max(0, MATCH_DURATION - (Date.now() - matchStartTime)),
-    players: [...players.values()].map(p => [
-      p.id, Math.round(p.x * 100) / 100, Math.round(p.y * 100) / 100, p.team,
-      Math.round(p.health), p.maxHealth, Math.round(p.mana), p.maxMana,
-      p.kills, p.deaths, p.name
-    ])
+    players: [...players.values()].map(p => [p.id, Math.round(p.x * 100) / 100, Math.round(p.y * 100) / 100, p.team, Math.round(p.health), p.maxHealth, Math.round(p.mana), p.maxMana, p.kills, p.deaths, p.name])
   }));
-
   console.log(`[JOIN] Player ${player.id} joined ${player.team}`);
-
   ws.on('message', (data) => {
     try {
       const msg = JSON.parse(data);
       if (!msg || typeof msg !== 'object') return;
       handlePlayerMessage(player, msg);
-    } catch (e) {
-      console.warn(`[PARSE ERROR] Player ${player.id}:`, e.message);
-    }
+    } catch (e) { console.warn(`[PARSE ERROR] Player ${player.id}:`, e.message); }
   });
-
-  ws.on('close', () => {
-    console.log(`[LEAVE] Player ${player.id} disconnected`);
-    players.delete(player.id);
-  });
-
+  ws.on('close', () => { console.log(`[LEAVE] Player ${player.id} disconnected`); players.delete(player.id); });
   ws.on('error', () => players.delete(player.id));
 });
 
@@ -430,48 +321,32 @@ const gameLoop = setInterval(() => {
     console.log(`[MATCH END] ${winner} (${radiantScore} - ${direScore})`);
     broadcastEvent({ type: 'matchEnd', winner, radiantScore, direScore });
     setTimeout(() => {
-      radiantScore = 0;
-      direScore = 0;
-      matchStartTime = Date.now();
+      radiantScore = 0; direScore = 0; matchStartTime = Date.now();
       for (const p of players.values()) {
         const pos = getSpawnPosition(p.team);
-        p.x = pos.x; p.y = pos.y;
-        p.health = p.maxHealth; p.mana = p.maxMana;
+        p.x = pos.x; p.y = pos.y; p.health = p.maxHealth; p.mana = p.maxMana;
         p.isDead = false; p.kills = 0; p.deaths = 0; p.gold = 600;
       }
-      hooks.length = 0;
-      earthbinds.length = 0;
+      hooks.length = 0; earthbinds.length = 0;
     }, 10000);
     return;
   }
-
-  updateHooks();
-  updateEarthbinds();
-  checkRespawn();
-  broadcastState();
+  updateHooks(); updateEarthbinds(); checkRespawn(); broadcastState();
 }, 1000 / 64);
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log('========================================');
-  console.log('  🥩 PUDGE WARS - JAM 2024 EDITION');
+  console.log('  🥩 PUDGE WARS - JAM 2024');
   console.log('========================================');
-  console.log(`  Port: ${PORT}`);
-  console.log(`  Field: ${FIELD_SIZE}x${FIELD_SIZE}`);
-  console.log(`  Tick Rate: 64 TPS`);
+  console.log(`  Port: ${PORT} | Field: ${FIELD_SIZE}x${FIELD_SIZE} | Tick: 64 TPS`);
   console.log('========================================');
   console.log(`  Open: http://localhost:${PORT}`);
   console.log('========================================');
-  console.log('  ABILITIES (Original Jam 2024):');
-  console.log('  Q - Meat Hook (pull enemies)');
-  console.log('  W - Phase Shift (invisible 1.5s)');
-  console.log('  E - Earthbind (root enemy)');
-  console.log('  R - Blink (teleport)');
-  console.log('  T - Rearm (reset cooldowns)');
+  console.log('  Q - Hook | W - Phase | E - Bind | R - Blink | T - Rearm');
   console.log('========================================');
 });
 
 server.on('error', (err) => console.error('[ERROR]', err));
-
 process.on('SIGINT', () => {
   console.log('\n[SHUTDOWN] Closing...');
   clearInterval(gameLoop);

@@ -425,7 +425,16 @@ canvas.addEventListener('contextmenu', (e) => {
       x: e.clientX - rect.left + cameraX,
       y: e.clientY - rect.top + cameraY
     };
-    
+
+    // Отправка движения на сервер
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'move',
+        x: input.moveTarget.x,
+        y: input.moveTarget.y
+      }));
+    }
+
     // Эффект клика
     createPhaseEffect(input.moveTarget.x, input.moveTarget.y);
   }
