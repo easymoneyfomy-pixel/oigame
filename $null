@@ -1,11 +1,7 @@
-G:\213333333333333333333333333333333333333333333333\MVP)\1\gam_oi\server.js:452
-  checkHookToHookCollision();
-  ^
-
-ReferenceError: checkHookToHookCollision is not defined
-    at updateHooks (G:\213333333333333333333333333333333333333333333333\MVP)\1\gam_oi\server.js:452:3)
-    at Timeout._onTimeout (G:\213333333333333333333333333333333333333333333333\MVP)\1\gam_oi\server.js:841:3)
-    at listOnTimeout (node:internal/timers:605:17)
-    at process.processTimers (node:internal/timers:541:7)
-
-Node.js v24.13.1
+At line:1 char:145
++ ... ; cd g:\213333333333333333333333333333333333333333333333\MVP)\1\gam_o ...
++                                                                 ~
+Unexpected token ')' in expression or statement.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : UnexpectedToken
+ 

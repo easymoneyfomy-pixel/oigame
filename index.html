@@ -2,25 +2,514 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Pudge Wars</title>
-  <style>body{margin:0;padding:0;overflow:hidden;background:#0a0a0a;font-family:sans-serif}canvas{display:block}</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pudge Wars - Warcraft 3 Original</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; background: #0a0a0a; font-family: 'Segoe UI', sans-serif; }
+    canvas { display: block; position: fixed; top: 0; left: 0; z-index: 1; }
+    
+    #ui { position: fixed; top: 10px; left: 10px; color: #fff; z-index: 100; pointer-events: none; }
+    #ui h1 { font-size: 28px; color: #e74c3c; text-shadow: 0 0 15px rgba(231,76,60,0.6); }
+    #connectionStatus { font-size: 14px; color: #888; }
+
+    #stats { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.85); border: 2px solid #e74c3c; border-radius: 8px; padding: 12px 16px; color: #fff; z-index: 100; min-width: 220px; pointer-events: auto; }
+    #stats h3 { color: #e74c3c; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; }
+    .stat-row { display: flex; justify-content: space-between; margin: 4px 0; font-size: 12px; }
+    .stat-label { color: #aaa; }
+    .stat-value { color: #e74c3c; font-weight: bold; }
+
+    #attributes { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 2px solid #f39c12; border-radius: 8px; padding: 10px 20px; color: #fff; z-index: 100; display: flex; gap: 20px; pointer-events: none; }
+    .attr { text-align: center; }
+    .attr-icon { font-size: 22px; display: block; }
+    .attr-value { color: #f39c12; font-weight: bold; font-size: 16px; }
+    .attr-label { font-size: 10px; color: #888; text-transform: uppercase; }
+
+    #bars { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: 500px; z-index: 100; pointer-events: none; }
+    .bar-container { background: rgba(0,0,0,0.8); border: 2px solid #333; border-radius: 4px; margin: 3px 0; overflow: hidden; position: relative; }
+    .bar { height: 25px; transition: width 0.1s; }
+    #healthBar { background: linear-gradient(90deg, #c0392b, #e74c3c); width: 100%; }
+    #manaBar { background: linear-gradient(90deg, #2980b9, #3498db); width: 100%; }
+    .bar-text { position: absolute; color: #fff; font-size: 12px; font-weight: bold; text-shadow: 1px 1px 2px #000; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+    #abilities { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 12px; z-index: 100; }
+    .ability { width: 70px; height: 70px; background: rgba(0,0,0,0.85); border: 3px solid #e74c3c; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: all 0.2s; }
+    .ability:hover { transform: scale(1.08); border-color: #f39c12; box-shadow: 0 0 20px rgba(243,156,18,0.5); }
+    .ability.on-cooldown { opacity: 0.6; cursor: not-allowed; border-color: #666; }
+    .ability-icon { font-size: 32px; }
+    .ability-key { position: absolute; top: 3px; left: 6px; font-size: 11px; color: #fff; background: rgba(0,0,0,0.8); padding: 2px 5px; border-radius: 4px; font-weight: bold; }
+    .ability-cd { position: absolute; bottom: 3px; font-size: 10px; color: #fff; background: rgba(0,0,0,0.9); padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .ability-level { position: absolute; top: 3px; right: 6px; font-size: 10px; color: #f39c12; background: rgba(0,0,0,0.8); padding: 2px 5px; border-radius: 4px; }
+
+    #ultimate { position: fixed; bottom: 20px; right: 200px; width: 90px; height: 90px; background: rgba(0,0,0,0.85); border: 3px solid #9b59b6; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: all 0.2s; z-index: 100; }
+    #ultimate:hover { transform: scale(1.1); border-color: #8e44ad; box-shadow: 0 0 30px rgba(142,68,173,0.6); }
+    #ultimate.on-cooldown { opacity: 0.6; cursor: not-allowed; border-color: #666; }
+    #ultimate .ability-icon { font-size: 40px; }
+    #ultimate .ability-key { top: 4px; left: 8px; font-size: 12px; }
+    #ultimate .ability-cd { bottom: 4px; font-size: 11px; }
+    #ultimate .ability-level { top: 4px; right: 8px; font-size: 10px; color: #f39c12; }
+
+    #startScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
+    #startScreen.hidden { display: none; }
+    #startScreen h1 { font-size: 64px; color: #e74c3c; margin-bottom: 10px; text-shadow: 0 0 40px rgba(231,76,60,0.8); }
+    #startScreen p { color: #aaa; margin-bottom: 30px; font-size: 18px; }
+    #startBtn { padding: 18px 60px; font-size: 22px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #e74c3c, #c0392b); border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; box-shadow: 0 0 30px rgba(231,76,60,0.5); }
+    #startBtn:hover { transform: scale(1.05); box-shadow: 0 0 50px rgba(231,76,60,0.8); }
+
+    #controls { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 12px; border-radius: 8px; color: #888; font-size: 11px; z-index: 100; pointer-events: none; }
+    #controls kbd { background: #333; padding: 3px 8px; border-radius: 4px; color: #fff; margin: 0 2px; font-weight: bold; }
+
+    #notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 56px; font-weight: bold; text-align: center; z-index: 2000; pointer-events: none; text-shadow: 0 0 40px rgba(0,0,0,0.8); animation: notifyPop 0.5s ease-out forwards; }
+    @keyframes notifyPop { 0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
+    .notify-hit { color: #e74c3c; }
+    .notify-kill { color: #f39c12; }
+    .notify-save { color: #2ecc71; }
+
+    #minimap { position: fixed; bottom: 10px; right: 10px; width: 180px; height: 180px; background: rgba(0,0,0,0.8); border: 2px solid #444; border-radius: 8px; z-index: 100; }
+  </style>
 </head>
 <body>
   <canvas id="game"></canvas>
+  <canvas id="minimap" width="180" height="180"></canvas>
+
+  <div id="ui">
+    <h1>🥩 PUDGE WARS <span style="font-size:14px;color:#888;">DOTA 2 ORIGINAL</span></h1>
+    <p id="connectionStatus">Connecting...</p>
+  </div>
+
+  <div id="attributes">
+    <div class="attr"><span class="attr-icon">💪</span><span class="attr-value" id="str">0</span><span class="attr-label">STR</span></div>
+    <div class="attr"><span class="attr-icon">🏹</span><span class="attr-value" id="agi">0</span><span class="attr-label">AGI</span></div>
+    <div class="attr"><span class="attr-icon">🧠</span><span class="attr-value" id="int">0</span><span class="attr-label">INT</span></div>
+    <div class="attr"><span class="attr-icon">⚔️</span><span class="attr-value" id="damageAttr">0</span><span class="attr-label">DMG</span></div>
+    <div class="attr"><span class="attr-icon">🛡️</span><span class="attr-value" id="armorAttr">0</span><span class="attr-label">ARMOR</span></div>
+  </div>
+
+  <div id="stats">
+    <h3>🥩 PUDGE</h3>
+    <div class="stat-row"><span class="stat-label">Level</span><span class="stat-value" id="level">1</span></div>
+    <div class="stat-row"><span class="stat-label">💰 Gold</span><span class="stat-value" id="gold">0</span></div>
+    <div class="stat-row"><span class="stat-label">💀 Kills</span><span class="stat-value" id="kills">0</span></div>
+    <div class="stat-row"><span class="stat-label">☠️ Deaths</span><span class="stat-value" id="deaths">0</span></div>
+    <div class="stat-row"><span class="stat-label">🪝 Flesh</span><span class="stat-value" id="fleshStacks">0</span></div>
+  </div>
+
+  <div id="bars">
+    <div class="bar-container">
+      <div id="healthBar" class="bar"></div>
+      <span class="bar-text" id="healthText">700/700</span>
+    </div>
+    <div class="bar-container">
+      <div id="manaBar" class="bar"></div>
+      <span class="bar-text" id="manaText">291/291</span>
+    </div>
+  </div>
+
+  <div id="abilities">
+    <div class="ability" id="abilityQ">
+      <span class="ability-key">Q</span>
+      <span class="ability-icon">🪝</span>
+      <span class="ability-cd" id="qCd"></span>
+      <span class="ability-level" id="qLvl">1</span>
+    </div>
+    <div class="ability" id="abilityE">
+      <span class="ability-key">E</span>
+      <span class="ability-icon">☠️</span>
+      <span class="ability-cd" id="eCd"></span>
+      <span class="ability-level" id="eLvl">1</span>
+    </div>
+  </div>
+
+  <div id="ultimate">
+    <span class="ability-key">R</span>
+    <span class="ability-icon">💀</span>
+    <span class="ability-cd" id="rCd"></span>
+    <span class="ability-level" id="rLvl">0</span>
+  </div>
+
+  <div id="startScreen">
+    <h1>🥩 PUDGE WARS</h1>
+    <p>Dota 2 Original Mechanics</p>
+    <p style="font-size:14px;color:#888;margin-bottom:20px;">Q: Hook (90/180/270/360) • E: Rot (30/40/50/60 + slow) • R: Dismember</p>
+    <button id="startBtn">Start Battle</button>
+  </div>
+
+  <div id="controls">
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;|&nbsp; <kbd>Q</kbd> Meat Hook &nbsp;|&nbsp; <kbd>E</kbd> Rot &nbsp;|&nbsp; <kbd>R</kbd> Dismember
+  </div>
+
   <script>
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
-    
-    // ИСПРАВЛЕНИЕ ОШИБОК
-    let abilityPoints = { count: 0 }; // Добавлено объявление
-    
-    function updateCooldowns() {
-      const rotEl = document.getElementById('abilityE');
-      const rotCdEl = document.getElementById('eCd'); // Добавлено объявление
-      if (rotCdEl) rotCdEl.textContent = '';
+// ============================================
+// КОНФИГУРАЦИЯ
+// ============================================
+const CONFIG = {
+  FIELD_SIZE: 2000, RIVER_Y: 1000, RIVER_WIDTH: 180,
+  PLAYER_RADIUS: 24, PLAYER_SPEED: 3.6,
+  BASE_HEALTH: 700, BASE_MANA: 291, BASE_DAMAGE: 52, BASE_ARMOR: 1,
+  BASE_STR: 25, BASE_AGI: 14, BASE_INT: 16,
+  HOOK_RANGE: [1000, 1100, 1200, 1300],
+  HOOK_SPEED: 25, HOOK_RADIUS: 12,
+  HOOK_COOLDOWN: [14000, 13000, 12000, 11000],
+  HOOK_DAMAGE: [90, 180, 270, 360],
+  HOOK_MANA_COST: [110, 120, 130, 140],
+  HOOK_PULL_SPEED: 10,
+  ROT_DAMAGE: [30, 40, 50, 60],
+  ROT_RADIUS: 250,
+  ROT_SLOW: [0.20, 0.25, 0.30, 0.35],
+  FLESH_HEAP_RANGE: 450,
+  DISMEMBER_DAMAGE: [75, 100, 125],
+  DISMEMBER_DURATION: 3000,
+  DISMEMBER_COOLDOWN: [30000, 25000, 20000],
+  DISMEMBER_MANA_COST: [175, 250, 325],
+  DISMEMBER_RANGE: 200
+};
+
+// ============================================
+// СОСТОЯНИЕ
+// ============================================
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let ws = null, myId = null, gameRunning = false;
+
+const state = { players: new Map(), hooks: [], myTeam: null, myPlayer: null, matchStartTime: Date.now() };
+const input = { keys: {}, mouseX: 0, mouseY: 0, hookRequested: false, rotRequested: false, dismemberRequested: false };
+const cooldowns = { hook: 0, rot: 0, dismember: 0 };
+const abilityLevels = { hook: 1, rot: 1, dismember: 0 };
+const abilityPoints = { count: 0 };
+const particles = [];
+
+// ============================================
+// КЛАССЫ
+// ============================================
+class Player {
+  constructor(data) {
+    this.id = data[0]; this.x = data[1]; this.y = data[2]; this.team = data[3];
+    this.health = data[4]; this.maxHealth = data[5];
+    this.mana = data[6]; this.maxMana = data[7];
+    this.level = data[8]; this.str = data[9]; this.agi = data[10]; this.int = data[11];
+    this.damage = data[12]; this.armor = data[13];
+    this.kills = data[14]; this.deaths = data[15];
+    this.fleshHeapStacks = data[16]; this.rotActive = data[17]; this.gold = data[18];
+    this.hookLevel = data[19] || 1; this.rotLevel = data[20] || 1; this.dismemberLevel = data[21] || 0;
+    this.angle = 0; this.isDead = false; this.dismembered = false;
+    this.name = data[24] || `Pudge_${this.id}`;
+  }
+  update() { if (this.id === myId) this.angle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2); }
+  draw(ctx, cameraX, cameraY) {
+    const sx = this.x - cameraX, sy = this.y - cameraY;
+    if (this.id === myId) {
+      const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, CONFIG.PLAYER_RADIUS * 3);
+      g.addColorStop(0, 'rgba(241, 196, 15, 0.5)'); g.addColorStop(1, 'rgba(241, 196, 15, 0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, CONFIG.PLAYER_RADIUS * 3, 0, Math.PI * 2); ctx.fill();
     }
-    
-    console.log('✅ Все ошибки исправлены');
+    if (this.rotActive) {
+      const rg = ctx.createRadialGradient(sx, sy, 0, sx, sy, CONFIG.ROT_RADIUS);
+      rg.addColorStop(0, 'rgba(46, 204, 113, 0.5)'); rg.addColorStop(0.5, 'rgba(39, 174, 96, 0.3)'); rg.addColorStop(1, 'rgba(46, 204, 113, 0)');
+      ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(sx, sy, CONFIG.ROT_RADIUS, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(sx, sy, CONFIG.PLAYER_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = this.team === 'radiant' ? '#2ecc71' : '#e74c3c'; ctx.fill();
+    ctx.lineWidth = 4; ctx.strokeStyle = this.id === myId ? '#f1c40f' : '#2c3e50'; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx, sy);
+    ctx.lineTo(sx + Math.cos(this.angle) * CONFIG.PLAYER_RADIUS * 1.8, sy + Math.sin(this.angle) * CONFIG.PLAYER_RADIUS * 1.8);
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 4; ctx.stroke();
+    if (this.id === myId) { ctx.fillStyle = '#f1c40f'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center'; ctx.fillText('YOU', sx, sy - CONFIG.PLAYER_RADIUS - 15); }
+    const hpPercent = this.health / this.maxHealth;
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(sx - 30, sy + CONFIG.PLAYER_RADIUS + 8, 60, 6);
+    ctx.fillStyle = hpPercent > 0.5 ? '#2ecc71' : hpPercent > 0.25 ? '#f39c12' : '#e74c3c';
+    ctx.fillRect(sx - 30, sy + CONFIG.PLAYER_RADIUS + 8, 60 * hpPercent, 6);
+  }
+}
+
+class Hook {
+  constructor(data) {
+    this.id = data[0]; this.x = data[1]; this.y = data[2];
+    this.targetX = data[3]; this.targetY = data[4]; this.ownerId = data[5];
+    this.state = data[6] || 'flying'; this.targetId = null; this.trail = [];
+    const dx = this.targetX - this.x, dy = this.targetY - this.y;
+    const dist = Math.hypot(dx, dy);
+    this.vx = (dx / dist) * CONFIG.HOOK_SPEED; this.vy = (dy / dist) * CONFIG.HOOK_SPEED;
+    this.traveled = 0;
+  }
+  update() {
+    if (this.state === 'flying') {
+      this.trail.push({ x: this.x, y: this.y, life: 15 });
+      this.x += this.vx; this.y += this.vy; this.traveled += CONFIG.HOOK_SPEED;
+      if (this.traveled >= CONFIG.HOOK_RANGE[abilityLevels.hook - 1]) this.state = 'returning';
+    } else if (this.state === 'returning' || this.state === 'pulling') {
+      const owner = state.players.get(this.ownerId);
+      if (owner) {
+        const dx = owner.x - this.x, dy = owner.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 15) { this.state = 'done'; }
+        else {
+          this.x += (dx / dist) * CONFIG.HOOK_PULL_SPEED; this.y += (dy / dist) * CONFIG.HOOK_PULL_SPEED;
+          if (this.state === 'pulling' && this.targetId !== null) {
+            const target = state.players.get(this.targetId);
+            if (target) { target.x = this.x; target.y = this.y; }
+          }
+        }
+      } else { this.state = 'done'; }
+    }
+    for (let i = this.trail.length - 1; i >= 0; i--) { this.trail[i].life--; if (this.trail[i].life <= 0) this.trail.splice(i, 1); }
+  }
+  draw(ctx, cameraX, cameraY) {
+    const sx = this.x - cameraX, sy = this.y - cameraY;
+    const owner = state.players.get(this.ownerId); if (!owner) return;
+    const ox = owner.x - cameraX, oy = owner.y - cameraY;
+    for (const point of this.trail) {
+      const alpha = point.life / 15; ctx.globalAlpha = alpha; ctx.fillStyle = '#e74c3c';
+      ctx.beginPath(); ctx.arc(point.x - cameraX, point.y - cameraY, CONFIG.HOOK_RADIUS * 0.8, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(sx, sy);
+    ctx.strokeStyle = '#888'; ctx.lineWidth = 4; ctx.setLineDash([6, 4]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(sx, sy, CONFIG.HOOK_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = this.state === 'pulling' ? '#f39c12' : '#e74c3c'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+  }
+}
+
+class Particle {
+  constructor(x, y, color, speed, life) {
+    this.x = x; this.y = y; this.color = color;
+    this.angle = Math.random() * Math.PI * 2;
+    this.speed = speed * (0.5 + Math.random() * 0.5);
+    this.vx = Math.cos(this.angle) * this.speed;
+    this.vy = Math.sin(this.angle) * this.speed;
+    this.life = life; this.maxLife = life;
+    this.size = 4 + Math.random() * 4;
+  }
+  update() { this.x += this.vx; this.y += this.vy; this.vx *= 0.96; this.vy *= 0.96; this.life--; }
+  draw(ctx, cameraX, cameraY) {
+    const alpha = this.life / this.maxLife; ctx.globalAlpha = alpha;
+    ctx.fillStyle = this.color; ctx.beginPath();
+    ctx.arc(this.x - cameraX, this.y - cameraY, this.size, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function createHitEffect(x, y, color) { for (let i = 0; i < 20; i++) particles.push(new Particle(x, y, color, 6, 35)); }
+function createDeathEffect(x, y) { for (let i = 0; i < 40; i++) { particles.push(new Particle(x, y, '#8e44ad', 10, 60)); particles.push(new Particle(x, y, '#e74c3c', 8, 50)); } }
+function createHookHitEffect(x, y) { for (let i = 0; i < 25; i++) { particles.push(new Particle(x, y, '#e74c3c', 8, 40)); particles.push(new Particle(x, y, '#f39c12', 6, 30)); } }
+
+// ============================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize); resize();
+
+// ============================================
+// УПРАВЛЕНИЕ
+// ============================================
+document.addEventListener('keydown', (e) => {
+  input.keys[e.code] = true;
+  if (e.code === 'KeyQ') input.hookRequested = true;
+  if (e.code === 'KeyE') input.rotRequested = true;
+  if (e.code === 'KeyR') input.dismemberRequested = true;
+});
+document.addEventListener('keyup', (e) => { input.keys[e.code] = false; });
+document.addEventListener('mousemove', (e) => { input.mouseX = e.clientX; input.mouseY = e.clientY; });
+document.addEventListener('mousedown', (e) => { if (e.button === 0 && gameRunning) input.hookRequested = true; });
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('startScreen').classList.add('hidden');
+  gameRunning = true;
+  console.log('[DEBUG] Game started');
+  connect();
+});
+document.getElementById('abilityQ').addEventListener('click', () => { if (gameRunning) input.hookRequested = true; });
+document.getElementById('abilityE').addEventListener('click', () => { if (gameRunning) input.rotRequested = true; });
+document.getElementById('ultimate').addEventListener('click', () => { if (gameRunning) input.dismemberRequested = true; });
+
+// ============================================
+// СЕТЬ
+// ============================================
+function connect() {
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${protocol}//${location.host}`);
+  ws.onopen = () => {
+    document.getElementById('connectionStatus').textContent = 'Connected ✓';
+    document.getElementById('connectionStatus').style.color = '#2ecc71';
+    gameRunning = true;
+  };
+  ws.onmessage = (e) => handleServerMessage(JSON.parse(e.data));
+  ws.onclose = () => {
+    document.getElementById('connectionStatus').textContent = 'Disconnected ✗';
+    document.getElementById('connectionStatus').style.color = '#e74c3c';
+    gameRunning = false;
+  };
+}
+
+function handleServerMessage(data) {
+  switch(data.type) {
+    case 'welcome':
+      myId = data.playerId; myTeam = data.team; state.myTeam = data.team;
+      for (const p of data.players) state.players.set(p[0], new Player(p));
+      break;
+    case 'state':
+      const newPlayers = new Map();
+      for (const p of data.players) {
+        const existing = state.players.get(p[0]);
+        if (existing) {
+          Object.assign(existing, {
+            x: p[1], y: p[2], team: p[3], health: p[4], maxHealth: p[5],
+            mana: p[6], maxMana: p[7], level: p[8], str: p[9], agi: p[10],
+            int: p[11], damage: p[12], armor: p[13], kills: p[14], deaths: p[15],
+            fleshHeapStacks: p[16], rotActive: p[17], gold: p[18],
+            hookLevel: p[19], rotLevel: p[20], dismemberLevel: p[21]
+          });
+          newPlayers.set(p[0], existing);
+        } else { newPlayers.set(p[0], new Player(p)); }
+      }
+      state.players = newPlayers;
+      state.hooks = data.hooks.map(h => new Hook(h));
+      if (data.stats && myId) {
+        const myStats = data.stats.find(s => s[0] === myId);
+        if (myStats) { state.myPlayer = newPlayers.get(myId); abilityPoints.count = myStats[6] || 0; }
+      }
+      if (data.matchStartTime) state.matchStartTime = data.matchStartTime;
+      break;
+    case 'event': handleEvent(data.event); break;
+  }
+}
+
+function handleEvent(evt) {
+  if (evt.type === 'hookFire' && evt.playerId === myId) { startCooldown('hook'); createHookHitEffect(state.players.get(myId)?.x || 0, state.players.get(myId)?.y || 0, '#e74c3c'); }
+  if (evt.type === 'hookHit') { const target = state.players.get(evt.targetId); if (target) { createHitEffect(target.x, target.y, '#e74c3c'); if (target.id === myId) showNotification('HOOKED!', 'notify-hit'); } }
+  if (evt.type === 'rotToggle') { const p = state.players.get(evt.playerId); if (p) { p.rotActive = evt.active; if (evt.playerId === myId) startCooldown('rot'); } }
+  if (evt.type === 'playerKill') { const victim = state.players.get(evt.victimId); if (victim) { createDeathEffect(victim.x, victim.y); if (evt.killerId === myId) showNotification('KILL! +150💰', 'notify-kill'); } }
+  if (evt.type === 'allySaved') showNotification('SAVE!', 'notify-save');
+}
+
+function sendInput() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  let dx = 0, dy = 0;
+  if (input.keys['KeyW']) dy -= 1;
+  if (input.keys['KeyS']) dy += 1;
+  if (input.keys['KeyA']) dx -= 1;
+  if (input.keys['KeyD']) dx += 1;
+  if (dx !== 0 || dy !== 0) { const len = Math.hypot(dx, dy); dx /= len; dy /= len; ws.send(JSON.stringify({ type: 'move', dx, dy })); }
+  if (input.hookRequested) { const angle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2); ws.send(JSON.stringify({ type: 'hook', angle, abilityLevel: abilityLevels.hook })); input.hookRequested = false; }
+  if (input.rotRequested) { ws.send(JSON.stringify({ type: 'rot', abilityLevel: abilityLevels.rot })); input.rotRequested = false; }
+  if (input.dismemberRequested) { const angle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2); ws.send(JSON.stringify({ type: 'dismember', angle, abilityLevel: abilityLevels.dismember })); input.dismemberRequested = false; }
+}
+
+// ============================================
+// UI
+// ============================================
+function startCooldown(ability) {
+  const now = Date.now();
+  if (ability === 'hook') cooldowns.hook = now + CONFIG.HOOK_COOLDOWN[abilityLevels.hook - 1];
+  if (ability === 'rot') cooldowns.rot = now + 1000;
+  if (ability === 'dismember') cooldowns.dismember = now + CONFIG.DISMEMBER_COOLDOWN[abilityLevels.dismember - 1];
+}
+
+function updateCooldowns() {
+  const now = Date.now();
+  const hookEl = document.getElementById('abilityQ'), hookCdEl = document.getElementById('qCd');
+  if (cooldowns.hook > now) { hookEl.classList.add('on-cooldown'); hookCdEl.textContent = ((cooldowns.hook - now) / 1000).toFixed(1); }
+  else { hookEl.classList.remove('on-cooldown'); hookCdEl.textContent = ''; }
+  const rotEl = document.getElementById('abilityE');
+  const ultiEl = document.getElementById('ultimate'), ultiCdEl = document.getElementById('rCd');
+  if (cooldowns.dismember > now) { ultiEl.classList.add('on-cooldown'); ultiCdEl.textContent = ((cooldowns.dismember - now) / 1000).toFixed(1); }
+  else { ultiEl.classList.remove('on-cooldown'); ultiCdEl.textContent = ''; }
+}
+
+function updateUI() {
+  const player = state.players.get(myId); if (!player) return;
+  const hpPercent = (player.health / player.maxHealth) * 100;
+  const manaPercent = (player.mana / player.maxMana) * 100;
+  document.getElementById('healthBar').style.width = hpPercent + '%';
+  document.getElementById('manaBar').style.width = manaPercent + '%';
+  document.getElementById('healthText').textContent = `${Math.round(player.health)}/${Math.round(player.maxHealth)}`;
+  document.getElementById('manaText').textContent = `${Math.round(player.mana)}/${Math.round(player.maxMana)}`;
+  document.getElementById('level').textContent = player.level;
+  document.getElementById('kills').textContent = player.kills;
+  document.getElementById('deaths').textContent = player.deaths;
+  document.getElementById('fleshStacks').textContent = player.fleshHeapStacks || 0;
+  document.getElementById('gold').textContent = Math.round(player.gold || 0);
+  document.getElementById('str').textContent = Math.round(player.str);
+  document.getElementById('agi').textContent = Math.round(player.agi);
+  document.getElementById('int').textContent = Math.round(player.int);
+  document.getElementById('damageAttr').textContent = Math.round(player.damage);
+  document.getElementById('armorAttr').textContent = Math.round((player.armor || 1) * 100) / 100;
+  document.getElementById('qLvl').textContent = player.hookLevel || 1;
+  document.getElementById('eLvl').textContent = player.rotLevel || 1;
+  document.getElementById('rLvl').textContent = player.dismemberLevel || 0;
+  updateCooldowns();
+}
+
+function showNotification(text, type) {
+  const el = document.createElement('div');
+  el.className = 'notify-' + type; el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 600);
+}
+
+// ============================================
+// КАМЕРА И РЕНДЕРИНГ
+// ============================================
+function updateCamera() {
+  const player = state.players.get(myId);
+  if (!player) return { x: 0, y: 0 };
+  return { x: player.x - canvas.width / 2, y: player.y - canvas.height / 2 };
+}
+
+function drawMap(cameraX, cameraY) {
+  ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)'; ctx.lineWidth = 1;
+  const gridSize = 100, offsetX = -cameraX % gridSize, offsetY = -cameraY % gridSize;
+  for (let x = offsetX; x < canvas.width; x += gridSize) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+  for (let y = offsetY; y < canvas.height; y += gridSize) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+  const riverScreenY = CONFIG.RIVER_Y - cameraY - CONFIG.RIVER_WIDTH / 2;
+  const riverGrad = ctx.createLinearGradient(0, riverScreenY, 0, riverScreenY + CONFIG.RIVER_WIDTH);
+  riverGrad.addColorStop(0, 'rgba(52,152,219,0.3)'); riverGrad.addColorStop(0.5, 'rgba(52,152,219,0.5)'); riverGrad.addColorStop(1, 'rgba(52,152,219,0.3)');
+  ctx.fillStyle = riverGrad; ctx.fillRect(0, riverScreenY, canvas.width, CONFIG.RIVER_WIDTH);
+  ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 4; ctx.strokeRect(-cameraX, -cameraY, CONFIG.FIELD_SIZE, CONFIG.FIELD_SIZE);
+}
+
+function drawMinimap() {
+  const mm = document.getElementById('minimap'); const mmCtx = mm.getContext('2d');
+  const SCALE = 180 / CONFIG.FIELD_SIZE;
+  mmCtx.fillStyle = 'rgba(0,0,0,0.9)'; mmCtx.fillRect(0, 0, 180, 180);
+  mmCtx.fillStyle = 'rgba(52,152,219,0.5)'; mmCtx.fillRect(0, (CONFIG.RIVER_Y - CONFIG.RIVER_WIDTH/2) * SCALE, 180, CONFIG.RIVER_WIDTH * SCALE);
+  for (const p of state.players.values()) {
+    mmCtx.fillStyle = p.team === 'radiant' ? '#2ecc71' : '#e74c3c';
+    const size = p.id === myId ? 6 : 4;
+    mmCtx.beginPath(); mmCtx.arc(p.x * SCALE, p.y * SCALE, size, 0, Math.PI * 2); mmCtx.fill();
+  }
+  const player = state.players.get(myId);
+  if (player) {
+    mmCtx.strokeStyle = '#fff'; mmCtx.lineWidth = 1;
+    mmCtx.strokeRect((player.x - canvas.width/2) * SCALE, (player.y - canvas.height/2) * SCALE, canvas.width * SCALE, canvas.height * SCALE);
+  }
+}
+
+function updateAndDrawParticles(cameraX, cameraY) {
+  for (let i = particles.length - 1; i >= 0; i--) { const p = particles[i]; p.update(); p.draw(ctx, cameraX, cameraY); if (p.life <= 0) particles.splice(i, 1); }
+  if (particles.length > 500) particles.splice(0, particles.length - 500);
+}
+
+function draw() {
+  const camera = updateCamera();
+  drawMap(camera.x, camera.y);
+  updateAndDrawParticles(camera.x, camera.y);
+  for (const hook of state.hooks) hook.draw(ctx, camera.x, camera.y);
+  for (const player of state.players.values()) { player.update(); player.draw(ctx, camera.x, camera.y); }
+  drawMinimap();
+  updateUI();
+}
+
+// ============================================
+// ИГРОВОЙ ЦИКЛ
+// ============================================
+function gameLoop() {
+  if (gameRunning) { sendInput(); draw(); }
+  requestAnimationFrame(gameLoop);
+}
+
+requestAnimationFrame(gameLoop);
   </script>
 </body>
 </html>

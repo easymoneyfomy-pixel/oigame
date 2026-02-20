@@ -43,6 +43,8 @@ const GAME = {
   ROT_RADIUS: 250,
   ROT_COOLDOWN: [1500, 1500, 1500, 1500],
   ROT_SLOW: [0.20, 0.25, 0.30, 0.35],
+  // FIXED: В оригинале Rot наносит урон по себе
+  ROT_SELF_DAMAGE: true,
   ROT_TICK_RATE: 100,
 
   // Passive - Flesh Heap
@@ -370,7 +372,9 @@ function handleHook(player, msg) {
     range: hookRange,
     speed: GAME.HOOK_SPEED,
     abilityLevel,
-    isAghanim: player.hasAghanim
+    isAghanim: player.hasAghanim,
+    // FIXED: Флаг для предотвращения повторного урона
+    damageDealt: false
   });
 
   player.hookCooldown = now + GAME.HOOK_COOLDOWN[cooldownIndex];
@@ -495,18 +499,25 @@ function updateHook(hook) {
 }
 
 function checkHookPlayerCollision(hook) {
+  // FIXED: Наносим урон только один раз при первом попадании
+  if (hook.damageDealt) return;
+  
   for (const [id, player] of players) {
     if (id === hook.ownerId || player.isDead) continue;
 
     if (pointInCircle(hook.x, hook.y, player.x, player.y, GAME.PLAYER_RADIUS + GAME.HOOK_RADIUS)) {
       if (player.team === hook.owner.team) {
+        // Спасение союзника - урон не наносим
         hook.state = 'pulling';
         hook.targetId = player.id;
         broadcastEvent({ type: 'allySaved', playerId: hook.ownerId, allyId: player.id });
       } else {
+        // Попадание во врага - наносим урон ОДИН раз
         player.health -= hook.damage;
         hook.state = 'pulling';
         hook.targetId = player.id;
+        // FIXED: Помечаем что урон уже нанесён
+        hook.damageDealt = true;
 
         console.log(`[HOOK HIT] Player ${hook.ownerId} -> Player ${player.id} for ${hook.damage} PURE damage`);
         broadcastEvent({ type: 'hookHit', targetId: player.id, hitterId: hook.ownerId, damage: hook.damage });
