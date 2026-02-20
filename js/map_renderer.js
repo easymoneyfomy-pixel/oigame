@@ -3,6 +3,8 @@
  * Изометрическая карта в стиле Warcraft 3: болото, река, стены
  */
 
+console.log('[MAP_RENDERER] Script loaded');
+
 // Глобальные переменные (изолированы в модуле)
 let waterOffset = 0;
 const TILE_SIZE = 64;

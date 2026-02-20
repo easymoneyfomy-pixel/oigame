@@ -101,32 +101,41 @@
   </style>
   <script src="js/map_renderer.js"></script>
   <script>
-    // Инициализация загрузочного статуса
-    const loadingStatusEl = document.getElementById('loadingStatus');
-    const startBtn = document.getElementById('startBtn');
+    // Инициализация после загрузки DOM
+    document.addEventListener('DOMContentLoaded', () => {
+      const loadingStatusEl = document.getElementById('loadingStatus');
+      const startBtn = document.getElementById('startBtn');
+      const onlineStatusEl = document.getElementById('onlineStatus');
 
-    // Запуск предзагрузки текстур
-    if (window.assetManager) {
-      assetManager.preload()
-        .then(() => {
-          console.log('[ASSETS] All textures loaded.');
-          loadingStatusEl.classList.add('ready');
-          loadingStatusEl.innerHTML = '✓ Assets ready';
-          startBtn.disabled = false;
-        })
-        .catch(err => {
-          console.error('[ASSETS] Failed to load:', err);
+      // Запуск предзагрузки текстур
+      if (window.assetManager) {
+        assetManager.preload()
+          .then(() => {
+            console.log('[ASSETS] All textures loaded.');
+            if (loadingStatusEl) {
+              loadingStatusEl.classList.add('ready');
+              loadingStatusEl.innerHTML = '✓ Assets ready';
+            }
+            if (startBtn) startBtn.disabled = false;
+          })
+          .catch(err => {
+            console.error('[ASSETS] Failed to load:', err);
+            if (loadingStatusEl) {
+              loadingStatusEl.classList.add('error');
+              loadingStatusEl.innerHTML = '⚠ Assets failed - starting anyway';
+            }
+            // Разрешаем старт через 3 секунды даже с ошибкой
+            setTimeout(() => { if (startBtn) startBtn.disabled = false; }, 3000);
+          });
+      } else {
+        // Fallback если assetManager не загружен
+        if (loadingStatusEl) {
+          loadingStatusEl.textContent = '⚠ Renderer not loaded';
           loadingStatusEl.classList.add('error');
-          loadingStatusEl.innerHTML = '⚠ Assets failed - starting anyway';
-          // Разрешаем старт через 3 секунды даже с ошибкой
-          setTimeout(() => { startBtn.disabled = false; }, 3000);
-        });
-    } else {
-      // Fallback если assetManager не загружен
-      loadingStatusEl.textContent = '⚠ Renderer not loaded';
-      loadingStatusEl.classList.add('error');
-      setTimeout(() => { startBtn.disabled = false; }, 2000);
-    }
+        }
+        setTimeout(() => { if (startBtn) startBtn.disabled = false; }, 2000);
+      }
+    });
   </script>
 </head>
 <body>
@@ -289,6 +298,18 @@
     
     // Первое кровь
     let firstBloodPlayed = false;
+    
+    // Достижения
+    const achievements = {
+      firstBlood: false,
+      doubleKill: false,
+      tripleKill: false,
+      quadraKill: false,
+      pentaKill: false,
+      killingSpree: false,
+      saveAlly: false,
+      hookMaster: false
+    };
     
     // Аудиосистема
     let audioEnabled = true;
@@ -928,6 +949,7 @@
                   firstBloodPlayed = true;
                   showNotification('🩸 FIRST BLOOD!', 'notify-kill');
                   playKillSound();
+                  unlockAchievement('firstBlood', '🩸 First Blood');
                 } else {
                   handleKillStreak();
                   showNotification('KILL! +150💰', 'notify-kill');
@@ -945,6 +967,7 @@
               createHitEffect(ally.x, ally.y, '#2ecc71');
               playSaveSound();
               showNotification('SAVE!', 'notify-save');
+              unlockAchievement('saveAlly', '💚 Guardian Angel');
             }
           }
           if (data.event.type === 'matchEnd') {
@@ -1236,15 +1259,23 @@
         if (killStreak.count === 2) {
           showNotification('🔥 DOUBLE KILL!', 'notify-kill');
           playKillSound();
+          unlockAchievement('doubleKill', '🔥 Double Kill');
         } else if (killStreak.count === 3) {
           showNotification('💀 TRIPLE KILL!', 'notify-kill');
           playKillSound();
+          unlockAchievement('tripleKill', '💀 Triple Kill');
         } else if (killStreak.count === 4) {
           showNotification('👻 QUADRA KILL!', 'notify-kill');
           playKillSound();
-        } else if (killStreak.count >= 5) {
+          unlockAchievement('quadraKill', '👻 Quadra Kill');
+        } else if (killStreak.count === 5) {
+          showNotification('⚡ PENTA KILL!', 'notify-kill');
+          playKillSound();
+          unlockAchievement('pentaKill', '⚡ Penta Kill');
+        } else if (killStreak.count >= 6) {
           showNotification(`⚡ ${killStreak.count}x KILL STREAK!`, 'notify-kill');
           playKillSound();
+          unlockAchievement('killingSpree', '⚡ Killing Spree');
         }
       } else {
         // Сбрасываем серию
@@ -1252,6 +1283,24 @@
       }
       
       killStreak.lastKillTime = now;
+    }
+    
+    /**
+     * Разблокировка достижения
+     */
+    function unlockAchievement(id, name) {
+      if (!achievements[id]) {
+        achievements[id] = true;
+        showNotification(`🏆 ACHIEVEMENT: ${name}`, 'notify-save');
+        playSaveSound();
+        
+        // Сохраняем в localStorage
+        try {
+          const saved = JSON.parse(localStorage.getItem('pudgeAchievements') || '{}');
+          saved[id] = true;
+          localStorage.setItem('pudgeAchievements', JSON.stringify(saved));
+        } catch(e) {}
+      }
     }
 
     // ==========================================
