@@ -398,22 +398,34 @@ function handleServerMessage(data) {
       break;
 
     case 'event':
-      if (data.event.type === 'hookFire' && data.event.playerId === myId) startHookCooldown();
-      if (data.event.type === 'hookHit') {
-        const target = state.players.get(data.event.targetId);
+      const evt = data.event;
+      if (evt.type === 'hookFire' && evt.playerId === myId) startHookCooldown();
+      if (evt.type === 'hookHit') {
+        const target = state.players.get(evt.targetId);
         if (target) {
           createHitEffect(target.x, target.y, '#e74c3c');
           if (target.id === myId) showNotification('HIT!', 'notify-hit');
         }
       }
-      if (data.event.type === 'playerKill') {
-        const victim = state.players.get(data.event.victimId);
-        if (victim) {
-          createDeathEffect(victim.x, victim.y);
-          if (data.event.killerId === myId) showNotification('KILL!', 'notify-kill');
+      if (evt.type === 'rotToggle') {
+        const p = state.players.get(evt.playerId);
+        if (p) {
+          p.rotActive = evt.active;
+          if (evt.playerId === myId) startRotCooldown();
         }
       }
-      if (data.event.type === 'allySaved') showNotification('SAVE!', 'notify-save');
+      if (evt.type === 'playerKill') {
+        const victim = state.players.get(evt.victimId);
+        if (victim) {
+          createDeathEffect(victim.x, victim.y);
+          if (evt.killerId === myId) {
+            state.myPlayer.gold += 150;
+            showNotification('KILL! +150💰', 'notify-kill');
+          }
+        }
+      }
+      if (evt.type === 'allySaved') showNotification('SAVE!', 'notify-save');
+      if (evt.type === 'matchEnd') showGameOver(evt.winner === myTeam, evt.radiantKills, evt.direKills);
       break;
   }
 }
@@ -450,6 +462,26 @@ function sendInput() {
 // ============================================
 function startHookCooldown() { cooldowns.hook = Date.now() + CONFIG.HOOK_COOLDOWN; }
 function startRotCooldown() { cooldowns.rot = Date.now() + CONFIG.ROT_COOLDOWN; }
+
+function showNotification(text, className) {
+  const el = document.createElement('div');
+  el.className = 'notify-' + className;
+  el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 500);
+}
+
+function showGameOver(victory, radiantKills, direKills) {
+  const screen = document.createElement('div');
+  screen.id = 'gameOver';
+  screen.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:3000;';
+  screen.innerHTML = `
+    <h1 style="font-size:64px;color:${victory ? '#2ecc71' : '#e74c3c'};text-shadow:0 0 30px ${victory ? 'rgba(46,204,113,0.6)' : 'rgba(231,76,60,0.6)'}">${victory ? '🏆 VICTORY!' : '💀 DEFEAT'}</h1>
+    <p style="color:#aaa;font-size:24px;margin:20px 0;">Radiant: ${radiantKills} - Dire: ${direKills}</p>
+    <button onclick="location.reload()" style="padding:15px 40px;font-size:20px;font-weight:bold;color:#fff;background:linear-gradient(135deg,#e74c3c,#c0392b);border:none;border-radius:8px;cursor:pointer;">Play Again</button>
+  `;
+  document.body.appendChild(screen);
+}
 
 function updateCooldowns() {
   const now = Date.now();
