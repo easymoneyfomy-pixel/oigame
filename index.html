@@ -109,8 +109,19 @@
 
       // Запуск предзагрузки текстур
       if (window.assetManager) {
+        // Fallback таймер - старт через 5 секунд даже если текстуры не загрузились
+        const fallbackTimer = setTimeout(() => {
+          console.warn('[ASSETS] Timeout - starting with fallback');
+          if (loadingStatusEl) {
+            loadingStatusEl.classList.add('error');
+            loadingStatusEl.innerHTML = '⚠ Timeout - using fallback';
+          }
+          if (startBtn) startBtn.disabled = false;
+        }, 5000);
+
         assetManager.preload()
           .then(() => {
+            clearTimeout(fallbackTimer);
             console.log('[ASSETS] All textures loaded.');
             if (loadingStatusEl) {
               loadingStatusEl.classList.add('ready');
@@ -119,13 +130,13 @@
             if (startBtn) startBtn.disabled = false;
           })
           .catch(err => {
+            clearTimeout(fallbackTimer);
             console.error('[ASSETS] Failed to load:', err);
             if (loadingStatusEl) {
               loadingStatusEl.classList.add('error');
               loadingStatusEl.innerHTML = '⚠ Assets failed - starting anyway';
             }
-            // Разрешаем старт через 3 секунды даже с ошибкой
-            setTimeout(() => { if (startBtn) startBtn.disabled = false; }, 3000);
+            if (startBtn) startBtn.disabled = false;
           });
       } else {
         // Fallback если assetManager не загружен
