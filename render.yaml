@@ -2,7 +2,7 @@ services:
   - type: web
     name: pudge-wars
     env: node
-    buildCommand: npm install
+    buildCommand: npm install --production
     startCommand: node server.js
     plan: free
     region: frankfurt
@@ -11,5 +11,5 @@ services:
         value: production
       - key: PORT
         value: 8080
-      - key: NPM_CONFIG_PRODUCTION
+      - key: DISABLE_YARN
         value: "true"
