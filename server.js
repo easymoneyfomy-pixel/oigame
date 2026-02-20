@@ -908,6 +908,8 @@ wss.on('connection', (ws) => {
   ws.on('message', (data) => {
     try {
       const msg = JSON.parse(data);
+      console.log(`[MSG] Player ${player.id}:`, msg.type, msg);
+      
       if (!msg || typeof msg !== 'object') return;
 
       if (msg.type === 'setName' && msg.name) {
@@ -916,7 +918,7 @@ wss.on('connection', (ws) => {
         handlePlayerMessage(player, msg);
       }
     } catch (e) {
-      console.warn(`[PARSE ERROR] Player ${player.id}:`, e.message);
+      console.warn(`[PARSE ERROR] Player ${player.id}:`, e.message, data.toString().substring(0, 100));
     }
   });
 

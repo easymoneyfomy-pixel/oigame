@@ -552,19 +552,30 @@ document.getElementById('ultimate').addEventListener('click', () => { if (gameRu
 function connect() {
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${protocol}//${location.host}`);
+  console.log('[DEBUG] Connecting to:', `${protocol}//${location.host}`);
 
   ws.onopen = () => {
-    document.getElementById('connectionStatus').textContent = 'Connected';
+    console.log('[DEBUG] WebSocket connected!');
+    document.getElementById('connectionStatus').textContent = 'Connected ✓';
     document.getElementById('connectionStatus').style.color = '#2ecc71';
     gameRunning = true;
   };
 
-  ws.onmessage = (e) => handleServerMessage(JSON.parse(e.data));
+  ws.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    console.log('[DEBUG] Received:', data.type);
+    handleServerMessage(data);
+  };
 
   ws.onclose = () => {
-    document.getElementById('connectionStatus').textContent = 'Disconnected';
+    console.log('[DEBUG] WebSocket closed');
+    document.getElementById('connectionStatus').textContent = 'Disconnected ✗';
     document.getElementById('connectionStatus').style.color = '#e74c3c';
     gameRunning = false;
+  };
+
+  ws.onerror = (err) => {
+    console.error('[DEBUG] WebSocket error:', err);
   };
 }
 
@@ -671,7 +682,10 @@ function handleEvent(evt) {
 }
 
 function sendInput() {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    console.log('[DEBUG] WebSocket not open:', ws?.readyState);
+    return;
+  }
 
   let dx = 0, dy = 0;
   if (input.keys['KeyW']) dy -= 1;
@@ -682,30 +696,27 @@ function sendInput() {
   if (dx !== 0 || dy !== 0) {
     const len = Math.hypot(dx, dy);
     dx /= len; dy /= len;
+    ws.send(JSON.stringify({ type: 'move', dx, dy }));
+    console.log('[DEBUG] Move:', { dx, dy });
   }
 
-  ws.send(JSON.stringify({ type: 'move', dx, dy }));
-
   if (input.hookRequested) {
-    ws.send(JSON.stringify({
-      type: 'hook',
-      angle: Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2),
-      abilityLevel: abilityLevels.hook
-    }));
+    const angle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2);
+    ws.send(JSON.stringify({ type: 'hook', angle, abilityLevel: abilityLevels.hook }));
+    console.log('[DEBUG] Hook fired at angle:', angle);
     input.hookRequested = false;
   }
 
   if (input.rotRequested) {
     ws.send(JSON.stringify({ type: 'rot', abilityLevel: abilityLevels.rot }));
+    console.log('[DEBUG] Rot toggled');
     input.rotRequested = false;
   }
 
   if (input.dismemberRequested) {
-    ws.send(JSON.stringify({
-      type: 'dismember',
-      angle: Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2),
-      abilityLevel: abilityLevels.dismember
-    }));
+    const angle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2);
+    ws.send(JSON.stringify({ type: 'dismember', angle, abilityLevel: abilityLevels.dismember }));
+    console.log('[DEBUG] Dismember cast at angle:', angle);
     input.dismemberRequested = false;
   }
 }
