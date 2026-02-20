@@ -3,6 +3,10 @@
   "version": "1.8.0",
   "description": "Multiplayer .io game - Pudge Wars clone (Warcraft 3)",
   "main": "server.js",
+  "type": "commonjs",
+  "bin": {
+    "pudge-wars": "./server.js"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
@@ -14,11 +18,19 @@
     "postinstall": "node scripts/postinstall.js",
     "verify": "npm run lint && npm run test",
     "clean": "rm -rf node_modules package-lock.json",
-    "build": "echo 'Build complete' && npm run verify"
+    "build": "echo 'Build complete' && npm run verify",
+    "predeploy": "npm run build",
+    "deploy": "git push origin main"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   },
+  "os": [
+    "win32",
+    "linux",
+    "darwin"
+  ],
   "dependencies": {
     "ws": "^8.14.2",
     "canvas": "^2.11.2"
@@ -33,12 +45,19 @@
     "io",
     "pudge",
     "dota",
-    "warcraft3"
+    "warcraft3",
+    "render",
+    "html5",
+    "canvas"
   ],
   "author": "",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/yourusername/pudge-wars.git"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/pudge-wars/issues"
+  },
+  "homepage": "https://github.com/yourusername/pudge-wars#readme"
 }
