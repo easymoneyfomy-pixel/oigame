@@ -357,8 +357,8 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (pathname === '/' || pathname === '/index_jam.html') {
-    const filePath = pathname === '/' ? '/index_jam.html' : pathname;
+  if (pathname === '/' || pathname === '/index.html') {
+    const filePath = pathname === '/' ? '/index.html' : pathname;
     const clientPath = path.join(__dirname, filePath);
     fs.readFile(clientPath, (err, data) => {
       if (err) { res.writeHead(404); res.end('Not found'); return; }
