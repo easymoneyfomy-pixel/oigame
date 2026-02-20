@@ -118,20 +118,29 @@ function getSpawnPosition(team) {
 }
 
 function calculatePlayerStats(player) {
+  // FIXED: Сохраняем процент здоровья до пересчета
+  const healthPercent = player.health / player.maxHealth;
+  
   const levelBonus = (player.level - 1);
   const strBonus = player.str * 20;
   const agiBonus = player.agi * 0.15;
   const intBonus = player.int * 12;
 
+  const oldMaxHealth = player.maxHealth;
   player.maxHealth = GAME.BASE_HEALTH + (levelBonus * 20) + strBonus;
   player.maxMana = GAME.BASE_MANA + (levelBonus * 15) + intBonus;
   player.armor = GAME.BASE_ARMOR + agiBonus;
   player.damage = GAME.BASE_DAMAGE + (player.str * 0.5);
-  
+
   // Flesh Heap бонусы
   const fleshStrBonus = player.fleshHeapStacks * player.fleshHeapStrPerStack * 20;
   player.maxHealth += fleshStrBonus;
   player.magicResist = player.fleshHeapMagicResist;
+  
+  // FIXED: Восстанавливаем процент здоровья после пересчета
+  if (oldMaxHealth > 0 && !player.isDead) {
+    player.health = player.maxHealth * healthPercent;
+  }
 }
 
 // ============================================
@@ -230,15 +239,18 @@ function killPlayer(victim, killer) {
   victim.isDead = true;
   victim.respawnTime = Date.now() + GAME.RESPAWN_TIME;
   victim.deaths++;
+  // FIXED: Выключаем Rot при смерти
+  victim.rotActive = false;
+  victim.rotEndTime = 0;
 
   if (killer) {
     killer.kills++;
     killer.gold += GAME.GOLD_PER_KILL;
     killer.xp += 500;
-    
+
     // Проверка уровня
     checkLevelUp(killer);
-    
+
     // Flesh Heap стек
     const dist = distance(victim, killer);
     if (dist < GAME.FLESH_HEAP_RANGE) {
@@ -307,7 +319,37 @@ function handlePlayerMessage(player, msg) {
     case 'rot': handleRot(player, msg); break;
     case 'dismember': handleDismember(player, msg); break;
     case 'upgrade': handleUpgrade(player, msg); break;
+    case 'buyItem': handleBuyItem(player, msg); break;  // FIXED: Добавлена покупка предметов
   }
+}
+
+// ============================================
+// МАГАЗИН - ПОКУПКА ПРЕДМЕТОВ
+// ============================================
+function handleBuyItem(player, msg) {
+  const itemId = msg.itemId;
+  if (!itemId) return;
+  
+  // Простая проверка - списываем золото
+  const itemCost = getItemCost(itemId);
+  if (player.gold >= itemCost) {
+    player.gold -= itemCost;
+    player.items = player.items || [];
+    player.items.push(itemId);
+    
+    console.log(`[SHOP] Player ${player.id} bought ${itemId} for ${itemCost} gold`);
+    broadcastEvent({ type: 'itemPurchased', playerId: player.id, itemId });
+  }
+}
+
+function getItemCost(itemId) {
+  // Базовые цены предметов
+  const prices = {
+    'orchid': 4700, 'shiva': 4700, 'heart': 5200,
+    'basher': 2875, 'abyssal': 6250, 'rapier': 6000,
+    'bloodstone': 4700, 'tango': 90, 'salve': 110, 'tp': 100
+  };
+  return prices[itemId] || 0;
 }
 
 function handleMove(player, msg) {
@@ -566,14 +608,20 @@ function updateRot() {
   const now = Date.now();
 
   for (const player of players.values()) {
-    if (!player.rotActive) continue;
-    
+    // FIXED: Мертвые не должны получать урон от Rot
+    if (!player.rotActive || player.isDead) continue;
+
     // Rot урон по себе
     if (GAME.ROT_SELF_DAMAGE) {
       const magicDmg = player.rotDamage / 10; // Тик каждые 100мс
       player.health -= magicDmg;
+      
+      // FIXED: Проверка на смерть от Rot
+      if (player.health <= 0 && !player.isDead) {
+        killPlayer(player, player); // Самоубийство от Rot
+      }
     }
-    
+
     // Проверка времени
     if (now >= player.rotEndTime) {
       player.rotActive = false;
@@ -583,23 +631,23 @@ function updateRot() {
     // Rot урон по врагам + замедление
     for (const other of players.values()) {
       if (other.team === player.team || other.isDead) continue;
-      
+
       const dist = distance(player, other);
       if (dist < GAME.ROT_RADIUS + GAME.PLAYER_RADIUS) {
         // Магический урон (игнорирует часть брони)
         const magicDmg = player.rotDamage / 10; // Тик каждые 100мс
         other.health -= magicDmg;
-        
+
         // Замедление
         other.speed = GAME.PLAYER_SPEED * (1 - player.rotSlow);
         other.rotSlowEndTime = now + 500;
-        
+
         if (other.health <= 0 && !other.isDead) {
           killPlayer(other, player);
         }
       }
     }
-    
+
     // Восстановление скорости после замедления
     if (player.rotSlowEndTime && now > player.rotSlowEndTime) {
       player.speed = GAME.PLAYER_SPEED;
