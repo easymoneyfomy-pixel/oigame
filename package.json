@@ -9,14 +9,14 @@
     "prod": "NODE_ENV=production node server.js",
     "lint": "eslint . --ext .js",
     "test": "node test/server.test.js",
-    "generate-textures": "node generate_textures.js"
+    "generate-textures": "node generate_textures.js",
+    "healthcheck": "curl -f http://localhost:8080/health || exit 1"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "ws": "^8.14.2",
-    "canvas": "^2.11.2"
+    "ws": "^8.14.2"
   },
   "devDependencies": {
     "eslint": "^8.56.0"
