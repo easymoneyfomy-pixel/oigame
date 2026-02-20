@@ -536,15 +536,13 @@ resize();
 // ============================================
 document.addEventListener('keydown', (e) => {
   input.keys[e.code] = true;
-  console.log('[DEBUG] Key DOWN:', e.code, 'gameRunning:', gameRunning, 'ws:', ws?.readyState);
   if (e.code === 'KeyQ') input.hookRequested = true;
   if (e.code === 'KeyE') input.rotRequested = true;
   if (e.code === 'KeyR') input.dismemberRequested = true;
 });
 
-document.addEventListener('keyup', (e) => { 
-  input.keys[e.code] = false; 
-  console.log('[DEBUG] Key UP:', e.code);
+document.addEventListener('keyup', (e) => {
+  input.keys[e.code] = false;
 });
 document.addEventListener('mousemove', (e) => { input.mouseX = e.clientX; input.mouseY = e.clientY; });
 document.addEventListener('mousedown', (e) => {
@@ -566,22 +564,12 @@ document.getElementById('upgradeRot').addEventListener('click', () => upgradeAbi
 document.getElementById('upgradeUlti').addEventListener('click', () => upgradeAbility('dismember'));
 
 function upgradeAbility(ability) {
-  if (abilityPoints.count <= 0) {
-    console.log('[DEBUG] No ability points');
-    return;
-  }
-  if (ability === 'dismember' && abilityLevels.dismember <= 0 && state.myPlayer && state.myPlayer.level < 6) {
-    console.log('[DEBUG] Need level 6 for ultimate');
-    return;
-  }
+  if (abilityPoints.count <= 0) return;
+  if (ability === 'dismember' && abilityLevels.dismember <= 0 && state.myPlayer && state.myPlayer.level < 6) return;
   const maxLevels = { hook: 4, rot: 4, dismember: 3 };
-  if (abilityLevels[ability] >= maxLevels[ability]) {
-    console.log('[DEBUG] Ability maxed');
-    return;
-  }
-  
+  if (abilityLevels[ability] >= maxLevels[ability]) return;
+
   ws.send(JSON.stringify({ type: 'upgrade', ability }));
-  console.log('[DEBUG] Upgrading', ability);
 }
 
 // ============================================
@@ -590,30 +578,19 @@ function upgradeAbility(ability) {
 function connect() {
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${protocol}//${location.host}`);
-  console.log('[DEBUG] Connecting to:', `${protocol}//${location.host}`);
 
   ws.onopen = () => {
-    console.log('[DEBUG] WebSocket connected!');
     document.getElementById('connectionStatus').textContent = 'Connected ✓';
     document.getElementById('connectionStatus').style.color = '#2ecc71';
     gameRunning = true;
   };
 
-  ws.onmessage = (e) => {
-    const data = JSON.parse(e.data);
-    console.log('[DEBUG] Received:', data.type);
-    handleServerMessage(data);
-  };
+  ws.onmessage = (e) => handleServerMessage(JSON.parse(e.data));
 
   ws.onclose = () => {
-    console.log('[DEBUG] WebSocket closed');
     document.getElementById('connectionStatus').textContent = 'Disconnected ✗';
     document.getElementById('connectionStatus').style.color = '#e74c3c';
     gameRunning = false;
-  };
-
-  ws.onerror = (err) => {
-    console.error('[DEBUG] WebSocket error:', err);
   };
 }
 
@@ -705,6 +682,16 @@ function handleEvent(evt) {
     }
   }
 
+  if (evt.type === 'hookDot') {
+    const target = state.players.get(evt.targetId);
+    if (target) {
+      showFloatingText(target.x, target.y - 20, `-${Math.round(evt.damage)}`, '#e74c3c');
+      if (target.id === myId) {
+        createHitEffect(target.x, target.y, '#8e44ad');
+      }
+    }
+  }
+
   if (evt.type === 'rotToggle') {
     const p = state.players.get(evt.playerId);
     if (p) {
@@ -731,10 +718,7 @@ function handleEvent(evt) {
 }
 
 function sendInput() {
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
-    console.log('[DEBUG] WebSocket not open:', ws?.readyState);
-    return;
-  }
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
   let dx = 0, dy = 0;
   if (input.keys['KeyW']) dy -= 1;
@@ -746,26 +730,22 @@ function sendInput() {
     const len = Math.hypot(dx, dy);
     dx /= len; dy /= len;
     ws.send(JSON.stringify({ type: 'move', dx, dy }));
-    console.log('[DEBUG] Move:', { dx, dy });
   }
 
   if (input.hookRequested) {
     const angle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2);
     ws.send(JSON.stringify({ type: 'hook', angle, abilityLevel: abilityLevels.hook }));
-    console.log('[DEBUG] Hook fired at angle:', angle);
     input.hookRequested = false;
   }
 
   if (input.rotRequested) {
     ws.send(JSON.stringify({ type: 'rot', abilityLevel: abilityLevels.rot }));
-    console.log('[DEBUG] Rot toggled');
     input.rotRequested = false;
   }
 
   if (input.dismemberRequested) {
     const angle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2);
     ws.send(JSON.stringify({ type: 'dismember', angle, abilityLevel: abilityLevels.dismember }));
-    console.log('[DEBUG] Dismember cast at angle:', angle);
     input.dismemberRequested = false;
   }
 }
@@ -1032,13 +1012,7 @@ function draw() {
 // ============================================
 // ИГРОВОЙ ЦИКЛ
 // ============================================
-let frameCount = 0;
 function gameLoop() {
-  frameCount++;
-  if (frameCount % 60 === 0) {
-    console.log('[DEBUG] Loop | gameRunning:', gameRunning, 'ws:', ws?.readyState, 'keys:', Object.keys(input.keys).filter(k => input.keys[k]));
-  }
-  
   if (gameRunning) {
     sendInput();
     draw();

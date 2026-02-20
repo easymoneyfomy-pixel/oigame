@@ -595,20 +595,54 @@ function updateHook(hook) {
 
       if (dist < 15) {
         hook.state = 'done';
+        // Очищаем периодический урон
+        if (hook.dotInterval) {
+          clearInterval(hook.dotInterval);
+          hook.dotInterval = null;
+        }
       } else {
         hook.x += (dx / dist) * GAME.HOOK_PULL_SPEED;
         hook.y += (dy / dist) * GAME.HOOK_PULL_SPEED;
 
         if (hook.state === 'pulling' && hook.targetId !== null) {
           const target = players.get(hook.targetId);
-          if (target) {
+          if (target && !target.isDead) {
             target.x = hook.x;
             target.y = hook.y;
+
+            // Периодический урон пока тащит (каждые 0.5 сек)
+            if (!hook.dotApplied) {
+              hook.dotApplied = true;
+              const dotDamage = hook.damage * 0.3; // 30% от урона хука каждые 0.5 сек
+              const dotInterval = setInterval(() => {
+                if (hook.state !== 'pulling' || !target || target.isDead || hook.state === 'done') {
+                  clearInterval(dotInterval);
+                  return;
+                }
+                target.health -= dotDamage;
+                console.log(`[HOOK DOT] Player ${hook.ownerId} -> Player ${target.id} for ${dotDamage} DOT damage`);
+                broadcastEvent({ 
+                  type: 'hookDot', 
+                  targetId: target.id, 
+                  hitterId: hook.ownerId, 
+                  damage: dotDamage 
+                });
+                if (target.health <= 0 && !target.isDead) {
+                  killPlayer(target, hook.owner);
+                  clearInterval(dotInterval);
+                }
+              }, 500);
+              hook.dotInterval = dotInterval;
+            }
           }
         }
       }
     } else {
       hook.state = 'done';
+      if (hook.dotInterval) {
+        clearInterval(hook.dotInterval);
+        hook.dotInterval = null;
+      }
     }
   }
 }
@@ -943,8 +977,7 @@ wss.on('connection', (ws) => {
   ws.on('message', (data) => {
     try {
       const msg = JSON.parse(data);
-      console.log(`[MSG] Player ${player.id}:`, msg.type, msg);
-      
+
       if (!msg || typeof msg !== 'object') return;
 
       if (msg.type === 'setName' && msg.name) {
@@ -953,7 +986,7 @@ wss.on('connection', (ws) => {
         handlePlayerMessage(player, msg);
       }
     } catch (e) {
-      console.warn(`[PARSE ERROR] Player ${player.id}:`, e.message, data.toString().substring(0, 100));
+      console.warn(`[PARSE ERROR] Player ${player.id}:`, e.message);
     }
   });
 
