@@ -54,9 +54,9 @@ class AssetManager {
   async preload() {
     console.log('[ASSETS] Starting preload...');
     await Promise.all([
-      this.loadTexture('ground', 'assets/ground_texture.svg'),
-      this.loadTexture('water', 'assets/water_texture.svg'),
-      this.loadTexture('wall', 'assets/wall_texture.svg')
+      this.loadTexture('ground', 'assets/ground_texture.png'),
+      this.loadTexture('water', 'assets/water_texture.png'),
+      this.loadTexture('wall', 'assets/wall_texture.png')
     ]);
   }
 
