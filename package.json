@@ -1,11 +1,14 @@
 {
   "name": "pudge-wars",
-  "version": "1.0.0",
-  "description": "Multiplayer WebSocket game - Pudge Wars clone",
+  "version": "1.8.0",
+  "description": "Multiplayer .io game - Pudge Wars clone (Warcraft 3)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "prod": "NODE_ENV=production node server.js",
+    "lint": "eslint . --ext .js",
+    "test": "echo \"Tests coming soon\" && exit 0"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -13,7 +16,22 @@
   "dependencies": {
     "ws": "^8.14.2"
   },
-  "keywords": ["websocket", "game", "multiplayer", "io"],
+  "devDependencies": {
+    "eslint": "^8.56.0"
+  },
+  "keywords": [
+    "websocket",
+    "game",
+    "multiplayer",
+    "io",
+    "pudge",
+    "dota",
+    "warcraft3"
+  ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/pudge-wars.git"
+  }
 }
