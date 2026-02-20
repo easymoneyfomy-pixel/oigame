@@ -100,7 +100,7 @@
   <div id="startScreen">
     <h1>🥩 PUDGE WARS</h1>
     <p>Hook enemies • Save allies • Dominate the river</p>
-    <button id="startBtn">Start Battle</button>
+    <button id="startBtn">⚔️ Бросить вызов</button>
   </div>
 
   <script>
@@ -169,8 +169,9 @@ class Player {
 
     if (this.rotActive) {
       const rg = ctx.createRadialGradient(sx, sy, 0, sx, sy, CONFIG.ROT_RADIUS);
-      rg.addColorStop(0, 'rgba(142, 68, 173, 0.3)');
-      rg.addColorStop(1, 'rgba(142, 68, 173, 0)');
+      rg.addColorStop(0, 'rgba(46, 204, 113, 0.4)');
+      rg.addColorStop(0.5, 'rgba(39, 174, 96, 0.2)');
+      rg.addColorStop(1, 'rgba(46, 204, 113, 0)');
       ctx.fillStyle = rg;
       ctx.beginPath();
       ctx.arc(sx, sy, CONFIG.ROT_RADIUS, 0, Math.PI * 2);
