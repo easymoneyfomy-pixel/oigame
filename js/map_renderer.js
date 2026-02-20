@@ -1,15 +1,13 @@
 /**
- * 🎨 Pudge Wars Map Renderer v2.0
- * Изометрическая карта в стиле Warcraft 3: болото, река, стены
+ * Pudge Wars Map Renderer v2.0
+ * Изометрическая карта: болото, река, стены
  */
 
 console.log('[MAP_RENDERER] Script loaded');
 
-// Глобальные переменные (изолированы в модуле)
 let waterOffset = 0;
 const TILE_SIZE = 64;
 
-// AssetManager — класс для предзагрузки текстур
 class AssetManager {
   constructor() {
     this.textures = {};
@@ -26,20 +24,17 @@ class AssetManager {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
-        console.log(`[ASSETS] Loaded: ${name} (${url})`);
+        console.log(`[ASSETS] Loaded: ${name}`);
         this.textures[name] = img;
         this.loadingCount--;
 
-        // Обновляем прогресс (если элемент существует)
         try {
           const loadingStatusEl = document.getElementById('loadingStatus');
           if (loadingStatusEl) {
             const loaded = this.totalCount - this.loadingCount;
             loadingStatusEl.innerHTML = `<span>✓ ${name} (${loaded}/${this.totalCount})</span>`;
           }
-        } catch(e) {
-          // Игнорируем ошибки UI
-        }
+        } catch(e) {}
 
         if (this.loadingCount === 0) {
           this.isReady = true;
@@ -47,10 +42,10 @@ class AssetManager {
         }
         resolve(img);
       };
-      img.onerror = (e) => {
-        console.error(`[ASSETS] Failed: ${name} (${url})`, e);
+      img.onerror = () => {
+        console.error(`[ASSETS] Failed: ${name}`);
         this.loadingCount--;
-        reject(new Error(`Failed to load ${name} from ${url}`));
+        reject(new Error(`Failed to load ${name}`));
       };
       img.src = url;
     });
@@ -80,23 +75,17 @@ class AssetManager {
 
 const assetManager = new AssetManager();
 
-/**
- * Отрисовка карты
- * @param {number} cameraX
- * @param {number} cameraY
- */
 function drawMap(cameraX, cameraY) {
   const ctx = canvas.getContext('2d');
   const fieldSize = CONFIG.FIELD_SIZE;
 
-  // Оптимизация
   ctx.imageSmoothingEnabled = false;
 
-  // 1. Фон
+  // Фон
   ctx.fillStyle = '#1a1a2e';
   ctx.fillRect(-cameraX, -cameraY, fieldSize, fieldSize);
 
-  // 2. Земля (тайлы)
+  // Земля (тайлы)
   if (assetManager.get('ground')) {
     const groundTex = assetManager.get('ground');
     const tilesX = Math.ceil(fieldSize / TILE_SIZE) + 1;
@@ -114,7 +103,7 @@ function drawMap(cameraX, cameraY) {
     ctx.fillRect(-cameraX, -cameraY, fieldSize, fieldSize);
   }
 
-  // 3. Река с анимацией: смещение + мерцание
+  // Река с анимацией
   const riverTop = CONFIG.RIVER_Y - CONFIG.RIVER_WIDTH / 2;
   const riverBottom = CONFIG.RIVER_Y + CONFIG.RIVER_WIDTH / 2;
 
@@ -126,7 +115,6 @@ function drawMap(cameraX, cameraY) {
     waterOffset += 0.2;
     if (waterOffset > TILE_SIZE) waterOffset -= TILE_SIZE;
 
-    // Мерцание: пульсация прозрачности
     const waterAlpha = 0.6 + Math.sin(performance.now() * 0.001) * 0.1;
     ctx.globalAlpha = waterAlpha;
 
@@ -143,35 +131,26 @@ function drawMap(cameraX, cameraY) {
     ctx.fillRect(-cameraX, riverTop - cameraY, fieldSize, riverBottom - riverTop);
   }
 
-  // 4. Берега
+  // Берега
   ctx.fillStyle = '#4a3a2a';
   ctx.fillRect(-cameraX, riverTop - cameraY - 8, fieldSize, 8);
   ctx.fillRect(-cameraX, riverBottom - cameraY, fieldSize, 8);
 
-  // 5. Стены
+  // Стены
   if (assetManager.get('wall')) {
     const wallTex = assetManager.get('wall');
     const wallHeight = TILE_SIZE;
-    const wallTilesX = Math.ceil(fieldSize / TILE_SIZE) + 1;
 
-    // Левая
+    // Левая и правая
     for (let ty = 0; ty * TILE_SIZE < fieldSize; ty++) {
       const y = ty * TILE_SIZE - cameraY;
       ctx.drawImage(wallTex, -cameraX, y, TILE_SIZE, wallHeight);
-    }
-    // Правая
-    for (let ty = 0; ty * TILE_SIZE < fieldSize; ty++) {
-      const y = ty * TILE_SIZE - cameraY;
       ctx.drawImage(wallTex, fieldSize - cameraX, y, TILE_SIZE, wallHeight);
     }
-    // Верхняя
+    // Верхняя и нижняя
     for (let tx = 0; tx * TILE_SIZE < fieldSize; tx++) {
       const x = tx * TILE_SIZE - cameraX;
       ctx.drawImage(wallTex, x, -cameraY, TILE_SIZE, wallHeight);
-    }
-    // Нижняя
-    for (let tx = 0; tx * TILE_SIZE < fieldSize; tx++) {
-      const x = tx * TILE_SIZE - cameraX;
       ctx.drawImage(wallTex, x, fieldSize - cameraY, TILE_SIZE, wallHeight);
     }
   } else {
@@ -186,7 +165,7 @@ function drawMap(cameraX, cameraY) {
     ctx.stroke();
   }
 
-  // 6. Виньетка
+  // Виньетка
   const gradient = ctx.createRadialGradient(
     canvas.width / 2, canvas.height / 2, 0,
     canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.8
@@ -195,16 +174,8 @@ function drawMap(cameraX, cameraY) {
   gradient.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // 7. загрузка ассетов — логирование для отладки
-  if (window.location.hostname.includes('onrender.com')) {
-    console.log('[MAP] Render detected — checking assets...');
-    console.log('[MAP] Ground:', assetManager.get('ground') ? 'OK' : 'MISSING');
-    console.log('[MAP] Water:', assetManager.get('water') ? 'OK' : 'MISSING');
-    console.log('[MAP] Wall:', assetManager.get('wall') ? 'OK' : 'MISSING');
-  }
 }
 
-// Экспорт для использования в index.html
+// Экспорт
 window.assetManager = assetManager;
 window.drawMap = drawMap;

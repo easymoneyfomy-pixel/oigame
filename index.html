@@ -9,7 +9,6 @@
     body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', sans-serif; }
     canvas { display: block; }
 
-    /* Базовый UI */
     #ui { position: fixed; top: 10px; left: 10px; color: #fff; z-index: 100; pointer-events: none; }
     #ui h1 { font-size: 24px; color: #e74c3c; text-shadow: 0 0 10px rgba(231,76,60,0.5); margin-bottom: 5px; }
     #ui p { font-size: 12px; color: #888; }
@@ -18,29 +17,24 @@
     #stats div { margin: 3px 0; font-size: 13px; }
     .stat-label { color: #888; }
     .stat-value { color: #e74c3c; font-weight: bold; }
-    
-    /* Лидерборд */
+
     #leaderboard { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 2px solid #444; border-radius: 8px; padding: 10px 20px; z-index: 100; min-width: 300px; }
     #leaderboard h3 { color: #e74c3c; font-size: 12px; margin: 0 0 8px 0; text-align: center; text-transform: uppercase; }
     .lb-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px; }
     .lb-row.me { background: rgba(241, 196, 15, 0.2); padding: 3px 8px; margin: 0 -8px; border-radius: 4px; }
     .lb-name { color: #aaa; }
     .lb-kills { color: #e74c3c; }
-    .lb-team-radiant { color: #2ecc71; }
-    .lb-team-dire { color: #e74c3c; }
 
     #hookIndicator { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 8px 20px; border-radius: 20px; color: #fff; font-size: 14px; z-index: 100; transition: all 0.2s; }
     #hookIndicator.ready { border: 2px solid #2ecc71; box-shadow: 0 0 10px rgba(46,204,113,0.5); }
     #hookIndicator.cooldown { border: 2px solid #e74c3c; opacity: 0.7; }
     #hookCooldownBar { position: fixed; bottom: 55px; left: 50%; transform: translateX(-50%); width: 150px; height: 6px; background: rgba(0,0,0,0.7); border-radius: 3px; overflow: hidden; z-index: 100; display: none; }
     #hookCooldownFill { height: 100%; background: linear-gradient(90deg, #e74c3c, #f39c12); width: 100%; transition: width 0.05s linear; }
-    
-    /* Таймер матча */
+
     #matchTimer { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 2px solid #e74c3c; border-radius: 8px; padding: 8px 20px; color: #fff; font-size: 18px; font-weight: bold; z-index: 100; }
     #matchTimer.urgent { border-color: #f00; color: #f00; animation: timerPulse 0.5s infinite; }
     @keyframes timerPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
-    
-    /* Экран конца игры */
+
     #gameOverScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
     #gameOverScreen.show { display: flex; }
     #gameOverScreen h1 { font-size: 64px; margin-bottom: 20px; }
@@ -50,8 +44,7 @@
     #gameOverScreen .finalScore { font-size: 24px; color: #f1c40f; margin-bottom: 20px; }
     #restartBtn { padding: 15px 40px; font-size: 18px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #e74c3c, #c0392b); border: none; border-radius: 8px; cursor: pointer; }
     #restartBtn:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(231,76,60,0.5); }
-    
-    /* Панель прокачки */
+
     #upgrades { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 2px solid #e74c3c; border-radius: 12px; padding: 10px 15px; z-index: 100; display: flex; gap: 10px; align-items: center; }
     #upgrades h3 { color: #e74c3c; font-size: 12px; margin: 0 10px 0 0; text-transform: uppercase; }
     .upgrade-item { background: rgba(40,20,20,0.8); border: 1px solid #633; border-radius: 6px; padding: 6px 10px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; min-width: 50px; }
@@ -60,26 +53,21 @@
     .upg-icon { font-size: 16px; }
     .upg-name { color: #aaa; font-size: 9px; text-transform: uppercase; }
     .upg-level { color: #e74c3c; font-size: 14px; font-weight: bold; }
-    
-    /* Индикаторы врагов */
+
     .enemy-arrow { position: fixed; width: 0; height: 0; pointer-events: none; z-index: 90; }
     .enemy-arrow::after { content: ''; position: absolute; width: 20px; height: 20px; border: 3px solid #e74c3c; border-radius: 50%; border-left-color: transparent; border-top-color: transparent; transform: rotate(-45deg); }
-    
-    /* Уведомления */
+
     #notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; font-weight: bold; text-align: center; z-index: 1000; pointer-events: none; text-shadow: 0 0 30px rgba(0,0,0,0.8); animation: notifyPop 0.5s ease-out forwards; }
     @keyframes notifyPop { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
     .notify-hit { color: #e74c3c; }
     .notify-kill { color: #f39c12; }
-    .notify-death { color: #8e44ad; }
     .notify-save { color: #2ecc71; }
-    
-    /* Миникарта */
+
     #minimap { position: fixed; top: 10px; right: 10px; width: 150px; height: 150px; background: rgba(0,0,0,0.8); border: 2px solid #444; border-radius: 8px; z-index: 100; }
-    
-    /* Звук */
+
     #soundToggle { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); border: 2px solid #444; border-radius: 8px; padding: 8px 12px; color: #fff; cursor: pointer; z-index: 100; font-size: 18px; }
     #soundToggle:hover { border-color: #e74c3c; }
-    
+
     #startScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
     #startScreen.hidden { display: none; }
     #startScreen h1 { font-size: 48px; color: #e74c3c; margin-bottom: 20px; text-shadow: 0 0 30px rgba(231,76,60,0.6); }
@@ -95,23 +83,18 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     #loadingStatus.ready { color: #2ecc71; }
     #loadingStatus.error { color: #e74c3c; }
-    
+
     #controls { position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; color: #888; font-size: 11px; z-index: 100; }
     #controls kbd { background: #333; padding: 2px 6px; border-radius: 3px; color: #fff; }
   </style>
   <script src="js/map_renderer.js"></script>
   <script>
-    // Инициализация после загрузки DOM
     document.addEventListener('DOMContentLoaded', () => {
       const loadingStatusEl = document.getElementById('loadingStatus');
       const startBtn = document.getElementById('startBtn');
-      const onlineStatusEl = document.getElementById('onlineStatus');
 
-      // Запуск предзагрузки текстур
       if (window.assetManager) {
-        // Fallback таймер - старт через 5 секунд даже если текстуры не загрузились
         const fallbackTimer = setTimeout(() => {
-          console.warn('[ASSETS] Timeout - starting with fallback');
           if (loadingStatusEl) {
             loadingStatusEl.classList.add('error');
             loadingStatusEl.innerHTML = '⚠ Timeout - using fallback';
@@ -122,16 +105,14 @@
         assetManager.preload()
           .then(() => {
             clearTimeout(fallbackTimer);
-            console.log('[ASSETS] All textures loaded.');
             if (loadingStatusEl) {
               loadingStatusEl.classList.add('ready');
               loadingStatusEl.innerHTML = '✓ Assets ready';
             }
             if (startBtn) startBtn.disabled = false;
           })
-          .catch(err => {
+          .catch(() => {
             clearTimeout(fallbackTimer);
-            console.error('[ASSETS] Failed to load:', err);
             if (loadingStatusEl) {
               loadingStatusEl.classList.add('error');
               loadingStatusEl.innerHTML = '⚠ Assets failed - starting anyway';
@@ -139,11 +120,6 @@
             if (startBtn) startBtn.disabled = false;
           });
       } else {
-        // Fallback если assetManager не загружен
-        if (loadingStatusEl) {
-          loadingStatusEl.textContent = '⚠ Renderer not loaded';
-          loadingStatusEl.classList.add('error');
-        }
         setTimeout(() => { if (startBtn) startBtn.disabled = false; }, 2000);
       }
     });
@@ -152,40 +128,37 @@
 <body>
   <canvas id="game"></canvas>
   <canvas id="minimap" width="150" height="150"></canvas>
-  
+
   <button id="soundToggle">🔊</button>
-  
+
   <div id="ui">
     <h1>🥩 PUDGE WARS</h1>
     <p id="connectionStatus">Connecting...</p>
   </div>
-  
-  <!-- Лидерборд -->
+
   <div id="leaderboard">
     <h3>🏆 Leaderboard</h3>
     <div id="lbList"></div>
   </div>
-  
+
   <div id="stats">
     <div><span class="stat-label">Kills:</span> <span class="stat-value" id="kills">0</span></div>
     <div><span class="stat-label">Deaths:</span> <span class="stat-value" id="deaths">0</span></div>
     <div><span class="stat-label">Health:</span> <span class="stat-value" id="health">1000</span></div>
     <div><span class="stat-label">💰 Gold:</span> <span class="stat-value" id="gold">600</span></div>
   </div>
-  
+
   <div id="hookIndicator" class="ready">🪝 HOOK READY</div>
   <div id="hookCooldownBar"><div id="hookCooldownFill"></div></div>
   <div id="matchTimer">⏱️ 7:00</div>
-  
-  <!-- Экран конца игры -->
+
   <div id="gameOverScreen">
     <h1 id="gameOverTitle">🏆 VICTORY!</h1>
     <p class="finalScore" id="finalScore">Radiant: 10 - Dire: 8</p>
     <p id="gameOverReason">Match ended</p>
     <button id="restartBtn">Play Again</button>
   </div>
-  
-  <!-- Панель прокачки -->
+
   <div id="upgrades">
     <h3>⬆️ Upgrades</h3>
     <div class="upgrade-item" id="upgRange">
@@ -209,7 +182,7 @@
       <span class="upg-level" id="cdLevel">1</span>
     </div>
   </div>
-  
+
   <div id="controls">
     <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;|&nbsp; <kbd>MOUSE</kbd> Aim &nbsp;|&nbsp; <kbd>CLICK</kbd> Hook
   </div>
@@ -225,7 +198,7 @@
 
   <script>
     // ==========================================
-    // КОНФИГУРАЦИЯ И КОНСТАНТЫ
+    // КОНФИГУРАЦИЯ
     // ==========================================
     const CONFIG = {
       FIELD_SIZE: 2000,
@@ -239,14 +212,9 @@
       HOOK_RADIUS: 6,
       HOOK_COOLDOWN: 3000,
       HOOK_DAMAGE: 300,
-      HOOK_PULL_SPEED: 8,
-      TEAM_RADIANT: 'radiant',
-      TEAM_DIRE: 'dire'
+      HOOK_PULL_SPEED: 8
     };
 
-    // ==========================================
-    // СИСТЕМНЫЕ ПЕРЕМЕННЫЕ
-    // ==========================================
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
 
@@ -255,17 +223,14 @@
     let gameRunning = false;
     let lastTime = 0;
 
-    // Состояние игры
     const state = {
       players: new Map(),
       hooks: [],
       myTeam: null,
       myStats: { kills: 0, deaths: 0 },
-      gold: 600,
-      level: 1
+      gold: 600
     };
-    
-    // Прокачка хука
+
     const hookUpgrades = {
       range: { level: 1, max: 5, base: 400, step: 50, cost: 100 },
       speed: { level: 1, max: 5, base: 15, step: 2, cost: 150 },
@@ -273,123 +238,67 @@
       cooldown: { level: 1, max: 5, base: 3000, step: -300, cost: 250 }
     };
 
-    // Ввод
     const input = {
       keys: {},
       mouseX: 0,
       mouseY: 0,
       hookRequested: false
     };
-    
-    // Кулдаун хука
+
     const hookCooldownState = {
       onCooldown: false,
       cooldownEnd: 0
     };
-    
-    // Таймер матча
+
     const matchState = {
-      duration: 420000, // 7 минут
-      startTime: 0,
+      duration: 420000,
       remaining: 420000
     };
-    
-    // Система частиц
+
     const particles = [];
-    
-    // Индикаторы врагов
     const enemyArrows = new Map();
-    
-    // Комбо убийств
-    const killStreak = {
-      count: 0,
-      timer: 0,
-      lastKillTime: 0
-    };
-    
-    // Первое кровь
+    const killStreak = { count: 0, lastKillTime: 0 };
     let firstBloodPlayed = false;
-    
-    // Достижения
-    const achievements = {
-      firstBlood: false,
-      doubleKill: false,
-      tripleKill: false,
-      quadraKill: false,
-      pentaKill: false,
-      killingSpree: false,
-      saveAlly: false,
-      hookMaster: false
-    };
-    
-    // Аудиосистема
+
     let audioEnabled = true;
     let audioCtx = null;
-    
-    /**
-     * Инициализация аудио контекста
-     */
+
+    // ==========================================
+    // АУДИО СИСТЕМА
+    // ==========================================
     function initAudio() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
     }
-    
-    /**
-     * Воспроизведение тона (синтезатор)
-     */
+
     function playSound(freq, type, duration, volume = 0.1) {
       if (!audioEnabled || !audioCtx) return;
-      
+
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-      
       osc.connect(gain);
       gain.connect(audioCtx.destination);
-      
+
       osc.type = type;
       osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      
       gain.gain.setValueAtTime(volume, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-      
+
       osc.start();
       osc.stop(audioCtx.currentTime + duration);
     }
-    
-    /**
-     * Звук выстрела крюком
-     */
-    function playHookSound() {
-      playSound(400, 'sawtooth', 0.2, 0.15);
-    }
-    
-    /**
-     * Звук попадания
-     */
-    function playHitSound() {
-      playSound(200, 'square', 0.15, 0.2);
-    }
-    
-    /**
-     * Звук убийства
-     */
+
+    function playHookSound() { playSound(400, 'sawtooth', 0.2, 0.15); }
+    function playHitSound() { playSound(200, 'square', 0.15, 0.2); }
     function playKillSound() {
       playSound(300, 'sawtooth', 0.1, 0.15);
       setTimeout(() => playSound(400, 'sawtooth', 0.2, 0.15), 100);
     }
-    
-    /**
-     * Звук смерти
-     */
     function playDeathSound() {
       playSound(200, 'sawtooth', 0.3, 0.2);
       setTimeout(() => playSound(150, 'sawtooth', 0.4, 0.2), 150);
     }
-    
-    /**
-     * Звук спасения
-     */
     function playSaveSound() {
       playSound(500, 'sine', 0.15, 0.1);
       setTimeout(() => playSound(700, 'sine', 0.2, 0.1), 100);
@@ -398,10 +307,6 @@
     // ==========================================
     // КЛАССЫ
     // ==========================================
-    
-    /**
-     * Частица для визуальных эффектов
-     */
     class Particle {
       constructor(x, y, color, speed, life) {
         this.x = x;
@@ -415,7 +320,7 @@
         this.maxLife = life;
         this.size = 3 + Math.random() * 3;
       }
-      
+
       update() {
         this.x += this.vx;
         this.y += this.vy;
@@ -423,7 +328,7 @@
         this.vy *= 0.98;
         this.life--;
       }
-      
+
       draw(ctx, cameraX, cameraY) {
         const alpha = this.life / this.maxLife;
         ctx.globalAlpha = alpha;
@@ -434,29 +339,20 @@
         ctx.globalAlpha = 1;
       }
     }
-    
-    /**
-     * Эффект попадания крюка
-     */
+
     function createHitEffect(x, y, color) {
       for (let i = 0; i < 15; i++) {
         particles.push(new Particle(x, y, color, 5, 30));
       }
     }
-    
-    /**
-     * Эффект смерти
-     */
+
     function createDeathEffect(x, y) {
       for (let i = 0; i < 30; i++) {
         particles.push(new Particle(x, y, '#8e44ad', 8, 50));
         particles.push(new Particle(x, y, '#e74c3c', 6, 40));
       }
     }
-    
-    /**
-     * Игрок (Pudge)
-     */
+
     class Player {
       constructor(data) {
         this.id = data[0];
@@ -466,21 +362,19 @@
         this.health = data[4];
         this.maxHealth = data[5];
         this.angle = 0;
-        this.isDead = false;
+        this.isDead = data[10] || false;
       }
-      
-      update(dt) {
+
+      update() {
         if (this.id === myId) {
-          const targetAngle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2);
-          this.angle = targetAngle;
+          this.angle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2);
         }
       }
-      
+
       draw(ctx, cameraX, cameraY) {
         const screenX = this.x - cameraX;
         const screenY = this.y - cameraY;
 
-        // Свечение для своего игрока
         if (this.id === myId) {
           const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, CONFIG.PLAYER_RADIUS * 2);
           gradient.addColorStop(0, 'rgba(241, 196, 15, 0.3)');
@@ -490,8 +384,7 @@
           ctx.arc(screenX, screenY, CONFIG.PLAYER_RADIUS * 2, 0, Math.PI * 2);
           ctx.fill();
         }
-        
-        // Индикатор низкого здоровья (красная аура)
+
         const hpPercent = this.health / this.maxHealth;
         if (hpPercent < 0.3 && this.id !== myId) {
           const dangerGradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, CONFIG.PLAYER_RADIUS * 2.5);
@@ -503,24 +396,20 @@
           ctx.fill();
         }
 
-        // Тело
         ctx.beginPath();
         ctx.arc(screenX, screenY, CONFIG.PLAYER_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = this.team === CONFIG.TEAM_RADIANT ? '#2ecc71' : '#e74c3c';
+        ctx.fillStyle = this.team === 'radiant' ? '#2ecc71' : '#e74c3c';
         ctx.fill();
-        
-        // Обводка
+
         ctx.lineWidth = 3;
         ctx.strokeStyle = this.id === myId ? '#f1c40f' : '#333';
         ctx.stroke();
-        
-        // Внутренний круг
+
         ctx.beginPath();
         ctx.arc(screenX, screenY, CONFIG.PLAYER_RADIUS * 0.6, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0,0,0,0.2)';
         ctx.fill();
 
-        // Направление взгляда
         ctx.beginPath();
         ctx.moveTo(screenX, screenY);
         ctx.lineTo(
@@ -530,8 +419,7 @@
         ctx.strokeStyle = 'rgba(255,255,255,0.5)';
         ctx.lineWidth = 2;
         ctx.stroke();
-        
-        // Индикатор "YOU"
+
         if (this.id === myId) {
           ctx.fillStyle = '#f1c40f';
           ctx.font = '12px Arial';
@@ -539,19 +427,15 @@
           ctx.fillText('YOU', screenX, screenY - CONFIG.PLAYER_RADIUS - 8);
         }
 
-        // Полоска здоровья
         const hpBarWidth = 40;
-        const hpPercent = this.health / this.maxHealth;
+        const hpBarPercent = this.health / this.maxHealth;
         ctx.fillStyle = '#333';
         ctx.fillRect(screenX - hpBarWidth/2, screenY + CONFIG.PLAYER_RADIUS + 5, hpBarWidth, 4);
-        ctx.fillStyle = hpPercent > 0.5 ? '#2ecc71' : hpPercent > 0.25 ? '#f39c12' : '#e74c3c';
-        ctx.fillRect(screenX - hpBarWidth/2, screenY + CONFIG.PLAYER_RADIUS + 5, hpBarWidth * hpPercent, 4);
+        ctx.fillStyle = hpBarPercent > 0.5 ? '#2ecc71' : hpBarPercent > 0.25 ? '#f39c12' : '#e74c3c';
+        ctx.fillRect(screenX - hpBarWidth/2, screenY + CONFIG.PLAYER_RADIUS + 5, hpBarWidth * hpBarPercent, 4);
       }
     }
 
-    /**
-     * Крюк (Meat Hook)
-     */
     class Hook {
       constructor(data) {
         this.id = data[0];
@@ -572,7 +456,7 @@
         this.traveled = 0;
       }
 
-      update(dt) {
+      update() {
         if (this.state === 'flying') {
           this.trail.push({ x: this.x, y: this.y, life: 10 });
           this.x += this.vx;
@@ -607,7 +491,7 @@
             this.state = 'done';
           }
         }
-        
+
         for (let i = this.trail.length - 1; i >= 0; i--) {
           this.trail[i].life--;
           if (this.trail[i].life <= 0) {
@@ -625,8 +509,7 @@
 
         const ownerScreenX = owner.x - cameraX;
         const ownerScreenY = owner.y - cameraY;
-        
-        // След
+
         for (const point of this.trail) {
           const alpha = point.life / 10;
           ctx.globalAlpha = alpha;
@@ -637,7 +520,6 @@
         }
         ctx.globalAlpha = 1;
 
-        // Цепь
         ctx.beginPath();
         ctx.moveTo(ownerScreenX, ownerScreenY);
         ctx.lineTo(screenX, screenY);
@@ -647,7 +529,6 @@
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Крюк
         ctx.beginPath();
         ctx.arc(screenX, screenY, CONFIG.HOOK_RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = this.state === 'pulling' ? '#f39c12' : '#e74c3c';
@@ -655,8 +536,7 @@
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 2;
         ctx.stroke();
-        
-        // Блеск
+
         ctx.beginPath();
         ctx.arc(screenX - 2, screenY - 2, CONFIG.HOOK_RADIUS * 0.3, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(255,255,255,0.6)';
@@ -677,19 +557,12 @@
     // ==========================================
     // УПРАВЛЕНИЕ
     // ==========================================
-    document.addEventListener('keydown', (e) => {
-      input.keys[e.code] = true;
-    });
-
-    document.addEventListener('keyup', (e) => {
-      input.keys[e.code] = false;
-    });
-
+    document.addEventListener('keydown', (e) => { input.keys[e.code] = true; });
+    document.addEventListener('keyup', (e) => { input.keys[e.code] = false; });
     document.addEventListener('mousemove', (e) => {
       input.mouseX = e.clientX;
       input.mouseY = e.clientY;
     });
-
     document.addEventListener('mousedown', (e) => {
       if (e.button === 0 && gameRunning) {
         input.hookRequested = true;
@@ -704,123 +577,114 @@
       gameRunning = true;
       initAudio();
       connect();
-      
+
       setTimeout(() => {
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'setName', name: playerName }));
         }
       }, 100);
     });
-    
+
     document.getElementById('soundToggle').addEventListener('click', () => {
       audioEnabled = !audioEnabled;
       document.getElementById('soundToggle').textContent = audioEnabled ? '🔊' : '🔇';
     });
-    
-    document.getElementById('restartBtn').addEventListener('click', () => {
-      location.reload();
-    });
-    
+
+    document.getElementById('restartBtn').addEventListener('click', () => { location.reload(); });
     document.getElementById('upgRange').addEventListener('click', () => buyUpgrade('range'));
     document.getElementById('upgSpeed').addEventListener('click', () => buyUpgrade('speed'));
     document.getElementById('upgDamage').addEventListener('click', () => buyUpgrade('damage'));
     document.getElementById('upgCooldown').addEventListener('click', () => buyUpgrade('cooldown'));
-    
+
     function buyUpgrade(type) {
       const upg = hookUpgrades[type];
-      if (upg.level >= upg.max) return;
-      if (state.gold < upg.cost) return;
-      
+      if (upg.level >= upg.max || state.gold < upg.cost) return;
+
       state.gold -= upg.cost;
       upg.level++;
       upg.cost = Math.floor(upg.cost * 1.5);
-      
+
       ws.send(JSON.stringify({
         type: 'upgrade',
         upgradeType: type,
         value: getUpgradeValue(type)
       }));
-      
+
       updateUpgradesUI();
       playSaveSound();
     }
-    
+
     function getUpgradeValue(type) {
       const upg = hookUpgrades[type];
       return upg.base + (upg.step * (upg.level - 1));
     }
-    
+
     function updateUpgradesUI() {
       for (const [type, upg] of Object.entries(hookUpgrades)) {
         const el = document.getElementById(`upg${type.charAt(0).toUpperCase() + type.slice(1)}`);
         const levelEl = document.getElementById(`${type}Level`);
         levelEl.textContent = upg.level;
-        
+
         if (upg.level >= upg.max) {
           el.classList.add('maxed');
-          el.title = 'MAX';
-        } else {
-          el.title = `Cost: ${upg.cost} gold`;
         }
       }
-      
+
       CONFIG.HOOK_RANGE = getUpgradeValue('range');
       CONFIG.HOOK_SPEED = getUpgradeValue('speed');
       CONFIG.HOOK_DAMAGE = getUpgradeValue('damage');
       CONFIG.HOOK_COOLDOWN = getUpgradeValue('cooldown');
     }
-    
+
     function updateLeaderboard(players) {
       const lbList = document.getElementById('lbList');
       if (!players || players.length === 0) return;
-      
+
       const sorted = [...players].sort((a, b) => b[8] - a[8]);
-      
       let html = '';
+
       for (let i = 0; i < Math.min(sorted.length, 10); i++) {
         const p = sorted[i];
-        const [id, x, y, team, health, maxHealth, gold, level, kills, deaths, isDead, name] = p;
+        const [id, , , team, , , , , kills, deaths, , name] = p;
         const isMe = id === myId ? 'me' : '';
         const teamIcon = team === 'radiant' ? '🟢' : '🔴';
-        
+
         html += `<div class="lb-row ${isMe}">
           <span class="lb-name">${i + 1}. ${teamIcon} ${name || `Pudge_${id}`}</span>
           <span class="lb-kills">⚔️ ${kills}/${deaths}</span>
         </div>`;
       }
-      
+
       lbList.innerHTML = html;
     }
-    
+
     function updateEnemyArrows(cameraX, cameraY) {
       const player = state.players.get(myId);
       if (!player) return;
-      
+
       const screenCX = canvas.width / 2;
       const screenCY = canvas.height / 2;
       const edgeDist = 80;
-      
+
       document.querySelectorAll('.enemy-arrow').forEach(el => el.remove());
       enemyArrows.clear();
-      
+
       for (const [id, p] of state.players) {
         if (id === myId || p.team === player.team || p.isDead) continue;
-        
+
         const screenX = p.x - cameraX;
         const screenY = p.y - cameraY;
-        
-        if (screenX > 0 && screenX < canvas.width && screenY > 0 && screenY < canvas.height) {
-          continue;
-        }
-        
+
+        if (screenX > 0 && screenX < canvas.width && screenY > 0 && screenY < canvas.height) continue;
+
         const dx = screenX - screenCX;
         const dy = screenY - screenCY;
         const angle = Math.atan2(dy, dx);
-        
+
         let arrowX, arrowY;
         const absDx = Math.abs(dx);
         const absDy = Math.abs(dy);
-        
+
         if (absDx / canvas.width > absDy / canvas.height) {
           arrowX = dx > 0 ? canvas.width - edgeDist : edgeDist;
           arrowY = screenCY + Math.tan(angle) * (arrowX - screenCX);
@@ -830,20 +694,20 @@
           arrowX = screenCX + (arrowY - screenCY) / Math.tan(angle);
           arrowX = Math.max(edgeDist, Math.min(canvas.width - edgeDist, arrowX));
         }
-        
+
         const arrow = document.createElement('div');
         arrow.className = 'enemy-arrow';
         arrow.style.left = (arrowX - 10) + 'px';
         arrow.style.top = (arrowY - 10) + 'px';
         arrow.style.transform = `rotate(${angle * 180 / Math.PI}deg)`;
         document.body.appendChild(arrow);
-        
+
         enemyArrows.set(id, arrow);
       }
     }
 
     // ==========================================
-    // СЕТЕВОЕ ВЗАИМОДЕЙСТВИЕ
+    // СЕТЕВАЯ ЛОГИКА
     // ==========================================
     function connect() {
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -852,7 +716,6 @@
       ws.onopen = () => {
         document.getElementById('connectionStatus').textContent = 'Connected';
         document.getElementById('connectionStatus').style.color = '#2ecc71';
-        // Обновляем онлайн на стартовом экране
         const onlineStatusEl = document.getElementById('onlineStatus');
         if (onlineStatusEl) {
           onlineStatusEl.textContent = '🟢 Server connected';
@@ -881,10 +744,8 @@
       switch(data.type) {
         case 'welcome':
           myId = data.playerId;
-          myTeam = data.team;
           state.myTeam = data.team;
           matchState.remaining = data.matchTime || matchState.duration;
-          matchState.startTime = Date.now();
           for (const p of data.players) {
             state.players.set(p[0], new Player(p));
           }
@@ -900,6 +761,7 @@
               existing.team = p[3];
               existing.health = p[4];
               existing.maxHealth = p[5];
+              existing.isDead = p[10] || false;
               newPlayers.set(p[0], existing);
             } else {
               newPlayers.set(p[0], new Player(p));
@@ -908,14 +770,13 @@
           state.players = newPlayers;
           state.hooks = data.hooks.map(h => new Hook(h));
 
-          // Обновляем онлайн (количество игроков)
           const onlineStatusEl = document.getElementById('onlineStatus');
           if (onlineStatusEl && !gameRunning) {
             const online = state.players.size;
             onlineStatusEl.textContent = `🟢 ${online} player${online !== 1 ? 's' : ''} online`;
             onlineStatusEl.style.color = online > 1 ? '#2ecc71' : '#f39c12';
           }
-          
+
           if (data.stats && myId) {
             const myStats = data.stats.find(s => s[0] === myId);
             if (myStats) {
@@ -923,73 +784,84 @@
               state.myStats.deaths = myStats[2];
             }
           }
-          
-          // Обновляем таймер если есть
+
           if (data.matchTime !== undefined) {
             matchState.remaining = data.matchTime;
           }
-          
+
           updateLeaderboard(data.players);
           break;
-          
+
         case 'event':
-          if (data.event.type === 'hookFire' && data.event.playerId === myId) {
+          handleGameEvent(data.event);
+          break;
+      }
+    }
+
+    function handleGameEvent(event) {
+      switch (event.type) {
+        case 'hookFire':
+          if (event.playerId === myId) {
             startHookCooldown();
             playHookSound();
           }
-          if (data.event.type === 'hookHit') {
-            const target = state.players.get(data.event.targetId);
-            if (target) {
-              createHitEffect(target.x, target.y, '#e74c3c');
-              playHitSound();
-              if (target.id === myId) {
-                showNotification('HIT!', 'notify-hit');
-              }
+          break;
+
+        case 'hookHit': {
+          const target = state.players.get(event.targetId);
+          if (target) {
+            createHitEffect(target.x, target.y, '#e74c3c');
+            playHitSound();
+            if (target.id === myId) {
+              showNotification('HIT!', 'notify-hit');
             }
           }
-          if (data.event.type === 'playerKill') {
-            const victim = state.players.get(data.event.victimId);
-            if (victim) {
-              createDeathEffect(victim.x, victim.y);
-              playKillSound();
-              if (data.event.killerId === myId) {
-                state.gold += 150;
-                
-                // Первое кровь!
-                if (!firstBloodPlayed) {
-                  firstBloodPlayed = true;
-                  showNotification('🩸 FIRST BLOOD!', 'notify-kill');
-                  playKillSound();
-                  unlockAchievement('firstBlood', '🩸 First Blood');
-                } else {
-                  handleKillStreak();
-                  showNotification('KILL! +150💰', 'notify-kill');
-                }
-              }
-              if (data.event.assistIds?.includes(myId)) {
-                state.gold += 50;
-                showNotification('ASSIST! +50💰', 'notify-save');
+          break;
+        }
+
+        case 'playerKill': {
+          const victim = state.players.get(event.victimId);
+          if (victim) {
+            createDeathEffect(victim.x, victim.y);
+            playKillSound();
+
+            if (event.killerId === myId) {
+              state.gold += 150;
+
+              if (!firstBloodPlayed) {
+                firstBloodPlayed = true;
+                showNotification('🩸 FIRST BLOOD!', 'notify-kill');
+              } else {
+                handleKillStreak();
+                showNotification('KILL! +150💰', 'notify-kill');
               }
             }
-          }
-          if (data.event.type === 'allySaved') {
-            const ally = state.players.get(data.event.allyId);
-            if (ally && ally.team === myTeam) {
-              createHitEffect(ally.x, ally.y, '#2ecc71');
-              playSaveSound();
-              showNotification('SAVE!', 'notify-save');
-              unlockAchievement('saveAlly', '💚 Guardian Angel');
+
+            if (event.assistIds?.includes(myId)) {
+              state.gold += 50;
+              showNotification('ASSIST! +50💰', 'notify-save');
             }
           }
-          if (data.event.type === 'matchEnd') {
-            const victory = data.event.winner === myTeam;
-            showGameOver(victory, data.event.radiantKills, data.event.direKills);
+          break;
+        }
+
+        case 'allySaved': {
+          const ally = state.players.get(event.allyId);
+          if (ally && ally.team === state.myTeam) {
+            createHitEffect(ally.x, ally.y, '#2ecc71');
+            playSaveSound();
+            showNotification('SAVE!', 'notify-save');
           }
-          if (data.event.type === 'matchStart') {
-            // Сброс при новом матче
-            firstBloodPlayed = false;
-            killStreak.count = 0;
-          }
+          break;
+        }
+
+        case 'matchEnd':
+          showGameOver(event.winner === state.myTeam, event.radiantKills, event.direKills);
+          break;
+
+        case 'matchStart':
+          firstBloodPlayed = false;
+          killStreak.count = 0;
           break;
       }
     }
@@ -997,24 +869,24 @@
     function startHookCooldown() {
       hookCooldownState.onCooldown = true;
       hookCooldownState.cooldownEnd = Date.now() + CONFIG.HOOK_COOLDOWN;
-      
+
       const indicator = document.getElementById('hookIndicator');
       const bar = document.getElementById('hookCooldownBar');
-      
+
       indicator.textContent = '⏳ COOLDOWN...';
       indicator.className = 'cooldown';
       bar.style.display = 'block';
     }
-    
+
     function updateHookCooldown() {
       const now = Date.now();
       const indicator = document.getElementById('hookIndicator');
       const bar = document.getElementById('hookCooldownBar');
       const fill = document.getElementById('hookCooldownFill');
-      
+
       if (hookCooldownState.onCooldown) {
         const remaining = hookCooldownState.cooldownEnd - now;
-        
+
         if (remaining <= 0) {
           hookCooldownState.onCooldown = false;
           indicator.textContent = '🪝 HOOK READY';
@@ -1053,103 +925,37 @@
     }
 
     // ==========================================
-    // КАМЕРА
+    // КАМЕРА И РЕНДЕРИНГ
     // ==========================================
     function updateCamera() {
       const player = state.players.get(myId);
       if (!player) return { x: 0, y: 0 };
-      
+
       return {
         x: player.x - canvas.width / 2,
         y: player.y - canvas.height / 2
       };
     }
 
-    // ==========================================
-    // ОТРИСОВКА
-    // ==========================================
-    function drawMap(cameraX, cameraY) {
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-      ctx.lineWidth = 1;
-      const gridSize = 100;
-      const offsetX = -cameraX % gridSize;
-      const offsetY = -cameraY % gridSize;
-
-      for (let x = offsetX; x < canvas.width; x += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
-      }
-      for (let y = offsetY; y < canvas.height; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
-      }
-
-      // Река с градиентом
-      const riverScreenY = CONFIG.RIVER_Y - cameraY;
-      const riverGradient = ctx.createLinearGradient(0, riverScreenY - CONFIG.RIVER_WIDTH/2, 0, riverScreenY + CONFIG.RIVER_WIDTH/2);
-      riverGradient.addColorStop(0, 'rgba(52,152,219,0.2)');
-      riverGradient.addColorStop(0.5, 'rgba(52,152,219,0.4)');
-      riverGradient.addColorStop(1, 'rgba(52,152,219,0.2)');
-      ctx.fillStyle = riverGradient;
-      ctx.fillRect(0, riverScreenY - CONFIG.RIVER_WIDTH/2, canvas.width, CONFIG.RIVER_WIDTH);
-      
-      // Анимация волн
-      const time = Date.now() / 1000;
-      ctx.strokeStyle = 'rgba(100,200,255,0.3)';
-      ctx.lineWidth = 2;
-      for (let i = 0; i < 5; i++) {
-        const waveY = riverScreenY - CONFIG.RIVER_WIDTH/4 + i * (CONFIG.RIVER_WIDTH / 4);
-        ctx.beginPath();
-        for (let x = 0; x < canvas.width; x += 20) {
-          const waveX = x + Math.sin(time * 2 + i) * 10;
-          if (x === 0) ctx.moveTo(waveX, waveY);
-          else ctx.lineTo(waveX, waveY);
-        }
-        ctx.stroke();
-      }
-
-      ctx.strokeStyle = 'rgba(52,152,219,0.6)';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(0, riverScreenY - CONFIG.RIVER_WIDTH/2);
-      ctx.lineTo(canvas.width, riverScreenY - CONFIG.RIVER_WIDTH/2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, riverScreenY + CONFIG.RIVER_WIDTH/2);
-      ctx.lineTo(canvas.width, riverScreenY + CONFIG.RIVER_WIDTH/2);
-      ctx.stroke();
-
-      ctx.strokeStyle = '#e74c3c';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(-cameraX, -cameraY, CONFIG.FIELD_SIZE, CONFIG.FIELD_SIZE);
-    }
-
-    const mmCanvas = document.getElementById('minimap');
-    const mmCtx = mmCanvas.getContext('2d');
-    const MM_SCALE = 150 / CONFIG.FIELD_SIZE;
-    
     function drawMinimap() {
+      const mmCanvas = document.getElementById('minimap');
+      const mmCtx = mmCanvas.getContext('2d');
+      const MM_SCALE = 150 / CONFIG.FIELD_SIZE;
+
       mmCtx.fillStyle = 'rgba(0,0,0,0.9)';
       mmCtx.fillRect(0, 0, 150, 150);
-      
+
       mmCtx.fillStyle = 'rgba(52,152,219,0.5)';
       mmCtx.fillRect(0, (CONFIG.RIVER_Y - CONFIG.RIVER_WIDTH/2) * MM_SCALE, 150, CONFIG.RIVER_WIDTH * MM_SCALE);
-      
+
       for (const player of state.players.values()) {
-        mmCtx.fillStyle = player.team === CONFIG.TEAM_RADIANT ? '#2ecc71' : '#e74c3c';
+        mmCtx.fillStyle = player.team === 'radiant' ? '#2ecc71' : '#e74c3c';
         const size = player.id === myId ? 5 : 3;
         mmCtx.beginPath();
         mmCtx.arc(player.x * MM_SCALE, player.y * MM_SCALE, size, 0, Math.PI * 2);
         mmCtx.fill();
       }
-      
+
       const player = state.players.get(myId);
       if (player) {
         const camX = player.x - canvas.width / 2;
@@ -1159,7 +965,7 @@
         mmCtx.strokeRect(camX * MM_SCALE, camY * MM_SCALE, canvas.width * MM_SCALE, canvas.height * MM_SCALE);
       }
     }
-    
+
     function updateAndDrawParticles(cameraX, cameraY) {
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
@@ -1170,21 +976,19 @@
         }
       }
     }
-    
+
     function showNotification(text, className) {
       const existing = document.getElementById('notification');
       if (existing) existing.remove();
-      
+
       const el = document.createElement('div');
       el.id = 'notification';
       el.className = className;
       el.textContent = text;
       document.body.appendChild(el);
-      
+
       setTimeout(() => el.remove(), 500);
     }
-    
-    function drawNotifications() {}
 
     function draw() {
       const camera = updateCamera();
@@ -1196,29 +1000,28 @@
       }
 
       for (const player of state.players.values()) {
-        player.update(16);
+        player.update();
         player.draw(ctx, camera.x, camera.y);
       }
-      
+
       drawMinimap();
       updateEnemyArrows(camera.x, camera.y);
       updateUI();
-      drawNotifications();
     }
 
     function updateUI() {
       const player = state.players.get(myId);
       if (player) {
         document.getElementById('health').textContent = Math.round(player.health);
-        
-        // Индикатор низкого здоровья
+
         const hpPercent = player.health / player.maxHealth;
+        const healthEl = document.getElementById('health');
         if (hpPercent < 0.25) {
-          document.getElementById('health').style.color = '#f00';
-          document.getElementById('health').style.animation = 'timerPulse 0.5s infinite';
+          healthEl.style.color = '#f00';
+          healthEl.style.animation = 'timerPulse 0.5s infinite';
         } else {
-          document.getElementById('health').style.color = '#e74c3c';
-          document.getElementById('health').style.animation = '';
+          healthEl.style.color = '#e74c3c';
+          healthEl.style.animation = '';
         }
       }
       document.getElementById('kills').textContent = state.myStats.kills;
@@ -1227,90 +1030,71 @@
       updateHookCooldown();
       updateMatchTimer();
     }
-    
+
     function updateMatchTimer() {
       const minutes = Math.floor(matchState.remaining / 60000);
       const seconds = Math.floor((matchState.remaining % 60000) / 1000);
       const timerEl = document.getElementById('matchTimer');
       timerEl.textContent = `⏱️ ${minutes}:${seconds.toString().padStart(2, '0')}`;
-      
-      // Мигание когда осталось меньше 1 минуты
+
       if (matchState.remaining < 60000) {
         timerEl.classList.add('urgent');
       } else {
         timerEl.classList.remove('urgent');
       }
     }
-    
+
     function showGameOver(victory, radiantKills, direKills) {
       const screen = document.getElementById('gameOverScreen');
       const title = document.getElementById('gameOverTitle');
       const score = document.getElementById('finalScore');
-      
+
       screen.classList.add('show');
       screen.className = victory ? 'victory' : 'defeat';
       title.textContent = victory ? '🏆 VICTORY!' : '💀 DEFEAT';
       score.textContent = `Radiant: ${radiantKills} - Dire: ${direKills}`;
-      
+
       playKillSound();
     }
-    
-    /**
-     * Обработка серии убийств (комбо)
-     */
+
     function handleKillStreak() {
       const now = Date.now();
       const timeSinceLastKill = now - killStreak.lastKillTime;
-      
-      // Если прошло меньше 10 секунд — увеличиваем серию
+
       if (timeSinceLastKill < 10000) {
         killStreak.count++;
-        
-        // Показываем уведомление для разных серий
-        if (killStreak.count === 2) {
-          showNotification('🔥 DOUBLE KILL!', 'notify-kill');
+
+        const notifications = {
+          2: ['🔥 DOUBLE KILL!', 'doubleKill', '🔥 Double Kill'],
+          3: ['💀 TRIPLE KILL!', 'tripleKill', '💀 Triple Kill'],
+          4: ['👻 QUADRA KILL!', 'quadraKill', '👻 Quadra Kill'],
+          5: ['⚡ PENTA KILL!', 'pentaKill', '⚡ Penta Kill']
+        };
+
+        if (notifications[killStreak.count]) {
+          const [msg, , achievement] = notifications[killStreak.count];
+          showNotification(msg, 'notify-kill');
           playKillSound();
-          unlockAchievement('doubleKill', '🔥 Double Kill');
-        } else if (killStreak.count === 3) {
-          showNotification('💀 TRIPLE KILL!', 'notify-kill');
-          playKillSound();
-          unlockAchievement('tripleKill', '💀 Triple Kill');
-        } else if (killStreak.count === 4) {
-          showNotification('👻 QUADRA KILL!', 'notify-kill');
-          playKillSound();
-          unlockAchievement('quadraKill', '👻 Quadra Kill');
-        } else if (killStreak.count === 5) {
-          showNotification('⚡ PENTA KILL!', 'notify-kill');
-          playKillSound();
-          unlockAchievement('pentaKill', '⚡ Penta Kill');
+          unlockAchievement(killStreak.count === 2 ? 'doubleKill' : killStreak.count === 3 ? 'tripleKill' : killStreak.count === 4 ? 'quadraKill' : 'pentaKill', achievement);
         } else if (killStreak.count >= 6) {
           showNotification(`⚡ ${killStreak.count}x KILL STREAK!`, 'notify-kill');
           playKillSound();
           unlockAchievement('killingSpree', '⚡ Killing Spree');
         }
       } else {
-        // Сбрасываем серию
         killStreak.count = 1;
       }
-      
+
       killStreak.lastKillTime = now;
     }
-    
-    /**
-     * Разблокировка достижения
-     */
+
     function unlockAchievement(id, name) {
-      if (!achievements[id]) {
-        achievements[id] = true;
+      const saved = JSON.parse(localStorage.getItem('pudgeAchievements') || '{}');
+      if (!saved[id]) {
+        saved[id] = true;
+        localStorage.setItem('pudgeAchievements', JSON.stringify(saved));
         showNotification(`🏆 ACHIEVEMENT: ${name}`, 'notify-save');
         playSaveSound();
-        
-        // Сохраняем в localStorage
-        try {
-          const saved = JSON.parse(localStorage.getItem('pudgeAchievements') || '{}');
-          saved[id] = true;
-          localStorage.setItem('pudgeAchievements', JSON.stringify(saved));
-        } catch(e) {}
       }
     }
 
@@ -1318,7 +1102,6 @@
     // ИГРОВОЙ ЦИКЛ
     // ==========================================
     function gameLoop(timestamp) {
-      const dt = timestamp - lastTime;
       lastTime = timestamp;
 
       if (gameRunning) {
