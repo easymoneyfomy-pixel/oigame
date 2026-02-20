@@ -7,7 +7,11 @@
 - [x] `assets/*.svg` — текстуры (3 файла)
 - [x] `render.yaml` — конфиг для Render
 - [x] `package.json` — зависимости
+- [x] `package-lock.json` — lock-файл npm
 - [x] `.gitignore` — игнорирование node_modules
+- [x] `.nvmrc` — версия Node.js (18)
+
+> ⚠️ **Warning о package-lock.json**: Если Render предупреждает "warning package-lock.json found" — это нормально. Проект использует npm, не Yarn. Просто игнорируйте.
 
 ## Проверка локально
 ```bash

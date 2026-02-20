@@ -21,12 +21,6 @@ class AssetManager {
     this.loadingCount++;
     this.totalCount++;
 
-    // Обновляем UI загрузки
-    const loadingStatusEl = document.getElementById('loadingStatus');
-    if (loadingStatusEl) {
-      loadingStatusEl.innerHTML = `<div class="spinner"></div> <span>Loading: ${this.loadingCount}/${this.totalCount}...</span>`;
-    }
-
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
@@ -34,10 +28,15 @@ class AssetManager {
         this.textures[name] = img;
         this.loadingCount--;
 
-        // Обновляем прогресс
-        if (loadingStatusEl) {
-          const loaded = this.totalCount - this.loadingCount;
-          loadingStatusEl.innerHTML = `<span>✓ ${name} (${loaded}/${this.totalCount})</span>`;
+        // Обновляем прогресс (если элемент существует)
+        try {
+          const loadingStatusEl = document.getElementById('loadingStatus');
+          if (loadingStatusEl) {
+            const loaded = this.totalCount - this.loadingCount;
+            loadingStatusEl.innerHTML = `<span>✓ ${name} (${loaded}/${this.totalCount})</span>`;
+          }
+        } catch(e) {
+          // Игнорируем ошибки UI
         }
 
         if (this.loadingCount === 0) {
