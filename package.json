@@ -1,12 +1,13 @@
 {
   "name": "pudge-wars",
-  "version": "2.0.0",
-  "description": "Multiplayer .io game - Pudge Wars clone with full abilities",
+  "version": "2.0.0-WC3",
+  "description": "Multiplayer .io game - Warcraft 3 Pudge Wars Original Balance",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "prod": "NODE_ENV=production node server.js"
+    "prod": "NODE_ENV=production node server.js",
+    "test": "node test/server.test.js"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -20,8 +21,9 @@
     "multiplayer",
     "io",
     "pudge",
-    "dota",
-    "warcraft3"
+    "warcraft3",
+    "pudge-wars",
+    "wc3"
   ],
   "author": "",
   "license": "MIT"
