@@ -1,14 +1,12 @@
 /**
- * PUDGE WARS Server v2.0
- * Multiplayer .io Game - Authoritative Server
- * 
- * Architecture: 60 TPS tick-based physics, WebSocket real-time
+ * PUDGE WARS Server v3.0 - AAA Edition
+ * Full Pudge Mechanics - Authoritative Server
  */
 
 const WebSocket = require('ws');
 const http = require('http');
-const fs = require('fs');
 const path = require('path');
+const fs = require('fs');
 
 // ============================================
 // CONFIGURATION
@@ -19,8 +17,8 @@ const FIELD_SIZE = 2000;
 const MATCH_DURATION = 420000;
 
 const GAME = {
-  PLAYER_RADIUS: 20,
-  PLAYER_SPEED: 3.5,
+  PLAYER_RADIUS: 22,
+  PLAYER_SPEED: 3.8,
   BASE_HEALTH: 625,
   BASE_MANA: 267,
   BASE_DAMAGE: 52,
@@ -28,22 +26,36 @@ const GAME = {
   BASE_STR: 25,
   BASE_AGI: 14,
   BASE_INT: 14,
-  STR_PER_LEVEL: 3.0,
-  AGI_PER_LEVEL: 1.4,
-  INT_PER_LEVEL: 1.5,
-  HOOK_RANGE: 400,
-  HOOK_SPEED: 16,
-  HOOK_RADIUS: 8,
-  HOOK_COOLDOWN: 4000,
-  HOOK_DAMAGE: 80,
-  HOOK_MANA_COST: 110,
-  ROT_DAMAGE: 30,
-  ROT_RADIUS: 200,
-  ROT_COOLDOWN: 1500,
-  ROT_DURATION: 5000,
-  FLESH_HEAP_STR_PER_STACK: 0.9,
-  FLESH_HEAP_RANGE: 400,
-  HOOK_PULL_SPEED: 10,
+  STR_PER_LEVEL: 3.2,
+  AGI_PER_LEVEL: 1.6,
+  INT_PER_LEVEL: 1.8,
+  
+  // Q - Meat Hook
+  HOOK_RANGE: 450,
+  HOOK_SPEED: 18,
+  HOOK_RADIUS: 10,
+  HOOK_COOLDOWN: [4000, 3500, 3000, 2500],
+  HOOK_DAMAGE: [90, 140, 190, 240],
+  HOOK_MANA_COST: [110, 120, 130, 140],
+  
+  // E - Rot
+  ROT_DAMAGE: [30, 50, 70, 90],
+  ROT_RADIUS: 220,
+  ROT_COOLDOWN: [1500, 1500, 1500, 1500],
+  ROT_SLOW: 0.3,
+  
+  // Passive - Flesh Heap
+  FLESH_HEAP_STR_PER_STACK: 1.0,
+  FLESH_HEAP_RANGE: 450,
+  
+  // R - Dismember
+  DISMEMBER_DAMAGE: 60,
+  DISMEMBER_DURATION: 3000,
+  DISMEMBER_COOLDOWN: [17000, 14000, 11000],
+  DISMEMBER_MANA_COST: [175, 250, 325],
+  DISMEMBER_RANGE: 200,
+  
+  HOOK_PULL_SPEED: 12,
   RESPAWN_TIME: 5000,
   GOLD_PER_KILL: 150,
   GOLD_PER_ASSIST: 50,
@@ -56,16 +68,28 @@ const GAME = {
 // ============================================
 const players = new Map();
 const hooks = [];
+const dismembers = [];
 let nextPlayerId = 1;
 let matchStartTime = Date.now();
 
 // ============================================
-// UTILITY FUNCTIONS
+// HELPER FUNCTIONS
 // ============================================
-const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-const pointInCircle = (px, py, cx, cy, r) => Math.hypot(px - cx, py - cy) < r;
-const circleCollision = (c1, r1, c2, r2) => Math.hypot(c1.x - c2.x, c1.y - c2.y) < (r1 + r2);
-const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function pointInCircle(px, py, cx, cy, radius) {
+  return Math.hypot(px - cx, py - cy) < radius;
+}
+
+function circleCollision(c1, r1, c2, r2) {
+  return Math.hypot(c1.x - c2.x, c1.y - c2.y) < (r1 + r2);
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
 
 function isInRiver(y, radius) {
   const riverTop = GAME.RIVER_Y - GAME.RIVER_WIDTH / 2;
@@ -74,10 +98,10 @@ function isInRiver(y, radius) {
 }
 
 function getSpawnPosition(team) {
-  const baseX = 500 + Math.random() * 1000;
-  return team === 'radiant'
-    ? { x: baseX, y: 200 + Math.random() * 300 }
-    : { x: baseX, y: 1500 + Math.random() * 300 };
+  const x = 500 + Math.random() * 1000;
+  return team === 'radiant' 
+    ? { x, y: 200 + Math.random() * 300 }
+    : { x, y: 1500 + Math.random() * 300 };
 }
 
 function calculatePlayerStats(player) {
@@ -108,56 +132,51 @@ function playerToData(p) {
 }
 
 function hookToData(h) {
-  return [
-    h.id, Math.round(h.x * 100) / 100, Math.round(h.y * 100) / 100,
-    Math.round(h.targetX * 100) / 100, Math.round(h.targetY * 100) / 100, h.ownerId
-  ];
-}
-
-function broadcastEvent(event) {
-  const data = JSON.stringify({ type: 'event', event });
-  for (const p of players.values()) {
-    if (p.ws.readyState === WebSocket.OPEN) p.ws.send(data);
-  }
-}
-
-function broadcastState() {
-  const matchTime = Math.max(0, MATCH_DURATION - (Date.now() - matchStartTime));
-  const state = {
-    type: 'state',
-    matchTime,
-    players: [...players.values()].map(playerToData),
-    hooks: hooks.map(hookToData),
-    stats: [...players.values()].map(p => [p.id, p.kills, p.deaths])
-  };
-  const data = JSON.stringify(state);
-  for (const p of players.values()) {
-    if (p.ws.readyState === WebSocket.OPEN) p.ws.send(data);
-  }
+  return [h.id, h.x, h.y, h.targetX, h.targetY, h.ownerId];
 }
 
 // ============================================
 // PLAYER MANAGEMENT
 // ============================================
-function createPlayer(ws, team) {
+function createPlayer(ws) {
+  const radiantCount = [...players.values()].filter(p => p.team === 'radiant').length;
+  const direCount = [...players.values()].filter(p => p.team === 'dire').length;
+  const team = radiantCount <= direCount ? 'radiant' : 'dire';
   const pos = getSpawnPosition(team);
-  const player = {
+
+  return {
     id: nextPlayerId++,
-    x: pos.x, y: pos.y, team,
-    health: GAME.BASE_HEALTH, maxHealth: GAME.BASE_HEALTH,
-    mana: GAME.BASE_MANA, maxMana: GAME.BASE_MANA,
-    speed: GAME.PLAYER_SPEED, ws,
-    hookCooldown: 0, rotCooldown: 0, rotActive: false, rotEndTime: 0,
-    isDead: false, respawnTime: 0,
-    kills: 0, deaths: 0, angle: 0,
-    gold: 600, level: 1,
-    str: GAME.BASE_STR, agi: GAME.BASE_AGI, int: GAME.BASE_INT,
-    damage: GAME.BASE_DAMAGE, armor: GAME.BASE_ARMOR,
+    x: pos.x, y: pos.y,
+    team,
+    health: GAME.BASE_HEALTH,
+    maxHealth: GAME.BASE_HEALTH,
+    mana: GAME.BASE_MANA,
+    maxMana: GAME.BASE_MANA,
+    speed: GAME.PLAYER_SPEED,
+    ws,
+    hookCooldown: 0, rotCooldown: 0, dismemberCooldown: 0,
+    rotActive: false, rotEndTime: 0,
+    hookRange: GAME.HOOK_RANGE,
+    hookSpeed: GAME.HOOK_SPEED,
+    hookDamage: GAME.HOOK_DAMAGE[0],
+    hookCooldownTime: GAME.HOOK_COOLDOWN[0],
+    rotDamage: GAME.ROT_DAMAGE[0],
+    dismemberDamage: GAME.DISMEMBER_DAMAGE,
+    dismemberCooldownTime: GAME.DISMEMBER_COOLDOWN[0],
+    isDead: false,
+    respawnTime: 0,
+    kills: 0,
+    deaths: 0,
     fleshHeapStacks: 0,
-    name: `Pudge_${nextPlayerId}`
+    str: GAME.BASE_STR,
+    agi: GAME.BASE_AGI,
+    int: GAME.BASE_INT,
+    damage: GAME.BASE_DAMAGE,
+    armor: GAME.BASE_ARMOR,
+    level: 1,
+    gold: 600,
+    abilityLevels: { hook: 1, rot: 1, dismember: 1 }
   };
-  calculatePlayerStats(player);
-  return player;
 }
 
 function killPlayer(victim, killer) {
@@ -168,6 +187,8 @@ function killPlayer(victim, killer) {
   if (killer) {
     killer.kills++;
     killer.gold += GAME.GOLD_PER_KILL;
+    
+    // Flesh Heap stack
     if (distance(victim, killer) < GAME.FLESH_HEAP_RANGE) {
       killer.fleshHeapStacks++;
       killer.str += GAME.FLESH_HEAP_STR_PER_STACK;
@@ -199,6 +220,7 @@ function handlePlayerMessage(player, msg) {
     case 'move': handleMove(player, msg); break;
     case 'hook': handleHook(player, msg); break;
     case 'rot': handleRot(player, msg); break;
+    case 'dismember': handleDismember(player, msg); break;
   }
 }
 
@@ -222,11 +244,15 @@ function handleMove(player, msg) {
 
 function handleHook(player, msg) {
   const now = Date.now();
-  if (now < player.hookCooldown || player.mana < GAME.HOOK_MANA_COST) return;
+  const abilityLevel = msg.abilityLevel || 1;
+  const cooldownIndex = Math.min(abilityLevel - 1, GAME.HOOK_COOLDOWN.length - 1);
+  
+  if (now < player.hookCooldown || player.mana < GAME.HOOK_MANA_COST[cooldownIndex]) return;
 
   const angle = msg.angle || 0;
-  const targetX = player.x + Math.cos(angle) * GAME.HOOK_RANGE;
-  const targetY = player.y + Math.sin(angle) * GAME.HOOK_RANGE;
+  const hookRange = GAME.HOOK_RANGE;
+  const targetX = player.x + Math.cos(angle) * hookRange;
+  const targetY = player.y + Math.sin(angle) * hookRange;
 
   hooks.push({
     id: `hook_${player.id}_${now}`,
@@ -235,24 +261,71 @@ function handleHook(player, msg) {
     vx: Math.cos(angle) * GAME.HOOK_SPEED,
     vy: Math.sin(angle) * GAME.HOOK_SPEED,
     traveled: 0, state: 'flying', targetId: null,
-    damage: GAME.HOOK_DAMAGE, range: GAME.HOOK_RANGE, speed: GAME.HOOK_SPEED
+    damage: GAME.HOOK_DAMAGE[cooldownIndex],
+    range: hookRange,
+    speed: GAME.HOOK_SPEED,
+    abilityLevel
   });
 
-  player.hookCooldown = now + GAME.HOOK_COOLDOWN;
-  player.mana -= GAME.HOOK_MANA_COST;
-  console.log(`[HOOK] Player ${player.id} fired`);
+  player.hookCooldown = now + GAME.HOOK_COOLDOWN[cooldownIndex];
+  player.mana -= GAME.HOOK_MANA_COST[cooldownIndex];
+  console.log(`[HOOK] Player ${player.id} fired (lvl ${abilityLevel})`);
   broadcastEvent({ type: 'hookFire', playerId: player.id });
 }
 
 function handleRot(player, msg) {
   const now = Date.now();
+  const abilityLevel = msg.abilityLevel || 1;
+  const cooldownIndex = Math.min(abilityLevel - 1, GAME.ROT_COOLDOWN.length - 1);
+  
   if (now < player.rotCooldown) return;
 
   player.rotActive = !player.rotActive;
-  player.rotEndTime = player.rotActive ? now + GAME.ROT_DURATION : 0;
-  player.rotCooldown = now + GAME.ROT_COOLDOWN;
-  console.log(`[ROT] Player ${player.id} ${player.rotActive ? 'ON' : 'OFF'}`);
+  player.rotEndTime = player.rotActive ? now + 5000 : 0;
+  player.rotCooldown = now + GAME.ROT_COOLDOWN[cooldownIndex];
+  player.rotDamage = GAME.ROT_DAMAGE[cooldownIndex];
+  
+  console.log(`[ROT] Player ${player.id} ${player.rotActive ? 'ON' : 'OFF'} (lvl ${abilityLevel})`);
   broadcastEvent({ type: 'rotToggle', playerId: player.id, active: player.rotActive });
+}
+
+function handleDismember(player, msg) {
+  const now = Date.now();
+  const abilityLevel = msg.abilityLevel || 1;
+  const cooldownIndex = Math.min(abilityLevel - 1, GAME.DISMEMBER_COOLDOWN.length - 1);
+  
+  if (now < player.dismemberCooldown || player.mana < GAME.DISMEMBER_MANA_COST[cooldownIndex]) return;
+
+  const angle = msg.angle || 0;
+  const range = GAME.DISMEMBER_RANGE;
+  const targetX = player.x + Math.cos(angle) * range;
+  const targetY = player.y + Math.sin(angle) * range;
+
+  // Find target
+  for (const other of players.values()) {
+    if (other.team === player.team || other.isDead) continue;
+    if (pointInCircle(targetX, targetY, other.x, other.y, GAME.PLAYER_RADIUS + 20)) {
+      // Channel dismember
+      dismembers.push({
+        id: `dismember_${player.id}_${now}`,
+        caster: player,
+        target: other,
+        endTime: now + GAME.DISMEMBER_DURATION,
+        damage: GAME.DISMEMBER_DAMAGE,
+        tickDamage: GAME.DISMEMBER_DAMAGE / 10
+      });
+      
+      other.dismembered = true;
+      other.dismemberer = player;
+      
+      player.dismemberCooldown = now + GAME.DISMEMBER_COOLDOWN[cooldownIndex];
+      player.mana -= GAME.DISMEMBER_MANA_COST[cooldownIndex];
+      
+      console.log(`[DISMEMBER] Player ${player.id} -> Player ${other.id}`);
+      broadcastEvent({ type: 'dismemberStart', casterId: player.id, targetId: other.id });
+      return;
+    }
+  }
 }
 
 // ============================================
@@ -272,7 +345,11 @@ function updateHook(hook) {
     hook.x += hook.vx;
     hook.y += hook.vy;
     hook.traveled += hook.speed;
-    if (hook.traveled >= hook.range) hook.state = 'returning';
+    
+    if (hook.traveled >= hook.range) {
+      hook.state = 'returning';
+    }
+    
     checkHookPlayerCollision(hook);
   } else if (hook.state === 'returning' || hook.state === 'pulling') {
     const owner = hook.owner;
@@ -280,13 +357,13 @@ function updateHook(hook) {
       const dx = owner.x - hook.x;
       const dy = owner.y - hook.y;
       const dist = Math.hypot(dx, dy);
-
-      if (dist < 10) {
+      
+      if (dist < 15) {
         hook.state = 'done';
       } else {
         hook.x += (dx / dist) * GAME.HOOK_PULL_SPEED;
         hook.y += (dy / dist) * GAME.HOOK_PULL_SPEED;
-
+        
         if (hook.state === 'pulling' && hook.targetId !== null) {
           const target = players.get(hook.targetId);
           if (target) {
@@ -304,11 +381,25 @@ function updateHook(hook) {
 function checkHookPlayerCollision(hook) {
   for (const [id, player] of players) {
     if (id === hook.ownerId || player.isDead) continue;
+    
     if (pointInCircle(hook.x, hook.y, player.x, player.y, GAME.PLAYER_RADIUS + GAME.HOOK_RADIUS)) {
       if (player.team === hook.owner.team) {
-        applyHookPull(hook, player);
+        // Save ally
+        hook.state = 'pulling';
+        hook.targetId = player.id;
+        broadcastEvent({ type: 'allySaved', playerId: hook.ownerId, allyId: player.id });
       } else {
-        applyHookHit(hook, player);
+        // Hit enemy
+        player.health -= hook.damage;
+        hook.state = 'pulling';
+        hook.targetId = player.id;
+        
+        console.log(`[HOOK HIT] Player ${hook.ownerId} -> Player ${player.id} for ${hook.damage}`);
+        broadcastEvent({ type: 'hookHit', targetId: player.id, hitterId: hook.ownerId });
+        
+        if (player.health <= 0 && !player.isDead) {
+          killPlayer(player, hook.owner);
+        }
       }
       return;
     }
@@ -318,55 +409,40 @@ function checkHookPlayerCollision(hook) {
 function checkHookToHookCollision() {
   for (let i = 0; i < hooks.length; i++) {
     for (let j = i + 1; j < hooks.length; j++) {
-      const h1 = hooks[i], h2 = hooks[j];
+      const h1 = hooks[i];
+      const h2 = hooks[j];
+      
       if (h1.state !== 'flying' || h2.state !== 'flying') continue;
-
+      
       if (circleCollision(h1, GAME.HOOK_RADIUS, h2, GAME.HOOK_RADIUS)) {
-        const dx = h2.x - h1.x, dy = h2.y - h1.y;
+        const dx = h2.x - h1.x;
+        const dy = h2.y - h1.y;
         const dist = Math.hypot(dx, dy) || 1;
-        const bounce = 0.5;
-
-        h1.vx = -h1.vx * bounce; h1.vy = -h1.vy * bounce;
-        h2.vx = -h2.vx * bounce; h2.vy = -h2.vy * bounce;
-        h1.x -= (dx / dist) * 5; h1.y -= (dy / dist) * 5;
-        h2.x += (dx / dist) * 5; h2.y += (dy / dist) * 5;
-
-        console.log(`[HOOK COLLISION] ${h1.id} <-> ${h2.id}`);
+        const bounceFactor = 0.5;
+        
+        h1.vx = -h1.vx * bounceFactor;
+        h1.vy = -h1.vy * bounceFactor;
+        h2.vx = -h2.vx * bounceFactor;
+        h2.vy = -h2.vy * bounceFactor;
+        
+        h1.x -= (dx / dist) * 5;
+        h1.y -= (dy / dist) * 5;
+        h2.x += (dx / dist) * 5;
+        h2.y += (dy / dist) * 5;
       }
     }
   }
 }
 
-function applyHookHit(hook, target) {
-  const owner = hook.owner;
-  const armorReduction = target.armor / (100 + target.armor);
-  const actualDamage = hook.damage * (1 - armorReduction);
-  target.health -= actualDamage;
-  hook.state = 'pulling';
-  hook.targetId = target.id;
-
-  console.log(`[HIT] ${owner.id} -> ${target.id} (${Math.round(actualDamage)} dmg)`);
-  broadcastEvent({ type: 'hookHit', targetId: target.id, hitterId: owner.id });
-
-  if (target.health <= 0 && !target.isDead) killPlayer(target, owner);
-}
-
-function applyHookPull(hook, ally) {
-  const owner = hook.owner;
-  hook.state = 'pulling';
-  hook.targetId = ally.id;
-  console.log(`[SAVE] ${owner.id} saved ${ally.id}`);
-  broadcastEvent({ type: 'allySaved', allyId: ally.id, saverId: owner.id });
-}
-
 // ============================================
-// COMBAT & ROT
+// ROT & DISMEMBER
 // ============================================
 function updateRot() {
   const now = Date.now();
 
   for (const player of players.values()) {
     if (!player.rotActive) continue;
+    
     if (now >= player.rotEndTime) {
       player.rotActive = false;
       continue;
@@ -374,26 +450,56 @@ function updateRot() {
 
     for (const other of players.values()) {
       if (other.team === player.team || other.isDead) continue;
+      
       if (distance(player, other) < GAME.ROT_RADIUS + GAME.PLAYER_RADIUS) {
         const armorReduction = other.armor / (100 + other.armor);
-        const actualDamage = GAME.ROT_DAMAGE * (1 - armorReduction);
+        const actualDamage = player.rotDamage * (1 - armorReduction);
         other.health -= actualDamage;
-        if (other.health <= 0 && !other.isDead) killPlayer(other, player);
+        
+        if (other.health <= 0 && !other.isDead) {
+          killPlayer(other, player);
+        }
       }
     }
   }
 }
 
-function checkRespawn() {
+function updateDismember() {
   const now = Date.now();
-  for (const player of players.values()) {
-    if (player.isDead && now >= player.respawnTime) respawnPlayer(player);
+
+  for (let i = dismembers.length - 1; i >= 0; i--) {
+    const dis = dismembers[i];
+    
+    if (now >= dis.endTime || dis.caster.isDead || dis.target.isDead) {
+      if (dis.target) {
+        dis.target.dismembered = false;
+        dis.target.dismemberer = null;
+      }
+      dismembers.splice(i, 1);
+      continue;
+    }
+
+    // Damage tick
+    dis.target.health -= dis.tickDamage;
+    
+    if (dis.target.health <= 0 && !dis.target.isDead) {
+      killPlayer(dis.target, dis.caster);
+    }
   }
 }
 
 // ============================================
 // MATCH MANAGEMENT
 // ============================================
+function checkRespawn() {
+  const now = Date.now();
+  for (const player of players.values()) {
+    if (player.isDead && now >= player.respawnTime) {
+      respawnPlayer(player);
+    }
+  }
+}
+
 function endMatch() {
   const radiantKills = [...players.values()].filter(p => p.team === 'radiant').reduce((s, p) => s + p.kills, 0);
   const direKills = [...players.values()].filter(p => p.team === 'dire').reduce((s, p) => s + p.kills, 0);
@@ -409,49 +515,119 @@ function resetMatch() {
   matchStartTime = Date.now();
   for (const player of players.values()) {
     const pos = getSpawnPosition(player.team);
-    Object.assign(player, {
-      x: pos.x, y: pos.y,
-      health: player.maxHealth, mana: player.maxMana,
-      isDead: false, kills: 0, deaths: 0, gold: 600,
-      fleshHeapStacks: 0, str: GAME.BASE_STR, agi: GAME.BASE_AGI,
-      int: GAME.BASE_INT, level: 1
-    });
-    calculatePlayerStats(player);
+    player.x = pos.x;
+    player.y = pos.y;
+    player.health = player.maxHealth;
+    player.mana = player.maxMana;
+    player.isDead = false;
+    player.kills = 0;
+    player.deaths = 0;
+    player.gold = 600;
+    player.fleshHeapStacks = 0;
   }
   hooks.length = 0;
+  dismembers.length = 0;
+  broadcastEvent({ type: 'matchStart', matchDuration: MATCH_DURATION });
   console.log('[MATCH] New match started');
+}
+
+// ============================================
+// NETWORK BROADCAST
+// ============================================
+function broadcastEvent(event) {
+  const data = JSON.stringify({ type: 'event', event });
+  for (const player of players.values()) {
+    if (player.ws.readyState === WebSocket.OPEN) {
+      player.ws.send(data);
+    }
+  }
+}
+
+function broadcastState() {
+  const matchTime = Math.max(0, MATCH_DURATION - (Date.now() - matchStartTime));
+
+  const state = {
+    type: 'state',
+    matchTime,
+    matchStartTime,
+    players: [...players.values()].map(playerToData),
+    hooks: hooks.map(hookToData),
+    stats: [...players.values()].map(p => [p.id, p.kills, p.deaths, p.gold || 0])
+  };
+
+  const data = JSON.stringify(state);
+  for (const player of players.values()) {
+    if (player.ws.readyState === WebSocket.OPEN) {
+      player.ws.send(data);
+    }
+  }
 }
 
 // ============================================
 // HTTP SERVER
 // ============================================
-const httpServer = http.createServer((req, res) => {
-  fs.readFile(path.join(__dirname, 'index.html'), (err, data) => {
-    if (err) {
-      res.writeHead(500);
-      res.end('Error loading game');
-      return;
-    }
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(data);
-  });
+const server = http.createServer((req, res) => {
+  const url = new URL(req.url, `http://localhost:${PORT}`);
+  let pathname = url.pathname;
+
+  // Health check
+  if (pathname === '/health' || pathname === '/api/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', players: players.size, uptime: Math.floor((Date.now() - matchStartTime) / 1000) }));
+    return;
+  }
+
+  // Stats API
+  if (pathname === '/api/stats') {
+    const radiantKills = [...players.values()].filter(p => p.team === 'radiant').reduce((s, p) => s + p.kills, 0);
+    const direKills = [...players.values()].filter(p => p.team === 'dire').reduce((s, p) => s + p.kills, 0);
+    
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+    res.end(JSON.stringify({
+      players: players.size,
+      radiant: { players: [...players.values()].filter(p => p.team === 'radiant').length, kills: radiantKills },
+      dire: { players: [...players.values()].filter(p => p.team === 'dire').length, kills: direKills },
+      matchTime: Math.max(0, MATCH_DURATION - (Date.now() - matchStartTime))
+    }));
+    return;
+  }
+
+  // Serve files
+  const mimeTypes = {
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.png': 'image/png',
+    '.svg': 'image/svg+xml; charset=utf-8'
+  };
+
+  if (pathname === '/' || pathname === '/index.html') {
+    const clientPath = path.join(__dirname, 'index.html');
+    fs.readFile(clientPath, (err, data) => {
+      if (err) { res.writeHead(500); res.end('Error'); return; }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(data);
+    });
+  } else {
+    const filePath = path.join(__dirname, pathname);
+    const ext = path.extname(filePath).toLowerCase();
+    const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+    fs.readFile(filePath, (err, data) => {
+      if (err) { res.writeHead(404); res.end('Not found'); return; }
+      res.writeHead(200, { 'Content-Type': contentType });
+      res.end(data);
+    });
+  }
 });
 
 // ============================================
 // WEBSOCKET SERVER
 // ============================================
-const wss = new WebSocket.Server({
-  server: httpServer,
-  maxPayload: 1024,
-  perMessageDeflate: false
-});
+const wss = new WebSocket.Server({ server, maxPayload: 1024, perMessageDeflate: false });
 
 wss.on('connection', (ws) => {
-  const radiantCount = [...players.values()].filter(p => p.team === 'radiant').length;
-  const direCount = [...players.values()].filter(p => p.team === 'dire').length;
-  const team = radiantCount <= direCount ? 'radiant' : 'dire';
-
-  const player = createPlayer(ws, team);
+  const player = createPlayer(ws);
   players.set(player.id, player);
 
   ws.send(JSON.stringify({
@@ -466,12 +642,17 @@ wss.on('connection', (ws) => {
 
   ws.on('message', (data) => {
     try {
-      handlePlayerMessage(player, JSON.parse(data));
-    } catch (e) { /* Invalid format */ }
+      const msg = JSON.parse(data);
+      if (msg.type === 'setName' && msg.name) {
+        player.name = msg.name.substring(0, 20);
+      } else {
+        handlePlayerMessage(player, msg);
+      }
+    } catch (e) { /* ignore */ }
   });
 
   ws.on('close', () => {
-    console.log(`[LEAVE] Player ${player.id}`);
+    console.log(`[LEAVE] Player ${player.id} disconnected`);
     players.delete(player.id);
   });
 
@@ -482,40 +663,43 @@ wss.on('connection', (ws) => {
 // GAME LOOP
 // ============================================
 const gameLoop = setInterval(() => {
-  if (Date.now() - matchStartTime >= MATCH_DURATION) {
+  const matchElapsed = Date.now() - matchStartTime;
+
+  if (matchElapsed >= MATCH_DURATION) {
     endMatch();
     return;
   }
 
   updateHooks();
   updateRot();
+  updateDismember();
   checkRespawn();
   broadcastState();
 }, 1000 / TICK_RATE);
 
 // ============================================
-// SERVER STARTUP
+// START SERVER
 // ============================================
-httpServer.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log('========================================');
-  console.log('  🥩 PUDGE WARS SERVER v2.0');
+  console.log('  🥩 PUDGE WARS - AAA EDITION');
   console.log('========================================');
-  console.log(`  Port: ${PORT} | Field: ${FIELD_SIZE}x${FIELD_SIZE}`);
+  console.log(`  Port: ${PORT}`);
+  console.log(`  Field: ${FIELD_SIZE}x${FIELD_SIZE}`);
   console.log(`  Tick Rate: ${TICK_RATE} TPS`);
+  console.log(`  River at Y: ${GAME.RIVER_Y}`);
+  console.log('========================================');
   console.log(`  Open: http://localhost:${PORT}`);
   console.log('========================================');
-  console.log('  Q - Meat Hook | W - Rot');
+  console.log('  Q - Meat Hook | E - Rot | R - Dismember');
   console.log('========================================');
 });
+
+server.on('error', (err) => console.error('[ERROR]', err));
 
 process.on('SIGINT', () => {
   console.log('\n[SHUTDOWN] Closing...');
   clearInterval(gameLoop);
   for (const p of players.values()) p.ws.close();
-  httpServer.close(() => {
-    wss.close(() => {
-      console.log('[SHUTDOWN] Done');
-      process.exit(0);
-    });
-  });
+  server.close(() => { wss.close(() => { console.log('[SHUTDOWN] Done'); process.exit(0); }); });
 });

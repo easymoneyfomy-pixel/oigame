@@ -3,120 +3,186 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pudge Wars - Multiplayer .io Game</title>
+  <title>Pudge Wars - AAA Edition</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { overflow: hidden; background: #0a0a0a; font-family: 'Segoe UI', sans-serif; }
     canvas { display: block; }
 
+    /* UI */
     #ui { position: fixed; top: 10px; left: 10px; color: #fff; z-index: 100; pointer-events: none; }
     #ui h1 { font-size: 28px; color: #e74c3c; text-shadow: 0 0 15px rgba(231,76,60,0.6); }
 
-    #stats { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); border: 2px solid #e74c3c; border-radius: 8px; padding: 12px 16px; color: #fff; z-index: 100; min-width: 200px; }
-    #stats h3 { color: #e74c3c; margin-bottom: 8px; font-size: 14px; }
+    /* Stats Panel */
+    #stats { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.85); border: 2px solid #e74c3c; border-radius: 8px; padding: 12px 16px; color: #fff; z-index: 100; min-width: 220px; }
+    #stats h3 { color: #e74c3c; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; }
     .stat-row { display: flex; justify-content: space-between; margin: 4px 0; font-size: 12px; }
     .stat-label { color: #aaa; }
     .stat-value { color: #e74c3c; font-weight: bold; }
 
-    #bars { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 400px; z-index: 100; }
-    .bar-container { background: rgba(0,0,0,0.8); border: 2px solid #333; border-radius: 4px; margin: 4px 0; overflow: hidden; }
-    .bar { height: 20px; transition: width 0.2s; }
+    /* Attributes */
+    #attributes { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border: 2px solid #f39c12; border-radius: 8px; padding: 10px 20px; color: #fff; z-index: 100; display: flex; gap: 20px; }
+    .attr { text-align: center; }
+    .attr-icon { font-size: 22px; display: block; }
+    .attr-value { color: #f39c12; font-weight: bold; font-size: 16px; }
+    .attr-label { font-size: 10px; color: #888; text-transform: uppercase; }
+
+    /* Health & Mana */
+    #bars { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: 500px; z-index: 100; }
+    .bar-container { background: rgba(0,0,0,0.8); border: 2px solid #333; border-radius: 4px; margin: 3px 0; overflow: hidden; position: relative; }
+    .bar { height: 25px; transition: width 0.1s; }
     #healthBar { background: linear-gradient(90deg, #c0392b, #e74c3c); width: 100%; }
     #manaBar { background: linear-gradient(90deg, #2980b9, #3498db); width: 100%; }
+    .bar-text { position: absolute; color: #fff; font-size: 12px; font-weight: bold; text-shadow: 1px 1px 2px #000; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 
-    #abilities { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px; z-index: 100; }
-    .ability { width: 60px; height: 60px; background: rgba(0,0,0,0.8); border: 2px solid #e74c3c; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: all 0.2s; }
-    .ability:hover { transform: scale(1.05); border-color: #f39c12; }
-    .ability.on-cooldown { opacity: 0.5; cursor: not-allowed; }
-    .ability-icon { font-size: 28px; }
-    .ability-key { position: absolute; top: 2px; left: 4px; font-size: 10px; color: #fff; background: rgba(0,0,0,0.7); padding: 1px 4px; border-radius: 3px; }
-    .ability-cd { position: absolute; bottom: 2px; font-size: 9px; color: #fff; background: rgba(0,0,0,0.8); padding: 1px 4px; border-radius: 3px; }
+    /* Abilities */
+    #abilities { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 12px; z-index: 100; }
+    .ability { width: 70px; height: 70px; background: rgba(0,0,0,0.85); border: 3px solid #e74c3c; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: all 0.2s; }
+    .ability:hover { transform: scale(1.08); border-color: #f39c12; box-shadow: 0 0 20px rgba(243,156,18,0.5); }
+    .ability.on-cooldown { opacity: 0.6; cursor: not-allowed; border-color: #666; }
+    .ability-icon { font-size: 32px; }
+    .ability-key { position: absolute; top: 3px; left: 6px; font-size: 11px; color: #fff; background: rgba(0,0,0,0.8); padding: 2px 5px; border-radius: 4px; font-weight: bold; }
+    .ability-cd { position: absolute; bottom: 3px; font-size: 10px; color: #fff; background: rgba(0,0,0,0.9); padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .ability-level { position: absolute; top: 3px; right: 6px; font-size: 10px; color: #f39c12; background: rgba(0,0,0,0.8); padding: 2px 5px; border-radius: 4px; }
 
-    #attributes { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 2px solid #f39c12; border-radius: 8px; padding: 10px 16px; color: #fff; z-index: 100; display: flex; gap: 16px; }
-    .attr { text-align: center; }
-    .attr-icon { font-size: 20px; display: block; }
-    .attr-value { color: #f39c12; font-weight: bold; font-size: 14px; }
-    .attr-label { font-size: 10px; color: #aaa; }
+    /* Ultimate */
+    #ultimate { position: fixed; bottom: 20px; right: 200px; width: 90px; height: 90px; background: rgba(0,0,0,0.85); border: 3px solid #9b59b6; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: all 0.2s; }
+    #ultimate:hover { transform: scale(1.1); border-color: #8e44ad; box-shadow: 0 0 30px rgba(142,68,173,0.6); }
+    #ultimate.on-cooldown { opacity: 0.6; cursor: not-allowed; border-color: #666; }
+    #ultimate .ability-icon { font-size: 40px; }
+    #ultimate .ability-key { top: 4px; left: 8px; font-size: 12px; }
+    #ultimate .ability-cd { bottom: 4px; font-size: 11px; }
 
+    /* Start Screen */
     #startScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
     #startScreen.hidden { display: none; }
-    #startScreen h1 { font-size: 56px; color: #e74c3c; margin-bottom: 10px; text-shadow: 0 0 30px rgba(231,76,60,0.8); }
-    #startScreen p { color: #aaa; margin-bottom: 30px; font-size: 16px; }
-    #startBtn { padding: 15px 50px; font-size: 20px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #e74c3c, #c0392b); border: none; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
-    #startBtn:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(231,76,60,0.6); }
+    #startScreen h1 { font-size: 64px; color: #e74c3c; margin-bottom: 10px; text-shadow: 0 0 40px rgba(231,76,60,0.8); }
+    #startScreen p { color: #aaa; margin-bottom: 30px; font-size: 18px; }
+    #startBtn { padding: 18px 60px; font-size: 22px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #e74c3c, #c0392b); border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; box-shadow: 0 0 30px rgba(231,76,60,0.5); }
+    #startBtn:hover { transform: scale(1.05); box-shadow: 0 0 50px rgba(231,76,60,0.8); }
 
-    #controls { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; color: #888; font-size: 11px; z-index: 100; }
-    #controls kbd { background: #333; padding: 2px 6px; border-radius: 3px; color: #fff; margin: 0 2px; }
+    /* Controls */
+    #controls { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 12px; border-radius: 8px; color: #888; font-size: 11px; z-index: 100; }
+    #controls kbd { background: #333; padding: 3px 8px; border-radius: 4px; color: #fff; margin: 0 2px; font-weight: bold; }
 
-    #notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; font-weight: bold; text-align: center; z-index: 2000; pointer-events: none; text-shadow: 0 0 30px rgba(0,0,0,0.8); animation: notifyPop 0.5s ease-out forwards; }
-    @keyframes notifyPop { 0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
+    /* Notifications */
+    #notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 56px; font-weight: bold; text-align: center; z-index: 2000; pointer-events: none; text-shadow: 0 0 40px rgba(0,0,0,0.8); animation: notifyPop 0.5s ease-out forwards; }
+    @keyframes notifyPop { 0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
     .notify-hit { color: #e74c3c; }
     .notify-kill { color: #f39c12; }
     .notify-save { color: #2ecc71; }
+    .notify-firstblood { color: #e74c3c; text-shadow: 0 0 50px rgba(231,76,60,0.8); }
+    .notify-rampage { color: #9b59b6; text-shadow: 0 0 50px rgba(155,89,182,0.8); }
+
+    /* Minimap */
+    #minimap { position: fixed; bottom: 10px; right: 10px; width: 180px; height: 180px; background: rgba(0,0,0,0.8); border: 2px solid #444; border-radius: 8px; z-index: 100; }
+
+    /* Killstreak */
+    #killstreak { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); font-size: 32px; font-weight: bold; color: #f39c12; text-shadow: 0 0 30px rgba(243,156,18,0.6); z-index: 150; display: none; }
+
+    /* Last hit effect */
+    .lasthit { position: fixed; font-size: 24px; font-weight: bold; color: #f39c12; animation: floatUp 1s ease-out forwards; pointer-events: none; }
+    @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(1.2); opacity: 0; } }
   </style>
+  <script src="js/map_renderer.js"></script>
 </head>
 <body>
   <canvas id="game"></canvas>
+  <canvas id="minimap" width="180" height="180"></canvas>
 
   <div id="ui">
-    <h1>🥩 PUDGE WARS</h1>
+    <h1>🥩 PUDGE WARS <span style="font-size:14px;color:#888;">AAA EDITION</span></h1>
     <p id="connectionStatus">Connecting...</p>
   </div>
 
   <div id="attributes">
     <div class="attr"><span class="attr-icon">💪</span><span class="attr-value" id="str">0</span><span class="attr-label">STR</span></div>
-    <div class="attr"><span class="attr-icon">⚡</span><span class="attr-value" id="agi">0</span><span class="attr-label">AGI</span></div>
+    <div class="attr"><span class="attr-icon">🏹</span><span class="attr-value" id="agi">0</span><span class="attr-label">AGI</span></div>
     <div class="attr"><span class="attr-icon">🧠</span><span class="attr-value" id="int">0</span><span class="attr-label">INT</span></div>
-    <div class="attr"><span class="attr-icon">⚔️</span><span class="attr-value" id="damage">0</span><span class="attr-label">DMG</span></div>
+    <div class="attr"><span class="attr-icon">⚔️</span><span class="attr-value" id="damageAttr">0</span><span class="attr-label">DMG</span></div>
+    <div class="attr"><span class="attr-icon">🛡️</span><span class="attr-value" id="armorAttr">0</span><span class="attr-label">ARMOR</span></div>
   </div>
 
   <div id="stats">
     <h3>🥩 PUDGE</h3>
     <div class="stat-row"><span class="stat-label">Level</span><span class="stat-value" id="level">1</span></div>
-    <div class="stat-row"><span class="stat-label">💪 Str</span><span class="stat-value" id="strength">25</span></div>
-    <div class="stat-row"><span class="stat-label">🏹 Agi</span><span class="stat-value" id="agility">14</span></div>
-    <div class="stat-row"><span class="stat-label">🧠 Int</span><span class="stat-value" id="intelligence">16</span></div>
-    <div class="stat-row"><span class="stat-label">⚔️ Dmg</span><span class="stat-value" id="damageStat">50</span></div>
-    <div class="stat-row"><span class="stat-label">🛡️ Armor</span><span class="stat-value" id="armor">5</span></div>
-    <hr style="border-color:#444;margin:8px 0;">
+    <div class="stat-row"><span class="stat-label">💰 Gold</span><span class="stat-value" id="gold">0</span></div>
     <div class="stat-row"><span class="stat-label">💀 Kills</span><span class="stat-value" id="kills">0</span></div>
     <div class="stat-row"><span class="stat-label">☠️ Deaths</span><span class="stat-value" id="deaths">0</span></div>
     <div class="stat-row"><span class="stat-label">🪝 Flesh</span><span class="stat-value" id="fleshStacks">0</span></div>
-    <div class="stat-row"><span class="stat-label">💰 Gold</span><span class="stat-value" id="gold">0</span></div>
+    <hr style="border-color:#444;margin:8px 0;">
+    <div class="stat-row"><span class="stat-label">GPM</span><span class="stat-value" id="gpm">0</span></div>
+    <div class="stat-row"><span class="stat-label">XPM</span><span class="stat-value" id="xpm">0</span></div>
   </div>
 
   <div id="bars">
-    <div class="bar-container"><div id="healthBar" class="bar"></div></div>
-    <div class="bar-container"><div id="manaBar" class="bar"></div></div>
+    <div class="bar-container">
+      <div id="healthBar" class="bar"></div>
+      <span class="bar-text" id="healthText">625/625</span>
+    </div>
+    <div class="bar-container">
+      <div id="manaBar" class="bar"></div>
+      <span class="bar-text" id="manaText">267/267</span>
+    </div>
   </div>
 
   <div id="abilities">
-    <div class="ability" id="abilityQ"><span class="ability-key">Q</span><span class="ability-icon">🪝</span><span class="ability-cd" id="qCd"></span></div>
-    <div class="ability" id="abilityE"><span class="ability-key">E</span><span class="ability-icon">☠️</span><span class="ability-cd" id="eCd"></span></div>
+    <div class="ability" id="abilityQ">
+      <span class="ability-key">Q</span>
+      <span class="ability-icon">🪝</span>
+      <span class="ability-cd" id="qCd"></span>
+      <span class="ability-level" id="qLvl">1</span>
+    </div>
+    <div class="ability" id="abilityE">
+      <span class="ability-key">E</span>
+      <span class="ability-icon">☠️</span>
+      <span class="ability-cd" id="eCd"></span>
+      <span class="ability-level" id="eLvl">1</span>
+    </div>
   </div>
 
-  <div id="controls"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;|&nbsp; <kbd>MOUSE</kbd> Aim &nbsp;|&nbsp; <kbd>Q</kbd> Hook &nbsp;|&nbsp; <kbd>E</kbd> Rot</div>
+  <div id="ultimate">
+    <span class="ability-key">R</span>
+    <span class="ability-icon">💀</span>
+    <span class="ability-cd" id="rCd"></span>
+  </div>
+
+  <div id="killstreak"></div>
+
+  <div id="controls">
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;|&nbsp; <kbd>Q</kbd> Hook &nbsp;|&nbsp; <kbd>E</kbd> Rot &nbsp;|&nbsp; <kbd>R</kbd> Dismember
+  </div>
 
   <div id="startScreen">
     <h1>🥩 PUDGE WARS</h1>
-    <p>Hook enemies • Save allies • Dominate the river</p>
-    <button id="startBtn">⚔️ Бросить вызов</button>
+    <p>AAA Edition - Complete Pudge Experience</p>
+    <button id="startBtn">Start Battle</button>
   </div>
 
   <script>
 // ============================================
-// CONFIGURATION (Sync with server)
+// GAME CONFIGURATION
 // ============================================
 const CONFIG = {
   FIELD_SIZE: 2000, RIVER_Y: 1000, RIVER_WIDTH: 180,
-  PLAYER_RADIUS: 20, PLAYER_SPEED: 3.5,
+  PLAYER_RADIUS: 22, PLAYER_SPEED: 3.8,
   BASE_HEALTH: 625, BASE_MANA: 267, BASE_DAMAGE: 52, BASE_ARMOR: 1,
   BASE_STR: 25, BASE_AGI: 14, BASE_INT: 14,
-  STR_PER_LEVEL: 3.0, AGI_PER_LEVEL: 1.4, INT_PER_LEVEL: 1.5,
-  HOOK_RANGE: 400, HOOK_SPEED: 16, HOOK_RADIUS: 8, HOOK_COOLDOWN: 4000, HOOK_DAMAGE: 80, HOOK_MANA_COST: 110,
-  ROT_DAMAGE: 30, ROT_RADIUS: 200, ROT_COOLDOWN: 1500, ROT_DURATION: 5000,
-  FLESH_HEAP_STR_PER_STACK: 0.9, FLESH_HEAP_RANGE: 400,
-  HOOK_PULL_SPEED: 10, RESPAWN_TIME: 5000
+  STR_PER_LEVEL: 3.2, AGI_PER_LEVEL: 1.6, INT_PER_LEVEL: 1.8,
+  
+  // Q - Meat Hook
+  HOOK_RANGE: 450, HOOK_SPEED: 18, HOOK_RADIUS: 10, HOOK_COOLDOWN: [4000, 3500, 3000, 2500], HOOK_DAMAGE: [90, 140, 190, 240], HOOK_MANA_COST: [110, 120, 130, 140],
+  
+  // E - Rot
+  ROT_DAMAGE: [30, 50, 70, 90], ROT_RADIUS: 220, ROT_COOLDOWN: [1500, 1500, 1500, 1500], ROT_MANA_COST: [0, 0, 0, 0], ROT_SLOW: 0.3,
+  
+  // Passive - Flesh Heap
+  FLESH_HEAP_STR_PER_STACK: 1.0, FLESH_HEAP_RANGE: 450, FLESH_HEAP_MAGIC_RESIST: [8, 10, 12, 14],
+  
+  // R - Dismember (Ultimate)
+  DISMEMBER_DAMAGE: 60, DISMEMBER_DURATION: 3000, DISMEMBER_COOLDOWN: [17000, 14000, 11000], DISMEMBER_MANA_COST: [175, 250, 325],
+  
+  HOOK_PULL_SPEED: 12, RESPAWN_TIME: 5000, GOLD_PER_KILL: 150, GOLD_PER_ASSIST: 50
 };
 
 // ============================================
@@ -127,10 +193,29 @@ const ctx = canvas.getContext('2d');
 
 let ws = null, myId = null, gameRunning = false, lastTime = 0;
 
-const state = { players: new Map(), hooks: [], myTeam: null, myPlayer: null, rotActive: false };
-const input = { keys: {}, mouseX: 0, mouseY: 0, hookRequested: false, rotRequested: false };
-const cooldowns = { hook: 0, rot: 0 };
+const state = { 
+  players: new Map(), 
+  hooks: [], 
+  myTeam: null, 
+  myPlayer: null,
+  rotActive: false,
+  dismemberActive: false,
+  dismemberTarget: null
+};
+
+const input = { 
+  keys: {}, 
+  mouseX: 0, 
+  mouseY: 0, 
+  hookRequested: false, 
+  rotRequested: false,
+  dismemberRequested: false
+};
+
+const cooldowns = { hook: 0, rot: 0, dismember: 0 };
+const abilityLevels = { hook: 1, rot: 1, dismember: 1 };
 const particles = [];
+const floatingTexts = [];
 
 // ============================================
 // ENTITY CLASSES
@@ -146,6 +231,8 @@ class Player {
     this.kills = data[14] || 0; this.deaths = data[15] || 0;
     this.fleshHeapStacks = data[16] || 0; this.rotActive = data[17] || false; this.gold = data[18] || 0;
     this.angle = 0; this.isDead = false;
+    this.dismembered = false;
+    this.dismemberer = null;
   }
 
   update() {
@@ -157,20 +244,22 @@ class Player {
   draw(ctx, cameraX, cameraY) {
     const sx = this.x - cameraX, sy = this.y - cameraY;
 
+    // Glow for own player
     if (this.id === myId) {
-      const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, CONFIG.PLAYER_RADIUS * 2.5);
-      g.addColorStop(0, 'rgba(241, 196, 15, 0.4)');
+      const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, CONFIG.PLAYER_RADIUS * 3);
+      g.addColorStop(0, 'rgba(241, 196, 15, 0.5)');
       g.addColorStop(1, 'rgba(241, 196, 15, 0)');
       ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.arc(sx, sy, CONFIG.PLAYER_RADIUS * 2.5, 0, Math.PI * 2);
+      ctx.arc(sx, sy, CONFIG.PLAYER_RADIUS * 3, 0, Math.PI * 2);
       ctx.fill();
     }
 
+    // Rot aura - GREEN
     if (this.rotActive) {
       const rg = ctx.createRadialGradient(sx, sy, 0, sx, sy, CONFIG.ROT_RADIUS);
-      rg.addColorStop(0, 'rgba(46, 204, 113, 0.4)');
-      rg.addColorStop(0.5, 'rgba(39, 174, 96, 0.2)');
+      rg.addColorStop(0, 'rgba(46, 204, 113, 0.5)');
+      rg.addColorStop(0.5, 'rgba(39, 174, 96, 0.3)');
       rg.addColorStop(1, 'rgba(46, 204, 113, 0)');
       ctx.fillStyle = rg;
       ctx.beginPath();
@@ -178,38 +267,60 @@ class Player {
       ctx.fill();
     }
 
+    // Dismember effect
+    if (this.dismembered) {
+      const dg = ctx.createRadialGradient(sx, sy, 0, sx, sy, CONFIG.PLAYER_RADIUS * 2);
+      dg.addColorStop(0, 'rgba(155, 89, 155, 0.6)');
+      dg.addColorStop(1, 'rgba(155, 89, 155, 0)');
+      ctx.fillStyle = dg;
+      ctx.beginPath();
+      ctx.arc(sx, sy, CONFIG.PLAYER_RADIUS * 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Body
     ctx.beginPath();
     ctx.arc(sx, sy, CONFIG.PLAYER_RADIUS, 0, Math.PI * 2);
     ctx.fillStyle = this.team === 'radiant' ? '#2ecc71' : '#e74c3c';
     ctx.fill();
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
     ctx.strokeStyle = this.id === myId ? '#f1c40f' : '#2c3e50';
     ctx.stroke();
 
+    // Inner circle
     ctx.beginPath();
-    ctx.arc(sx, sy, CONFIG.PLAYER_RADIUS * 0.6, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.arc(sx, sy, CONFIG.PLAYER_RADIUS * 0.7, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.fill();
 
+    // Direction indicator
     ctx.beginPath();
     ctx.moveTo(sx, sy);
-    ctx.lineTo(sx + Math.cos(this.angle) * CONFIG.PLAYER_RADIUS * 1.5, sy + Math.sin(this.angle) * CONFIG.PLAYER_RADIUS * 1.5);
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-    ctx.lineWidth = 3;
+    ctx.lineTo(sx + Math.cos(this.angle) * CONFIG.PLAYER_RADIUS * 1.8, sy + Math.sin(this.angle) * CONFIG.PLAYER_RADIUS * 1.8);
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 4;
     ctx.stroke();
 
+    // "YOU" indicator
     if (this.id === myId) {
       ctx.fillStyle = '#f1c40f';
-      ctx.font = 'bold 12px Arial';
+      ctx.font = 'bold 14px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText('YOU', sx, sy - CONFIG.PLAYER_RADIUS - 10);
+      ctx.fillText('YOU', sx, sy - CONFIG.PLAYER_RADIUS - 15);
     }
 
+    // Health bar
     const hpPercent = this.health / this.maxHealth;
     ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(sx - 25, sy + CONFIG.PLAYER_RADIUS + 6, 50, 5);
+    ctx.fillRect(sx - 30, sy + CONFIG.PLAYER_RADIUS + 8, 60, 6);
     ctx.fillStyle = hpPercent > 0.5 ? '#2ecc71' : hpPercent > 0.25 ? '#f39c12' : '#e74c3c';
-    ctx.fillRect(sx - 25, sy + CONFIG.PLAYER_RADIUS + 6, 50 * hpPercent, 5);
+    ctx.fillRect(sx - 30, sy + CONFIG.PLAYER_RADIUS + 8, 60 * hpPercent, 6);
+
+    // Player name
+    ctx.fillStyle = '#fff';
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(this.name || `Pudge_${this.id}`, sx, sy - CONFIG.PLAYER_RADIUS - 25);
   }
 }
 
@@ -227,7 +338,7 @@ class Hook {
 
   update() {
     if (this.state === 'flying') {
-      this.trail.push({ x: this.x, y: this.y, life: 10 });
+      this.trail.push({ x: this.x, y: this.y, life: 15 });
       this.x += this.vx; this.y += this.vy;
       this.traveled += CONFIG.HOOK_SPEED;
       if (this.traveled >= CONFIG.HOOK_RANGE) this.state = 'returning';
@@ -236,7 +347,7 @@ class Hook {
       if (owner) {
         const dx = owner.x - this.x, dy = owner.y - this.y;
         const dist = Math.hypot(dx, dy);
-        if (dist < 10) {
+        if (dist < 15) {
           this.state = 'done';
         } else {
           this.x += (dx / dist) * CONFIG.HOOK_PULL_SPEED;
@@ -250,6 +361,7 @@ class Hook {
         this.state = 'done';
       }
     }
+
     for (let i = this.trail.length - 1; i >= 0; i--) {
       this.trail[i].life--;
       if (this.trail[i].life <= 0) this.trail.splice(i, 1);
@@ -257,45 +369,53 @@ class Hook {
   }
 
   draw(ctx, cameraX, cameraY) {
+    const sx = this.x - cameraX, sy = this.y - cameraY;
     const owner = state.players.get(this.ownerId);
     if (!owner) return;
 
-    const sx = this.x - cameraX, sy = this.y - cameraY;
     const ox = owner.x - cameraX, oy = owner.y - cameraY;
 
-    for (const p of this.trail) {
-      ctx.globalAlpha = p.life / 10;
+    // Trail
+    for (const point of this.trail) {
+      const alpha = point.life / 15;
+      ctx.globalAlpha = alpha;
       ctx.fillStyle = '#e74c3c';
       ctx.beginPath();
-      ctx.arc(p.x - cameraX, p.y - cameraY, CONFIG.HOOK_RADIUS * 0.7, 0, Math.PI * 2);
+      ctx.arc(point.x - cameraX, point.y - cameraY, CONFIG.HOOK_RADIUS * 0.8, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
 
+    // Chain
     ctx.beginPath();
     ctx.moveTo(ox, oy);
     ctx.lineTo(sx, sy);
-    ctx.strokeStyle = '#7f8c8d';
+    ctx.strokeStyle = '#888';
     ctx.lineWidth = 4;
     ctx.setLineDash([6, 4]);
     ctx.stroke();
     ctx.setLineDash([]);
 
+    // Hook
     ctx.beginPath();
     ctx.arc(sx, sy, CONFIG.HOOK_RADIUS, 0, Math.PI * 2);
-    ctx.fillStyle = this.state === 'pulling' ? '#f39c12' : '#c0392b';
+    ctx.fillStyle = this.state === 'pulling' ? '#f39c12' : '#e74c3c';
     ctx.fill();
     ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.stroke();
 
+    // Shine
     ctx.beginPath();
-    ctx.arc(sx - 2, sy - 2, CONFIG.HOOK_RADIUS * 0.3, 0, Math.PI * 2);
+    ctx.arc(sx - 3, sy - 3, CONFIG.HOOK_RADIUS * 0.35, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.fill();
   }
 }
 
+// ============================================
+// PARTICLES & EFFECTS
+// ============================================
 class Particle {
   constructor(x, y, color, speed, life) {
     this.x = x; this.y = y; this.color = color;
@@ -304,17 +424,18 @@ class Particle {
     this.vx = Math.cos(this.angle) * this.speed;
     this.vy = Math.sin(this.angle) * this.speed;
     this.life = life; this.maxLife = life;
-    this.size = 3 + Math.random() * 3;
+    this.size = 4 + Math.random() * 4;
   }
 
   update() {
     this.x += this.vx; this.y += this.vy;
-    this.vx *= 0.98; this.vy *= 0.98;
+    this.vx *= 0.96; this.vy *= 0.96;
     this.life--;
   }
 
   draw(ctx, cameraX, cameraY) {
-    ctx.globalAlpha = this.life / this.maxLife;
+    const alpha = this.life / this.maxLife;
+    ctx.globalAlpha = alpha;
     ctx.fillStyle = this.color;
     ctx.beginPath();
     ctx.arc(this.x - cameraX, this.y - cameraY, this.size, 0, Math.PI * 2);
@@ -323,8 +444,36 @@ class Particle {
   }
 }
 
+function createHitEffect(x, y, color) {
+  for (let i = 0; i < 20; i++) particles.push(new Particle(x, y, color, 6, 35));
+}
+
+function createDeathEffect(x, y) {
+  for (let i = 0; i < 40; i++) {
+    particles.push(new Particle(x, y, '#8e44ad', 10, 60));
+    particles.push(new Particle(x, y, '#e74c3c', 8, 50));
+  }
+}
+
+function createHookHitEffect(x, y) {
+  for (let i = 0; i < 25; i++) {
+    particles.push(new Particle(x, y, '#e74c3c', 8, 40));
+    particles.push(new Particle(x, y, '#f39c12', 6, 30));
+  }
+}
+
+function createRotEffect(x, y) {
+  for (let i = 0; i < 5; i++) {
+    particles.push(new Particle(x, y, 'rgba(46, 204, 113, 0.5)', 3, 20));
+  }
+}
+
+function showFloatingText(x, y, text, color) {
+  floatingTexts.push({ x, y, text, color, life: 60 });
+}
+
 // ============================================
-// INPUT HANDLING
+// INITIALIZATION
 // ============================================
 function resize() {
   canvas.width = window.innerWidth;
@@ -333,15 +482,21 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
+// ============================================
+// INPUT HANDLING
+// ============================================
 document.addEventListener('keydown', (e) => {
   input.keys[e.code] = true;
   if (e.code === 'KeyQ') input.hookRequested = true;
   if (e.code === 'KeyE') input.rotRequested = true;
+  if (e.code === 'KeyR') input.dismemberRequested = true;
 });
 
 document.addEventListener('keyup', (e) => { input.keys[e.code] = false; });
 document.addEventListener('mousemove', (e) => { input.mouseX = e.clientX; input.mouseY = e.clientY; });
-document.addEventListener('mousedown', (e) => { if (e.button === 0 && gameRunning) input.hookRequested = true; });
+document.addEventListener('mousedown', (e) => {
+  if (e.button === 0 && gameRunning) input.hookRequested = true;
+});
 
 document.getElementById('startBtn').addEventListener('click', () => {
   document.getElementById('startScreen').classList.add('hidden');
@@ -351,6 +506,7 @@ document.getElementById('startBtn').addEventListener('click', () => {
 
 document.getElementById('abilityQ').addEventListener('click', () => { if (gameRunning) input.hookRequested = true; });
 document.getElementById('abilityE').addEventListener('click', () => { if (gameRunning) input.rotRequested = true; });
+document.getElementById('ultimate').addEventListener('click', () => { if (gameRunning) input.dismemberRequested = true; });
 
 // ============================================
 // NETWORKING
@@ -387,7 +543,12 @@ function handleServerMessage(data) {
       for (const p of data.players) {
         const existing = state.players.get(p[0]);
         if (existing) {
-          Object.assign(existing, { x: p[1], y: p[2], team: p[3], health: p[4], maxHealth: p[5], mana: p[6], maxMana: p[7], level: p[8], str: p[9], agi: p[10], int: p[11], damage: p[12], armor: p[13], kills: p[14], deaths: p[15], fleshHeapStacks: p[16], rotActive: p[17] });
+          Object.assign(existing, { 
+            x: p[1], y: p[2], team: p[3], health: p[4], maxHealth: p[5], 
+            mana: p[6], maxMana: p[7], level: p[8], str: p[9], agi: p[10], 
+            int: p[11], damage: p[12], armor: p[13], kills: p[14], deaths: p[15], 
+            fleshHeapStacks: p[16], rotActive: p[17], gold: p[18] 
+          });
           newPlayers.set(p[0], existing);
         } else {
           newPlayers.set(p[0], new Player(p));
@@ -399,36 +560,46 @@ function handleServerMessage(data) {
       break;
 
     case 'event':
-      const evt = data.event;
-      if (evt.type === 'hookFire' && evt.playerId === myId) startHookCooldown();
-      if (evt.type === 'hookHit') {
-        const target = state.players.get(evt.targetId);
-        if (target) {
-          createHitEffect(target.x, target.y, '#e74c3c');
-          if (target.id === myId) showNotification('HIT!', 'notify-hit');
-        }
-      }
-      if (evt.type === 'rotToggle') {
-        const p = state.players.get(evt.playerId);
-        if (p) {
-          p.rotActive = evt.active;
-          if (evt.playerId === myId) startRotCooldown();
-        }
-      }
-      if (evt.type === 'playerKill') {
-        const victim = state.players.get(evt.victimId);
-        if (victim) {
-          createDeathEffect(victim.x, victim.y);
-          if (evt.killerId === myId) {
-            state.myPlayer.gold += 150;
-            showNotification('KILL! +150💰', 'notify-kill');
-          }
-        }
-      }
-      if (evt.type === 'allySaved') showNotification('SAVE!', 'notify-save');
-      if (evt.type === 'matchEnd') showGameOver(evt.winner === myTeam, evt.radiantKills, evt.direKills);
+      handleEvent(data.event);
       break;
   }
+}
+
+function handleEvent(evt) {
+  if (evt.type === 'hookFire' && evt.playerId === myId) {
+    startCooldown('hook');
+    createHookHitEffect(state.players.get(myId)?.x || 0, state.players.get(myId)?.y || 0, '#e74c3c');
+  }
+  
+  if (evt.type === 'hookHit') {
+    const target = state.players.get(evt.targetId);
+    if (target) {
+      createHitEffect(target.x, target.y, '#e74c3c');
+      if (target.id === myId) showNotification('HOOKED!', 'notify-hit');
+    }
+  }
+  
+  if (evt.type === 'rotToggle') {
+    const p = state.players.get(evt.playerId);
+    if (p) {
+      p.rotActive = evt.active;
+      if (evt.playerId === myId) startCooldown('rot');
+    }
+  }
+  
+  if (evt.type === 'playerKill') {
+    const victim = state.players.get(evt.victimId);
+    if (victim) {
+      createDeathEffect(victim.x, victim.y);
+      if (evt.killerId === myId) {
+        showNotification('KILL! +150💰', 'notify-kill');
+        showFloatingText(victim.x, victim.y, '+150', '#f39c12');
+      }
+    }
+  }
+  
+  if (evt.type === 'allySaved') showNotification('SAVE!', 'notify-save');
+  if (evt.type === 'matchEnd') showGameOver(evt.winner === myTeam, evt.radiantKills, evt.direKills);
 }
 
 function sendInput() {
@@ -448,44 +619,42 @@ function sendInput() {
   ws.send(JSON.stringify({ type: 'move', dx, dy }));
 
   if (input.hookRequested) {
-    ws.send(JSON.stringify({ type: 'hook', angle: Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2) }));
+    ws.send(JSON.stringify({ 
+      type: 'hook', 
+      angle: Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2),
+      abilityLevel: abilityLevels.hook
+    }));
     input.hookRequested = false;
   }
 
   if (input.rotRequested) {
-    ws.send(JSON.stringify({ type: 'rot' }));
+    ws.send(JSON.stringify({ type: 'rot', abilityLevel: abilityLevels.rot }));
     input.rotRequested = false;
+  }
+
+  if (input.dismemberRequested) {
+    ws.send(JSON.stringify({ 
+      type: 'dismember', 
+      angle: Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2),
+      abilityLevel: abilityLevels.dismember
+    }));
+    input.dismemberRequested = false;
   }
 }
 
 // ============================================
 // COOLDOWNS & UI
 // ============================================
-function startHookCooldown() { cooldowns.hook = Date.now() + CONFIG.HOOK_COOLDOWN; }
-function startRotCooldown() { cooldowns.rot = Date.now() + CONFIG.ROT_COOLDOWN; }
-
-function showNotification(text, className) {
-  const el = document.createElement('div');
-  el.className = 'notify-' + className;
-  el.textContent = text;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 500);
-}
-
-function showGameOver(victory, radiantKills, direKills) {
-  const screen = document.createElement('div');
-  screen.id = 'gameOver';
-  screen.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:3000;';
-  screen.innerHTML = `
-    <h1 style="font-size:64px;color:${victory ? '#2ecc71' : '#e74c3c'};text-shadow:0 0 30px ${victory ? 'rgba(46,204,113,0.6)' : 'rgba(231,76,60,0.6)'}">${victory ? '🏆 VICTORY!' : '💀 DEFEAT'}</h1>
-    <p style="color:#aaa;font-size:24px;margin:20px 0;">Radiant: ${radiantKills} - Dire: ${direKills}</p>
-    <button onclick="location.reload()" style="padding:15px 40px;font-size:20px;font-weight:bold;color:#fff;background:linear-gradient(135deg,#e74c3c,#c0392b);border:none;border-radius:8px;cursor:pointer;">Play Again</button>
-  `;
-  document.body.appendChild(screen);
+function startCooldown(ability) {
+  const now = Date.now();
+  if (ability === 'hook') cooldowns.hook = now + CONFIG.HOOK_COOLDOWN[abilityLevels.hook - 1];
+  if (ability === 'rot') cooldowns.rot = now + CONFIG.ROT_COOLDOWN[abilityLevels.rot - 1];
+  if (ability === 'dismember') cooldowns.dismember = now + CONFIG.DISMEMBER_COOLDOWN[abilityLevels.dismember - 1];
 }
 
 function updateCooldowns() {
   const now = Date.now();
+  
   const hookEl = document.getElementById('abilityQ'), hookCdEl = document.getElementById('qCd');
   if (cooldowns.hook > now) {
     hookEl.classList.add('on-cooldown');
@@ -503,30 +672,69 @@ function updateCooldowns() {
     rotEl.classList.remove('on-cooldown');
     rotCdEl.textContent = '';
   }
+
+  const ultiEl = document.getElementById('ultimate'), ultiCdEl = document.getElementById('rCd');
+  if (cooldowns.dismember > now) {
+    ultiEl.classList.add('on-cooldown');
+    ultiCdEl.textContent = ((cooldowns.dismember - now) / 1000).toFixed(1);
+  } else {
+    ultiEl.classList.remove('on-cooldown');
+    ultiCdEl.textContent = '';
+  }
 }
 
 function updateUI() {
   const player = state.players.get(myId);
   if (!player) return;
 
-  document.getElementById('healthBar').style.width = (player.health / player.maxHealth * 100) + '%';
-  document.getElementById('manaBar').style.width = (player.mana / player.maxMana * 100) + '%';
+  // Bars
+  const hpPercent = (player.health / player.maxHealth) * 100;
+  const manaPercent = (player.mana / player.maxMana) * 100;
+  document.getElementById('healthBar').style.width = hpPercent + '%';
+  document.getElementById('manaBar').style.width = manaPercent + '%';
+  document.getElementById('healthText').textContent = `${Math.round(player.health)}/${Math.round(player.maxHealth)}`;
+  document.getElementById('manaText').textContent = `${Math.round(player.mana)}/${Math.round(player.maxMana)}`;
 
+  // Stats
   document.getElementById('level').textContent = player.level;
   document.getElementById('kills').textContent = player.kills;
   document.getElementById('deaths').textContent = player.deaths;
   document.getElementById('fleshStacks').textContent = player.fleshHeapStacks || 0;
-  document.getElementById('gold').textContent = player.gold || 0;
+  document.getElementById('gold').textContent = Math.round(player.gold || 0);
 
+  // Attributes with Flesh Heap bonus
   const fleshBonus = (player.fleshHeapStacks || 0) * CONFIG.FLESH_HEAP_STR_PER_STACK;
-  document.getElementById('strength').textContent = Math.round(player.str + fleshBonus);
-  document.getElementById('agility').textContent = Math.round(player.agi);
-  document.getElementById('intelligence').textContent = Math.round(player.int);
-  document.getElementById('damage').textContent = Math.round(player.damage);
-  document.getElementById('damageStat').textContent = Math.round(player.damage);
-  document.getElementById('armor').textContent = Math.round((player.armor || 5) * 100) / 100;
+  document.getElementById('str').textContent = Math.round(player.str + fleshBonus);
+  document.getElementById('agi').textContent = Math.round(player.agi);
+  document.getElementById('int').textContent = Math.round(player.int);
+  document.getElementById('damageAttr').textContent = Math.round(player.damage);
+  document.getElementById('armorAttr').textContent = Math.round((player.armor || 5) * 100) / 100;
+
+  // GPM / XPM
+  const matchTime = (Date.now() - state.matchStartTime) / 60000;
+  document.getElementById('gpm').textContent = Math.round((player.gold || 0) / matchTime) || 0;
+  document.getElementById('xpm').textContent = Math.round(player.level * 60 / matchTime) || 0;
 
   updateCooldowns();
+}
+
+function showNotification(text, type) {
+  const el = document.createElement('div');
+  el.className = 'notify-' + type;
+  el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 600);
+}
+
+function showGameOver(victory, radiantKills, direKills) {
+  const screen = document.createElement('div');
+  screen.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:3000;';
+  screen.innerHTML = `
+    <h1 style="font-size:72px;color:${victory ? '#2ecc71' : '#e74c3c'};text-shadow:0 0 50px ${victory ? 'rgba(46,204,113,0.8)' : 'rgba(231,76,60,0.8)'}">${victory ? '🏆 VICTORY!' : '💀 DEFEAT'}</h1>
+    <p style="color:#aaa;font-size:28px;margin:30px 0;">Radiant: ${radiantKills} - Dire: ${direKills}</p>
+    <button onclick="location.reload()" style="padding:20px 60px;font-size:24px;font-weight:bold;color:#fff;background:linear-gradient(135deg,#e74c3c,#c0392b);border:none;border-radius:12px;cursor:pointer;box-shadow:0 0 40px rgba(231,76,60,0.6);">Play Again</button>
+  `;
+  document.body.appendChild(screen);
 }
 
 // ============================================
@@ -545,10 +753,12 @@ function drawMap(cameraX, cameraY) {
   ctx.fillStyle = '#1a1a2e';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // Grid
   ctx.strokeStyle = 'rgba(255,255,255,0.03)';
   ctx.lineWidth = 1;
   const gridSize = 100;
-  const offsetX = -cameraX % gridSize, offsetY = -cameraY % gridSize;
+  const offsetX = -cameraX % gridSize;
+  const offsetY = -cameraY % gridSize;
 
   for (let x = offsetX; x < canvas.width; x += gridSize) {
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
@@ -557,90 +767,53 @@ function drawMap(cameraX, cameraY) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
   }
 
-  const riverScreenY = CONFIG.RIVER_Y - cameraY;
-  const riverGradient = ctx.createLinearGradient(0, riverScreenY - CONFIG.RIVER_WIDTH/2, 0, riverScreenY + CONFIG.RIVER_WIDTH/2);
-  riverGradient.addColorStop(0, 'rgba(52,152,219,0.25)');
-  riverGradient.addColorStop(0.5, 'rgba(52,152,219,0.45)');
-  riverGradient.addColorStop(1, 'rgba(52,152,219,0.25)');
-  ctx.fillStyle = riverGradient;
-  ctx.fillRect(0, riverScreenY - CONFIG.RIVER_WIDTH/2, canvas.width, CONFIG.RIVER_WIDTH);
+  // River
+  const riverY = CONFIG.RIVER_Y - cameraY;
+  const riverGrad = ctx.createLinearGradient(0, riverY - CONFIG.RIVER_WIDTH/2, 0, riverY + CONFIG.RIVER_WIDTH/2);
+  riverGrad.addColorStop(0, 'rgba(52,152,219,0.3)');
+  riverGrad.addColorStop(0.5, 'rgba(52,152,219,0.5)');
+  riverGrad.addColorStop(1, 'rgba(52,152,219,0.3)');
+  ctx.fillStyle = riverGrad;
+  ctx.fillRect(0, riverY - CONFIG.RIVER_WIDTH/2, canvas.width, CONFIG.RIVER_WIDTH);
 
-  const time = Date.now() / 1000;
-  ctx.strokeStyle = 'rgba(100,200,255,0.3)';
-  ctx.lineWidth = 2;
-  for (let i = 0; i < 6; i++) {
-    const waveY = riverScreenY - CONFIG.RIVER_WIDTH/3 + i * (CONFIG.RIVER_WIDTH / 5);
-    ctx.beginPath();
-    for (let x = 0; x < canvas.width; x += 25) {
-      const waveX = x + Math.sin(time * 2 + i) * 12;
-      if (x === 0) ctx.moveTo(waveX, waveY); else ctx.lineTo(waveX, waveY);
-    }
-    ctx.stroke();
-  }
-
-  ctx.strokeStyle = 'rgba(52,152,219,0.7)';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(0, riverScreenY - CONFIG.RIVER_WIDTH/2);
-  ctx.lineTo(canvas.width, riverScreenY - CONFIG.RIVER_WIDTH/2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(0, riverScreenY + CONFIG.RIVER_WIDTH/2);
-  ctx.lineTo(canvas.width, riverScreenY + CONFIG.RIVER_WIDTH/2);
-  ctx.stroke();
-
+  // Boundary
   ctx.strokeStyle = '#e74c3c';
   ctx.lineWidth = 4;
   ctx.strokeRect(-cameraX, -cameraY, CONFIG.FIELD_SIZE, CONFIG.FIELD_SIZE);
 }
 
 function drawMinimap() {
-  let mmCanvas = document.getElementById('minimap');
-  if (!mmCanvas) {
-    mmCanvas = document.createElement('canvas');
-    mmCanvas.id = 'minimap';
-    mmCanvas.width = 150; mmCanvas.height = 150;
-    mmCanvas.style.cssText = 'position:fixed;bottom:10px;right:10px;border:2px solid #fff;border-radius:4px;z-index:100;';
-    document.body.appendChild(mmCanvas);
-  }
-  const mmCtx = mmCanvas.getContext('2d');
-  const MM_SCALE = 150 / CONFIG.FIELD_SIZE;
+  const mm = document.getElementById('minimap');
+  const mmCtx = mm.getContext('2d');
+  const SCALE = 180 / CONFIG.FIELD_SIZE;
 
   mmCtx.fillStyle = 'rgba(0,0,0,0.9)';
-  mmCtx.fillRect(0, 0, 150, 150);
+  mmCtx.fillRect(0, 0, 180, 180);
 
+  // River
   mmCtx.fillStyle = 'rgba(52,152,219,0.5)';
-  mmCtx.fillRect(0, (CONFIG.RIVER_Y - CONFIG.RIVER_WIDTH/2) * MM_SCALE, 150, CONFIG.RIVER_WIDTH * MM_SCALE);
+  mmCtx.fillRect(0, (CONFIG.RIVER_Y - CONFIG.RIVER_WIDTH/2) * SCALE, 180, CONFIG.RIVER_WIDTH * SCALE);
 
-  for (const player of state.players.values()) {
-    mmCtx.fillStyle = player.team === 'radiant' ? '#2ecc71' : '#e74c3c';
-    const size = player.id === myId ? 6 : 3;
+  // Players
+  for (const p of state.players.values()) {
+    mmCtx.fillStyle = p.team === 'radiant' ? '#2ecc71' : '#e74c3c';
+    const size = p.id === myId ? 6 : 4;
     mmCtx.beginPath();
-    mmCtx.arc(player.x * MM_SCALE, player.y * MM_SCALE, size, 0, Math.PI * 2);
+    mmCtx.arc(p.x * SCALE, p.y * SCALE, size, 0, Math.PI * 2);
     mmCtx.fill();
   }
 
+  // Viewport
   const player = state.players.get(myId);
   if (player) {
-    const camX = player.x - canvas.width / 2;
-    const camY = player.y - canvas.height / 2;
     mmCtx.strokeStyle = '#fff';
     mmCtx.lineWidth = 1;
-    mmCtx.strokeRect(camX * MM_SCALE, camY * MM_SCALE, canvas.width * MM_SCALE, canvas.height * MM_SCALE);
-  }
-}
-
-// ============================================
-// PARTICLES
-// ============================================
-function createHitEffect(x, y, color) {
-  for (let i = 0; i < 15; i++) particles.push(new Particle(x, y, color, 5, 30));
-}
-
-function createDeathEffect(x, y) {
-  for (let i = 0; i < 30; i++) {
-    particles.push(new Particle(x, y, '#8e44ad', 8, 50));
-    particles.push(new Particle(x, y, '#e74c3c', 6, 40));
+    mmCtx.strokeRect(
+      (player.x - canvas.width/2) * SCALE,
+      (player.y - canvas.height/2) * SCALE,
+      canvas.width * SCALE,
+      canvas.height * SCALE
+    );
   }
 }
 
@@ -651,37 +824,50 @@ function updateAndDrawParticles(cameraX, cameraY) {
     p.draw(ctx, cameraX, cameraY);
     if (p.life <= 0) particles.splice(i, 1);
   }
+
+  // Floating texts
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const ft = floatingTexts[i];
+    ft.y -= 1;
+    ft.life--;
+    ctx.globalAlpha = ft.life / 60;
+    ctx.fillStyle = ft.color;
+    ctx.font = 'bold 20px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(ft.text, ft.x - cameraX, ft.y - cameraY);
+    ctx.globalAlpha = 1;
+    if (ft.life <= 0) floatingTexts.splice(i, 1);
+  }
 }
 
-function showNotification(text, className) {
-  const existing = document.getElementById('notification');
-  if (existing) existing.remove();
-  const el = document.createElement('div');
-  el.id = 'notification'; el.className = className; el.textContent = text;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 500);
-}
-
-// ============================================
-// GAME LOOP
-// ============================================
 function draw() {
   const camera = updateCamera();
   drawMap(camera.x, camera.y);
   updateAndDrawParticles(camera.x, camera.y);
 
-  for (const hook of state.hooks) hook.draw(ctx, camera.x, camera.y);
-  for (const player of state.players.values()) { player.update(); player.draw(ctx, camera.x, camera.y); }
+  // Hooks
+  for (const hook of state.hooks) {
+    hook.draw(ctx, camera.x, camera.y);
+  }
+
+  // Players
+  for (const player of state.players.values()) {
+    player.update();
+    player.draw(ctx, camera.x, camera.y);
+  }
 
   drawMinimap();
   updateUI();
 }
 
-function gameLoop(timestamp) {
-  const dt = timestamp - lastTime;
-  lastTime = timestamp;
-
-  if (gameRunning) { sendInput(); draw(); }
+// ============================================
+// GAME LOOP
+// ============================================
+function gameLoop() {
+  if (gameRunning) {
+    sendInput();
+    draw();
+  }
   requestAnimationFrame(gameLoop);
 }
 
