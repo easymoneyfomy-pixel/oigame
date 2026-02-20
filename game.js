@@ -174,9 +174,13 @@ window.addEventListener('resize', resize); resize();
 // Управление
 canvas.addEventListener('contextmenu', (e) => {
   e.preventDefault();
-  if (gameRunning) {
+  if (gameRunning && ws && ws.readyState === WebSocket.OPEN) {
     const rect = canvas.getBoundingClientRect();
     input.moveTarget = { x: e.clientX - rect.left + cameraX, y: e.clientY - rect.top + cameraY };
+    
+    // Отправка движения на сервер
+    ws.send(JSON.stringify({ type: 'move', x: input.moveTarget.x, y: input.moveTarget.y }));
+    
     createPhaseEffect(input.moveTarget.x, input.moveTarget.y);
   }
 });
