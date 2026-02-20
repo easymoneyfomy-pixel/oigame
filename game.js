@@ -215,8 +215,9 @@ function useAbility(ability) {
   switch(ability) {
     case 'hook':
       if (now < cooldowns.hook || player.mana < CONFIG.HOOK_MANA_COST) return;
-      const angle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2);
-      ws.send(JSON.stringify({ type: 'hook', angle, targetX: player.x + Math.cos(angle) * CONFIG.HOOK_RANGE, targetY: player.y + Math.sin(angle) * CONFIG.HOOK_RANGE }));
+      // Угол от игрока к курсору с учётом камеры
+      const hookAngle = Math.atan2(input.mouseY - player.y, input.mouseX - player.x);
+      ws.send(JSON.stringify({ type: 'hook', angle: hookAngle, targetX: player.x + Math.cos(hookAngle) * CONFIG.HOOK_RANGE, targetY: player.y + Math.sin(hookAngle) * CONFIG.HOOK_RANGE }));
       break;
     case 'phase':
       if (now < cooldowns.phase || player.mana < CONFIG.PHASE_MANA_COST) return;
@@ -224,12 +225,12 @@ function useAbility(ability) {
       break;
     case 'earthbind':
       if (now < cooldowns.earthbind || player.mana < CONFIG.EARTHBIND_MANA_COST) return;
-      const bindAngle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2);
+      const bindAngle = Math.atan2(input.mouseY - player.y, input.mouseX - player.x);
       ws.send(JSON.stringify({ type: 'earthbind', x: player.x + Math.cos(bindAngle) * CONFIG.EARTHBIND_RANGE, y: player.y + Math.sin(bindAngle) * CONFIG.EARTHBIND_RANGE }));
       break;
     case 'blink':
       if (now < cooldowns.blink || player.mana < CONFIG.BLINK_MANA_COST) return;
-      const blinkAngle = Math.atan2(input.mouseY - canvas.height/2, input.mouseX - canvas.width/2);
+      const blinkAngle = Math.atan2(input.mouseY - player.y, input.mouseX - player.x);
       ws.send(JSON.stringify({ type: 'blink', x: player.x + Math.cos(blinkAngle) * CONFIG.BLINK_RANGE, y: player.y + Math.sin(blinkAngle) * CONFIG.BLINK_RANGE }));
       break;
     case 'rearm':
