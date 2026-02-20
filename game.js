@@ -121,7 +121,6 @@ class Player {
   draw(ctx, camX, camY) {
     const sx = this.x - camX;
     const sy = this.y - camY;
-    console.log(`[DRAW Player ${this.id}] pos=(${this.x},${this.y}) cam=(${camX},${camY}) screen=(${sx},${sy}) team=${this.team}`);
 
     // Rot эффект
     if (this.isRotting) {
@@ -491,7 +490,6 @@ function connect() {
 }
 
 function handleServerMessage(data) {
-  console.log('[NET] Received:', data.type, data);
   switch (data.type) {
     case 'welcome':
       myId = data.playerId;
@@ -499,7 +497,6 @@ function handleServerMessage(data) {
       for (const p of data.players) {
         state.players.set(p[0], new Player(p));
       }
-      console.log('[NET] Welcome: myId=', myId, 'team=', state.myTeam, 'players=', state.players.size);
       break;
 
     case 'state':
@@ -523,7 +520,6 @@ function handleServerMessage(data) {
         }
       }
       state.players = newPlayers;
-      console.log('[NET] State: players=', state.players.size);
 
       if (data.hooks) {
         state.hooks = data.hooks.map(h => new Hook(h[1], h[2], h[3], h[4], h[5]));
@@ -732,7 +728,6 @@ function draw() {
   drawGrid(cameraX, cameraY);
   drawRiver(cameraX, cameraY);
 
-  console.log('[DRAW] Players count:', state.players.size, 'myId:', myId);
   for (const player of state.players.values()) {
     player.update();
     player.draw(ctx, cameraX, cameraY);

@@ -19,6 +19,7 @@
     .ability.on-cooldown { opacity: 0.5; cursor: not-allowed; border-color: #666; }
     .ability-icon { font-size: 36px; }
     .ability-key { position: absolute; top: 4px; left: 8px; font-size: 14px; color: #fff; background: rgba(0,0,0,0.8); padding: 3px 8px; border-radius: 6px; font-weight: bold; }
+    .ability-cd { position: absolute; bottom: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #e74c3c, #c0392b); width: 0%; transition: width 0.1s; }
     #bars { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: 500px; z-index: 100; pointer-events: none; }
     .bar-container { background: rgba(0,0,0,0.8); border: 2px solid #333; border-radius: 4px; margin: 3px 0; overflow: hidden; position: relative; height: 25px; }
     .bar { height: 100%; transition: width 0.1s; }
@@ -77,9 +78,9 @@
     <div class="bar-container"><div id="manaBar" class="bar"></div><div id="manaText" class="bar-text">291/291</div></div>
   </div>
   <div id="abilities">
-    <div class="ability" id="abilityQ"><span class="ability-key">Q</span><span class="ability-icon">🪝</span></div>
-    <div class="ability" id="abilityE"><span class="ability-key">E</span><span class="ability-icon">☠️</span></div>
-    <div class="ability" id="abilityR"><span class="ability-key">R</span><span class="ability-icon">👄</span></div>
+    <div class="ability" id="abilityQ"><span class="ability-key">Q</span><span class="ability-icon">🪝</span><div id="qCd" class="ability-cd"></div></div>
+    <div class="ability" id="abilityE"><span class="ability-key">E</span><span class="ability-icon">☠️</span><div id="eCd" class="ability-cd"></div></div>
+    <div class="ability" id="abilityR"><span class="ability-key">R</span><span class="ability-icon">👄</span><div id="rCd" class="ability-cd"></div></div>
   </div>
   <canvas id="game"></canvas>
   <canvas id="minimap" width="200" height="200"></canvas>
