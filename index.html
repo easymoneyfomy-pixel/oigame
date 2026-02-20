@@ -200,6 +200,7 @@
     <input type="text" id="playerNameInput" placeholder="Enter your name..." maxlength="20" autocomplete="off">
     <button id="startBtn">Start Game</button>
     <div id="loadingStatus"><div class="spinner"></div> <span>Loading assets...</span></div>
+    <div id="onlineStatus" style="color:#666;font-size:11px;margin-top:10px;">⏳ Checking online...</div>
   </div>
 
   <script>
@@ -819,6 +820,12 @@
       ws.onopen = () => {
         document.getElementById('connectionStatus').textContent = 'Connected';
         document.getElementById('connectionStatus').style.color = '#2ecc71';
+        // Обновляем онлайн на стартовом экране
+        const onlineStatusEl = document.getElementById('onlineStatus');
+        if (onlineStatusEl) {
+          onlineStatusEl.textContent = '🟢 Server connected';
+          onlineStatusEl.style.color = '#2ecc71';
+        }
       };
 
       ws.onmessage = (e) => {
@@ -830,6 +837,11 @@
         document.getElementById('connectionStatus').textContent = 'Disconnected';
         document.getElementById('connectionStatus').style.color = '#e74c3c';
         gameRunning = false;
+        const onlineStatusEl = document.getElementById('onlineStatus');
+        if (onlineStatusEl) {
+          onlineStatusEl.textContent = '🔴 Server disconnected';
+          onlineStatusEl.style.color = '#e74c3c';
+        }
       };
     }
 
@@ -863,6 +875,14 @@
           }
           state.players = newPlayers;
           state.hooks = data.hooks.map(h => new Hook(h));
+
+          // Обновляем онлайн (количество игроков)
+          const onlineStatusEl = document.getElementById('onlineStatus');
+          if (onlineStatusEl && !gameRunning) {
+            const online = state.players.size;
+            onlineStatusEl.textContent = `🟢 ${online} player${online !== 1 ? 's' : ''} online`;
+            onlineStatusEl.style.color = online > 1 ? '#2ecc71' : '#f39c12';
+          }
           
           if (data.stats && myId) {
             const myStats = data.stats.find(s => s[0] === myId);
