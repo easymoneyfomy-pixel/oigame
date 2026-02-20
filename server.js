@@ -309,6 +309,8 @@ function handlePlayerMessage(player, msg) {
 }
 
 function handleMove(player, msg) {
+  if (player.isDead) return;
+  
   const dx = clamp(msg.dx || 0, -1, 1);
   const dy = clamp(msg.dy || 0, -1, 1);
   const len = Math.hypot(dx, dy);
@@ -319,12 +321,17 @@ function handleMove(player, msg) {
     let newX = clamp(player.x + moveX, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
     let newY = clamp(player.y + moveY, GAME.PLAYER_RADIUS, FIELD_SIZE - GAME.PLAYER_RADIUS);
 
-    if (!isInRiver(newY, GAME.PLAYER_RADIUS)) {
+    // Проверка на реку - блокируем только вход в реку
+    const inRiver = isInRiver(newY, GAME.PLAYER_RADIUS);
+    const wasInRiver = isInRiver(player.y, GAME.PLAYER_RADIUS);
+    
+    if (inRiver && !wasInRiver) {
+      // Игрок пытается зайти в реку - блокируем движение по Y, но разрешаем по X
+      player.x = newX;
+    } else {
+      // Игрок не в реке или уже в реке - разрешаем движение
       player.x = newX;
       player.y = newY;
-    } else {
-      // Разрешаем движение вдоль реки (по X)
-      player.x = newX;
     }
   }
 }
