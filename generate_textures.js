@@ -4,6 +4,7 @@
  * 
  * Использование:
  *   node generate_textures.js
+ *   npm run generate-textures
  */
 
 const fs = require('fs');
@@ -17,6 +18,40 @@ const OUTPUT_DIR = path.join(__dirname, 'assets');
 if (!fs.existsSync(OUTPUT_DIR)) {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   console.log('📁 Created assets/ directory');
+}
+
+/**
+ * Утилита для создания бесшовного паттерна
+ */
+function makeTileable(canvas, ctx) {
+  const size = canvas.width;
+  const edgeBlend = 64;
+  
+  // Копируем края для бесшовности
+  const tempCanvas = createCanvas(size, size);
+  const tempCtx = tempCanvas.getContext('2d');
+  tempCtx.drawImage(canvas, 0, 0);
+  
+  // Blend левый и правый края
+  for (let x = 0; x < edgeBlend; x++) {
+    const alpha = x / edgeBlend;
+    tempCtx.globalAlpha = alpha;
+    tempCtx.drawImage(canvas, size - edgeBlend + x, 0, edgeBlend, size, x, 0, edgeBlend, size);
+  }
+  
+  // Blend верхний и нижний края
+  for (let y = 0; y < edgeBlend; y++) {
+    const alpha = y / edgeBlend;
+    tempCtx.globalAlpha = alpha;
+    tempCtx.drawImage(canvas, 0, size - edgeBlend, size, edgeBlend, 0, y, size, edgeBlend);
+  }
+  
+  // Углы
+  tempCtx.globalAlpha = 1;
+  const cornerSize = edgeBlend;
+  tempCtx.drawImage(canvas, size - cornerSize, size - cornerSize, cornerSize, cornerSize, 0, 0, cornerSize, cornerSize);
+  
+  ctx.drawImage(tempCanvas, 0, 0);
 }
 
 /**
