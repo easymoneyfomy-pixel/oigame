@@ -128,6 +128,15 @@
     <span class="ability-level" id="rLvl">0</span>
   </div>
 
+  <div id="talents" style="position:fixed;top:70px;right:10px;background:rgba(0,0,0,0.85);border:2px solid #f39c12;border-radius:8px;padding:10px;z-index:100;">
+    <div style="color:#f39c12;font-size:12px;margin-bottom:8px;text-transform:uppercase;font-weight:bold;">⬆️ Ability Points: <span id="abilityPoints" style="color:#fff;font-size:16px;">0</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <button id="upgradeHook" style="background:#333;border:1px solid #666;color:#fff;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:11px;">Q - Hook <span id="hookUpgradeLvl" style="color:#f39c12;">1</span></button>
+      <button id="upgradeRot" style="background:#333;border:1px solid #666;color:#fff;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:11px;">E - Rot <span id="rotUpgradeLvl" style="color:#f39c12;">1</span></button>
+      <button id="upgradeUlti" style="background:#333;border:1px solid #666;color:#fff;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:11px;">R - Dismember <span id="ultiUpgradeLvl" style="color:#f39c12;">0</span></button>
+    </div>
+  </div>
+
   <div id="controls">
     <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;|&nbsp; <kbd>Q</kbd> Meat Hook &nbsp;|&nbsp; <kbd>E</kbd> Rot &nbsp;|&nbsp; <kbd>R</kbd> Dismember
   </div>
@@ -204,6 +213,7 @@ const input = {
 
 const cooldowns = { hook: 0, rot: 0, dismember: 0 };
 const abilityLevels = { hook: 1, rot: 1, dismember: 0 };
+const abilityPoints = { count: 0 };
 const particles = [];
 const floatingTexts = [];
 
@@ -550,6 +560,30 @@ document.getElementById('abilityQ').addEventListener('click', () => { if (gameRu
 document.getElementById('abilityE').addEventListener('click', () => { if (gameRunning) input.rotRequested = true; });
 document.getElementById('ultimate').addEventListener('click', () => { if (gameRunning) input.dismemberRequested = true; });
 
+// Прокачка способностей
+document.getElementById('upgradeHook').addEventListener('click', () => upgradeAbility('hook'));
+document.getElementById('upgradeRot').addEventListener('click', () => upgradeAbility('rot'));
+document.getElementById('upgradeUlti').addEventListener('click', () => upgradeAbility('dismember'));
+
+function upgradeAbility(ability) {
+  if (abilityPoints.count <= 0) {
+    console.log('[DEBUG] No ability points');
+    return;
+  }
+  if (ability === 'dismember' && abilityLevels.dismember <= 0 && state.myPlayer && state.myPlayer.level < 6) {
+    console.log('[DEBUG] Need level 6 for ultimate');
+    return;
+  }
+  const maxLevels = { hook: 4, rot: 4, dismember: 3 };
+  if (abilityLevels[ability] >= maxLevels[ability]) {
+    console.log('[DEBUG] Ability maxed');
+    return;
+  }
+  
+  ws.send(JSON.stringify({ type: 'upgrade', ability }));
+  console.log('[DEBUG] Upgrading', ability);
+}
+
 // ============================================
 // СЕТЬ
 // ============================================
@@ -634,6 +668,10 @@ function handleServerMessage(data) {
         const myStats = data.stats.find(s => s[0] === myId);
         if (myStats) {
           state.myPlayer = newPlayers.get(myId);
+          // XP и ability points: [id, kills, deaths, gold, level, xp, abilityPoints]
+          if (myStats.length >= 7) {
+            abilityPoints.count = myStats[6] || 0;
+          }
         }
       }
       if (data.matchStartTime) state.matchStartTime = data.matchStartTime;
@@ -649,6 +687,13 @@ function handleEvent(evt) {
   if (evt.type === 'hookFire' && evt.playerId === myId) {
     startCooldown('hook');
     createHookHitEffect(state.players.get(myId)?.x || 0, state.players.get(myId)?.y || 0, '#e74c3c');
+  }
+
+  if (evt.type === 'abilityUpgrade') {
+    if (evt.ability === 'hook') abilityLevels.hook = evt.level;
+    if (evt.ability === 'rot') abilityLevels.rot = evt.level;
+    if (evt.ability === 'dismember') abilityLevels.dismember = evt.level;
+    showNotification(`${evt.ability.toUpperCase()} LVL ${evt.level}!`, 'notify-save');
   }
 
   if (evt.type === 'hookHit') {
@@ -797,6 +842,12 @@ function updateUI() {
   document.getElementById('eLvl').textContent = player.rotLevel || 1;
   document.getElementById('rLvl').textContent = player.dismemberLevel || 0;
 
+  // Обновляем UI прокачки
+  document.getElementById('abilityPoints').textContent = abilityPoints.count;
+  document.getElementById('hookUpgradeLvl').textContent = player.hookLevel || 1;
+  document.getElementById('rotUpgradeLvl').textContent = player.rotLevel || 1;
+  document.getElementById('ultiUpgradeLvl').textContent = player.dismemberLevel || 0;
+
   updateCooldowns();
 }
 
@@ -825,7 +876,20 @@ function showGameOver(victory, radiantKills, direKills) {
 function updateCamera() {
   const player = state.players.get(myId);
   if (!player) return { x: 0, y: 0 };
-  return { x: player.x - canvas.width / 2, y: player.y - canvas.height / 2 };
+  
+  // FIXED: Камера центрирована на игроке с ограничением границ арены
+  const halfCanvasX = canvas.width / 2;
+  const halfCanvasY = canvas.height / 2;
+  
+  // Ограничиваем камеру чтобы не показывала за пределы арены
+  let cameraX = player.x - halfCanvasX;
+  let cameraY = player.y - halfCanvasY;
+  
+  // FIXED: Не даём камере выходить за границы поля
+  cameraX = Math.max(0, Math.min(cameraX, CONFIG.FIELD_SIZE - canvas.width));
+  cameraY = Math.max(0, Math.min(cameraY, CONFIG.FIELD_SIZE - canvas.height));
+  
+  return { x: cameraX, y: cameraY };
 }
 
 // ============================================
@@ -835,6 +899,7 @@ function drawMap(cameraX, cameraY) {
   ctx.fillStyle = '#1a1a2e';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // Сетка
   ctx.strokeStyle = 'rgba(255,255,255,0.03)';
   ctx.lineWidth = 1;
   const gridSize = 100;
@@ -848,17 +913,31 @@ function drawMap(cameraX, cameraY) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
   }
 
+  // FIXED: Река отрисовывается ровно по центру арены (Y = 1000)
   const riverY = CONFIG.RIVER_Y - cameraY;
-  const riverGrad = ctx.createLinearGradient(0, riverY - CONFIG.RIVER_WIDTH/2, 0, riverY + CONFIG.RIVER_WIDTH/2);
+  const riverTop = riverY - CONFIG.RIVER_WIDTH / 2;
+  const riverGrad = ctx.createLinearGradient(0, riverTop, 0, riverTop + CONFIG.RIVER_WIDTH);
   riverGrad.addColorStop(0, 'rgba(52,152,219,0.3)');
   riverGrad.addColorStop(0.5, 'rgba(52,152,219,0.5)');
   riverGrad.addColorStop(1, 'rgba(52,152,219,0.3)');
   ctx.fillStyle = riverGrad;
-  ctx.fillRect(0, riverY - CONFIG.RIVER_WIDTH/2, canvas.width, CONFIG.RIVER_WIDTH);
+  // FIXED: Река рисуется только в пределах арены
+  ctx.fillRect(
+    Math.max(0, -cameraX),
+    riverTop,
+    Math.min(CONFIG.FIELD_SIZE + cameraX, canvas.width),
+    CONFIG.RIVER_WIDTH
+  );
 
+  // FIXED: Красная рамка границ арены - рисуется в мировых координатах
   ctx.strokeStyle = '#e74c3c';
   ctx.lineWidth = 4;
-  ctx.strokeRect(-cameraX, -cameraY, CONFIG.FIELD_SIZE, CONFIG.FIELD_SIZE);
+  ctx.strokeRect(
+    -cameraX,           // Левый верхний угол X
+    -cameraY,           // Левый верхний угол Y
+    CONFIG.FIELD_SIZE,  // Ширина
+    CONFIG.FIELD_SIZE   // Высота
+  );
 }
 
 function drawMinimap() {

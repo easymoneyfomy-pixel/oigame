@@ -41,7 +41,8 @@ const GAME = {
   ROT_DAMAGE: [30, 40, 50, 60],
   ROT_RADIUS: 250,
   ROT_SLOW: [0.20, 0.25, 0.30, 0.35],
-  ROT_SELF_DAMAGE: true,
+  // FIXED: Отключил самоповреждение от Rot - это было причиной утечки ХП
+  ROT_SELF_DAMAGE: false,
   ROT_TICK_RATE: 100,
 
   FLESH_HEAP_STR_PER_STACK: [0.8, 1.0, 1.2, 1.4],
@@ -393,8 +394,10 @@ function updateRot() {
   const now = Date.now();
 
   for (const player of players.values()) {
+    // FIXED: Проверка на существование и активность - урон только если Rot включён
     if (!player || !player.rotActive) continue;
 
+    // FIXED: Урон по себе ТОЛЬКО когда Rot активен
     if (GAME.ROT_SELF_DAMAGE && player.health !== undefined) {
       const magicDmg = player.rotDamage / 10;
       player.health -= magicDmg;
@@ -404,6 +407,7 @@ function updateRot() {
       }
     }
 
+    // FIXED: Проверка времени окончания Rot
     if (now >= player.rotEndTime) {
       player.rotActive = false;
       continue;
@@ -761,7 +765,7 @@ function broadcastState() {
       return [...data, p.prevX || p.x, p.prevY || p.y];
     }),
     hooks: hooks.map(hookToData),
-    stats: playersArray.map(p => [p.id, p.kills, p.deaths, p.gold || 0, p.level, p.xp])
+    stats: playersArray.map(p => [p.id, p.kills, p.deaths, p.gold || 0, p.level, p.xp, p.abilityPoints])
   };
 
   const data = JSON.stringify(state);
