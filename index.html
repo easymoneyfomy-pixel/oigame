@@ -918,5 +918,19 @@
 
     requestAnimationFrame(gameLoop);
   </script>
+  <script>
+    // Финальная проверка загрузки
+    console.log('🔍 Pudge Wars v1.8 - Loading assets...');
+    if (typeof assetManager !== 'undefined') {
+      console.log('✅ AssetManager loaded');
+      if (assetManager.isReady) {
+        console.log('✅ All textures ready');
+      } else {
+        console.log('⏳ Textures still loading...');
+      }
+    } else {
+      console.error('❌ AssetManager not found!');
+    }
+  </script>
 </body>
 </html>

@@ -1,0 +1,12 @@
+<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" fill="#5d4037"/>
+  <!-- Кирпичи -->
+  <rect x="2" y="2" width="28" height="14" fill="#4a3a2a" stroke="#3a2a1a" stroke-width="1"/>
+  <rect x="32" y="2" width="28" height="14" fill="#4a3a2a" stroke="#3a2a1a" stroke-width="1"/>
+  <rect x="17" y="18" width="28" height="14" fill="#4a3a2a" stroke="#3a2a1a" stroke-width="1"/>
+  <rect x="2" y="34" width="28" height="14" fill="#4a3a2a" stroke="#3a2a1a" stroke-width="1"/>
+  <rect x="32" y="34" width="28" height="14" fill="#4a3a2a" stroke="#3a2a1a" stroke-width="1"/>
+  <rect x="17" y="50" width="28" height="12" fill="#4a3a2a" stroke="#3a2a1a" stroke-width="1"/>
+  <!-- Трещины -->
+  <path d="M5,5 L10,10 M50,20 L55,25 M30,40 L35,45" stroke="#2a1a1a" stroke-width="0.5" opacity="0.3"/>
+</svg>

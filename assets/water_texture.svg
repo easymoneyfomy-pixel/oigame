@@ -1,0 +1,17 @@
+<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" fill="#1e3c50"/>
+  <defs>
+    <linearGradient id="waterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2a5269;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3a6a7f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e3c50;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#waterGrad)"/>
+  <path d="M0,10 Q16,15 32,10 T64,10" stroke="rgba(100,200,255,0.3)" stroke-width="1" fill="none"/>
+  <path d="M0,25 Q20,30 32,25 T64,25" stroke="rgba(100,200,255,0.3)" stroke-width="1" fill="none"/>
+  <path d="M0,40 Q18,45 32,40 T64,40" stroke="rgba(100,200,255,0.3)" stroke-width="1" fill="none"/>
+  <path d="M0,55 Q22,60 32,55 T64,55" stroke="rgba(100,200,255,0.3)" stroke-width="1" fill="none"/>
+  <ellipse cx="20" cy="30" rx="8" ry="3" fill="rgba(255,255,255,0.1)" transform="rotate(15 20 30)"/>
+  <ellipse cx="45" cy="50" rx="10" ry="4" fill="rgba(255,255,255,0.1)" transform="rotate(-10 45 50)"/>
+</svg>
