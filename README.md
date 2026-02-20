@@ -1,190 +1,206 @@
-# 🥩 PUDGE WARS - Warcraft 3 Original
+# 🥩 PUDGE WARS - AAA EDITION
 
-**Точная копия легендарной карты Pudge Wars из Warcraft 3!**
+**Do You Wanna Jam 2024 Submission**
 
----
+## 🎮 GAME DESCRIPTION
 
-## 🎮 ОРИГИНАЛЬНЫЕ МЕХАНИКИ WARCRAFT 3
+Pudge Wars is a 5v5 team battle game where each player controls Pudge with 5 unique abilities. Fight across a divided arena with an uncrossable river. The team with the most kills wins!
 
-### ⚔️ Способности
+## 🚀 HOW TO PLAY
 
-#### **Q - Meat Hook (Мясной Крюк)**
-| Параметр | Значение |
-|----------|----------|
-| **Урон** | 100 / 200 / 300 / 400 (чистый) |
-| **Дальность** | 1000 / 1100 / 1200 / 1300 |
-| **Кулдаун** | 14 / 13 / 12 / 11 сек |
-| **Мана** | 100 / 100 / 100 / 100 |
-| **Скорость крюка** | 1600 юнитов/сек |
-| **Радиус захвата** | 100 |
+### Launch the Game
+1. Open browser: **http://localhost:8080**
+2. Click **"⚔️ START BATTLE ⚔️"**
+3. Join the battle!
 
-#### **E - Rot (Гниение)**
-| Параметр | Значение |
-|----------|----------|
-| **Урон/сек** | 40 / 80 / 120 / 160 (магический) |
-| **Замедление** | 15% / 20% / 25% / 30% |
-| **Радиус** | 250 |
-| **Мана** | 0 (бесплатно) |
-| **Особенность** | Урон по себе и врагам |
+### Controls
+| Key | Ability | Description | Cooldown |
+|-----|---------|-------------|----------|
+| **RMB** | Move | Right-click to move | - |
+| **Q** | 🪝 Meat Hook | Pull enemies to you (150 damage) | 12s |
+| **W** | 💨 Phase Shift | Become invisible for 1.5s (dodge all projectiles) | 18s |
+| **E** | 🕸️ Earthbind | Root enemy for 2 seconds | 16s |
+| **R** | ⚡ Blink | Teleport to target location | 8s |
+| **T** | 🔄 Rearm | **RESET ALL COOLDOWNS!** | 60s |
+| **SPACE** | Camera | Center camera on Pudge | - |
 
-#### **R - Dismember (Потрошение)**
-| Параметр | Значение |
-|----------|----------|
-| **Урон/сек** | 80 / 120 / 160 + 50% от силы |
-| **Длительность** | 2.75 сек |
-| **Кулдаун** | 30 / 25 / 20 сек |
-| **Мана** | 100 / 130 / 170 |
-| **Дальность** | 200 |
-| **Хил** | 100% от урона |
+## 🏆 GAME FEATURES
 
-#### **Пассивка - Flesh Heap (Гора Плоти)**
-| Параметр | Значение |
-|----------|----------|
-| **Сила за стак** | 1.0 / 1.5 / 2.0 / 2.5 |
-| **Маг. резист** | 10% / 15% / 20% / 25% |
-| **Радиус получения** | 450 (при смерти врага) |
+### AAA Graphics
+- ✨ Enhanced particle effects (60-70 particles per effect)
+- 🌊 Animated river with waves
+- 💫 Glowing abilities and UI elements
+- 🎨 Smooth animations and transitions
+- 📊 Polished score board and health bars
 
----
+### 5 Unique Abilities
+1. **Meat Hook (Q)** - Skill shot that pulls enemies to you
+2. **Phase Shift (W)** - Become invisible and dodge attacks
+3. **Earthbind (E)** - Area root that immobilizes enemies
+4. **Blink (R)** - Instant teleportation
+5. **Rearm (T)** - Reset ALL ability cooldowns instantly!
 
-## 🗺️ КАРТА
+### Game Mechanics
+- 5v5 team battles
+- Radiant vs Dire teams
+- First to most kills wins
+- 7 minute match duration
+- Respawn time: 5 seconds
+- Gold per kill: 150
 
-### **Layout**
+## 📁 FILES
+
 ```
-┌─────────────────────────────────────┐
-│  ░░░  Radiant Spawn (200-500 Y)   ░░░  │
-│                                     │
-│  ─────────────────────────────────  │ ← Река (Y: 910-1090)
-│                                     │
-│  ▓▓▓  Dire Spawn (1500-1800 Y)    ▓▓▓  │
-└─────────────────────────────────────┘
+server.js       - Game server (64 TPS, WebSocket)
+game.js         - Client game logic
+index_jam.html  - Game client (AAA UI)
+package.json    - Dependencies (ws)
 ```
 
-### **Река**
-- **Позиция**: Y = 1000 (центр карты)
-- **Ширина**: 180 юнитов
-- **Тип**: Непроходимая (блокирует движение)
-- **Стиль**: Мутная болотная вода (Warcraft 3)
+## 🛠️ INSTALLATION
 
-### **Границы**
-- **Размер карты**: 2000x2000
-- **Угловые башни**: 40x40 в каждом углу
-- **Проходимость**: Нельзя выйти за границы
+### Requirements
+- Node.js 18+ 
+- Modern browser (Chrome, Firefox, Edge)
 
----
-
-## 🎨 WARCRAFT 3 СТИЛЬ
-
-### **Визуал**
-- ✅ **Тёмное болото** - земля в стиле WC3
-- ✅ **Мутная река** - зелёная вода с волнами
-- ✅ **Rot аура** - зелёное свечение (50, 205, 50)
-- ✅ **Частицы** - эффекты как в оригинале
-- ✅ **Полоски здоровья** - WC3 стиль
-
-### **Цвета**
-| Элемент | Цвет |
-|---------|------|
-| **Земля** | #2d2a26 (тёмное болото) |
-| **Река** | #2d5743 (мутная вода) |
-| **Radiant** | #27ae60 (зелёный) |
-| **Dire** | #c0392b (красный) |
-| **Rot** | #32cd32 (зелёное свечение) |
-| **Hook** | #e74c3c (красный след) |
-
----
-
-## 💰 ЭКОНОМИКА
-
-| Параметр | Значение |
-|----------|----------|
-| **Стартовое золото** | 1000 💰 |
-| **Золото за убийство** | 150 💰 |
-| **Золото за ассист** | 50 💰 |
-| **Золото при респауне** | 1000 💰 |
-
----
-
-## 🎮 УПРАВЛЕНИЕ
-
-| Клавиша | Действие |
-|---------|----------|
-| **W A S D** | Перемещение |
-| **Мышь** | Прицеливание |
-| **Q / ЛКМ** | Meat Hook |
-| **E** | Rot (вкл/выкл) |
-| **R** | Dismember (ульт) |
-
----
-
-## ⚙️ ТЕХНИЧЕСКИЕ ДЕТАЛИ
-
-### **Характеристики Pudge**
-| Параметр | Значение |
-|----------|----------|
-| **Сила** | 25 (+3.0 за уровень) |
-| **Ловкость** | 14 (+1.0 за уровень) |
-| **Интеллект** | 14 (+1.5 за уровень) |
-| **Скорость** | 285 MS |
-| **Броня** | 1 |
-| **HP** | 700 |
-| **MP** | 267 |
-
-### **Сервер**
-- **Tick Rate**: 64 TPS
-- **Физика**: Авторитетный сервер
-- **WebSocket**: Realtime соединение
-
-### **Клиент**
-- **FPS**: 60
-- **Рендер**: HTML5 Canvas
-- **Интерполяция**: Плавное движение
-
----
-
-## 🎯 ОТЛИЧИЯ ОТ DOTA 2
-
-| Параметр | WC3 Pudge Wars | Dota 2 Pudge |
-|----------|----------------|--------------|
-| **Hook урон** | 100/200/300/400 | 150/220/290/360 |
-| **Hook КД** | 14/13/12/11 сек | 18/16/14/12 сек |
-| **Rot урон** | 40/80/120/160 | 30/60/90/120 |
-| **Flesh STR** | 1/1.5/2/2.5 | 1.1/1.4/1.7/2.0 |
-| **Dismember хил** | 100% | 100% (с Shard) |
-| **Золото старт** | 1000 | 600 |
-
----
-
-## 🚀 ЗАПУСК
-
+### Install Dependencies
 ```bash
 npm install
+```
+
+### Run Server
+```bash
 npm start
 ```
 
-**Откройте:** http://localhost:8080
+Or directly:
+```bash
+node server.js
+```
+
+### Development Mode
+```bash
+npm run dev
+```
+
+## 🌐 ENDPOINTS
+
+- **Game:** http://localhost:8080/
+- **Health:** http://localhost:8080/health
+- **Stats:** http://localhost:8080/api/stats
+
+## 🎯 GAME TIPS
+
+### Offense
+- Use **Meat Hook** to initiate fights
+- **Earthbind** prevents enemies from escaping
+- **Rearm** + **Hook** = Double hook combo!
+
+### Defense
+- **Phase Shift** dodges hooks and projectiles
+- **Blink** over river to escape
+- Use **Rearm** to reset Phase Shift cooldown
+
+### Pro Combos
+1. **Hook + Earthbind** - Pull and root enemy
+2. **Blink + Hook** - Surprise engage
+3. **Rearm + All abilities** - Full combo reset
+4. **Phase + Blink** - Safe escape
+
+## 🏅 SCORING
+
+- **Kill:** +150 gold, +500 XP
+- **Assist:** +50 gold
+- **Flesh Heap:** +STR per kill (passive)
+
+## ⚙️ SERVER CONFIG
+
+```javascript
+PORT: 8080
+TICK_RATE: 64 TPS
+FIELD_SIZE: 2000x2000
+MATCH_DURATION: 420000ms (7 min)
+RESPAWN_TIME: 5000ms (5 sec)
+```
+
+## 🎨 ABILITY VALUES
+
+### Meat Hook (Q)
+- Range: 1200
+- Speed: 32
+- Damage: 150 (pure)
+- Mana Cost: 120
+- Cooldown: 12s
+
+### Phase Shift (W)
+- Duration: 1.5s
+- Mana Cost: 80
+- Cooldown: 18s
+
+### Earthbind (E)
+- Range: 900
+- Radius: 200
+- Root Duration: 2s
+- Mana Cost: 100
+- Cooldown: 16s
+
+### Blink (R)
+- Range: 800
+- Mana Cost: 60
+- Cooldown: 8s
+
+### Rearm (T)
+- Resets: ALL abilities
+- Mana Cost: 200
+- Cooldown: 60s
+
+## 🐛 TROUBLESHOOTING
+
+### Server won't start
+```bash
+# Check Node.js version
+node --version
+
+# Reinstall dependencies
+npm install
+
+# Check for port conflicts
+netstat -ano | findstr :8080
+```
+
+### Can't connect
+1. Make sure server is running
+2. Check firewall settings
+3. Try http://127.0.0.1:8080
+
+### Game lagging
+1. Close other browser tabs
+2. Lower browser hardware acceleration
+3. Check server tick rate: http://localhost:8080/health
+
+## 📝 VERSION HISTORY
+
+### AAA Edition (Current)
+- ✨ Enhanced graphics and effects
+- 🎨 Polished UI with animations
+- 💫 Smooth particle systems
+- 🌊 Animated river
+- 🎯 Improved gameplay mechanics
+
+## 🎓 CREDITS
+
+- **Game Design:** Based on Pudge Wars from Warcraft 3
+- **Characters:** Dota 2 (Valve Corporation)
+- **Audio:** Dota 2 sound effects
+- **Art:** Original pixel art
+
+## 📜 LICENSE
+
+MIT License - Free for educational and personal use
+
+## 🎮 ENJOY THE GAME!
+
+**Good luck and have fun!** 🥩⚔️
 
 ---
-
-## 📊 РЕЖИМЫ ИГРЫ
-
-### **Free For All (FFA)**
-- Каждый за себя
-- Победа: 15-100 убийств
-
-### **Team Deathmatch (TDM)**
-- Radiant vs Dire
-- Победа: 30-200 убийств
-
----
-
-## 🙏 СОЗДАНО ПО МОТИВАМ
-
-- **Pudge Hook Wars v2.7d** от Flux
-- **Warcraft 3: The Frozen Throne**
-- **DotA Allstars**
-
----
-
-**Made with ❤️ for Warcraft 3 Pudge Wars community**
-
-🥩 *"Fresh Meat!"*
+*Made for Do You Wanna Jam 2024*
