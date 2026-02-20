@@ -672,6 +672,12 @@ function endMatch() {
     
     hooks.length = 0;
     
+    // Событие начала матча
+    broadcastEvent({
+      type: 'matchStart',
+      matchDuration: MATCH_DURATION
+    });
+    
     console.log('[MATCH] New match started');
   }, 10000);
 }

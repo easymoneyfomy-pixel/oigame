@@ -286,6 +286,9 @@
       lastKillTime: 0
     };
     
+    // Первое кровь
+    let firstBloodPlayed = false;
+    
     // Аудиосистема
     let audioEnabled = true;
     let audioCtx = null;
@@ -899,8 +902,16 @@
               playKillSound();
               if (data.event.killerId === myId) {
                 state.gold += 150;
-                handleKillStreak(); // Обработка комбо
-                showNotification('KILL! +150💰', 'notify-kill');
+                
+                // Первое кровь!
+                if (!firstBloodPlayed) {
+                  firstBloodPlayed = true;
+                  showNotification('🩸 FIRST BLOOD!', 'notify-kill');
+                  playKillSound();
+                } else {
+                  handleKillStreak();
+                  showNotification('KILL! +150💰', 'notify-kill');
+                }
               }
               if (data.event.assistIds?.includes(myId)) {
                 state.gold += 50;
@@ -919,6 +930,11 @@
           if (data.event.type === 'matchEnd') {
             const victory = data.event.winner === myTeam;
             showGameOver(victory, data.event.radiantKills, data.event.direKills);
+          }
+          if (data.event.type === 'matchStart') {
+            // Сброс при новом матче
+            firstBloodPlayed = false;
+            killStreak.count = 0;
           }
           break;
       }

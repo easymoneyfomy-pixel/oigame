@@ -24,6 +24,7 @@ class AssetManager {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
+        console.log(`[ASSETS] Loaded: ${name} (${url})`);
         this.textures[name] = img;
         this.loadingCount--;
         if (this.loadingCount === 0) {
@@ -32,10 +33,10 @@ class AssetManager {
         }
         resolve(img);
       };
-      img.onerror = () => {
-        console.error(`[ASSETS] Failed to load: ${url}`);
+      img.onerror = (e) => {
+        console.error(`[ASSETS] Failed: ${name} (${url})`, e);
         this.loadingCount--;
-        reject(new Error(`Failed to load ${name}`));
+        reject(new Error(`Failed to load ${name} from ${url}`));
       };
       img.src = url;
     });
@@ -43,9 +44,9 @@ class AssetManager {
 
   async preload() {
     await Promise.all([
-      this.loadTexture('ground', 'assets/ground_texture.png'),
-      this.loadTexture('water', 'assets/water_texture.png'),
-      this.loadTexture('wall', 'assets/wall_texture.png')
+      this.loadTexture('ground', 'assets/ground_texture.svg'),
+      this.loadTexture('water', 'assets/water_texture.svg'),
+      this.loadTexture('wall', 'assets/wall_texture.svg')
     ]);
   }
 
@@ -179,6 +180,14 @@ function drawMap(cameraX, cameraY) {
   gradient.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 7. загрузка ассетов — логирование для отладки
+  if (window.location.hostname.includes('onrender.com')) {
+    console.log('[MAP] Render detected — checking assets...');
+    console.log('[MAP] Ground:', assetManager.get('ground') ? 'OK' : 'MISSING');
+    console.log('[MAP] Water:', assetManager.get('water') ? 'OK' : 'MISSING');
+    console.log('[MAP] Wall:', assetManager.get('wall') ? 'OK' : 'MISSING');
+  }
 }
 
 // Экспорт для использования в index.html
