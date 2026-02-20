@@ -379,8 +379,18 @@ function handleHook(player, msg) {
 // ============================================
 function handleRot(player, msg) {
   const now = Date.now();
+  
+  // FIXED: Проверка кулдауна Rot (1 секунда между переключениями)
+  if (now < player.rotCooldown) {
+    return;
+  }
+  
+  // FIXED: Rot работает как переключатель (toggle) - вкл/выкл
   player.rotActive = !player.rotActive;
-  player.rotEndTime = player.rotActive ? now + 5000 : 0;
+  // FIXED: Убрал ограничение по времени 5 секунд - Rot работает пока не выключат
+  player.rotEndTime = player.rotActive ? Infinity : 0;
+  // FIXED: Кулдаун между переключениями
+  player.rotCooldown = now + 1000;
 
   const abilityLevel = player.abilityLevels.rot;
   player.rotDamage = GAME.ROT_DAMAGE[Math.min(abilityLevel - 1, GAME.ROT_DAMAGE.length - 1)];
@@ -397,7 +407,7 @@ function updateRot() {
     // FIXED: Проверка на существование и активность - урон только если Rot включён
     if (!player || !player.rotActive) continue;
 
-    // FIXED: Урон по себе ТОЛЬКО когда Rot активен
+    // FIXED: Урон по себе ТОЛЬКО когда Rot активен (сейчас отключено)
     if (GAME.ROT_SELF_DAMAGE && player.health !== undefined) {
       const magicDmg = player.rotDamage / 10;
       player.health -= magicDmg;
@@ -407,8 +417,9 @@ function updateRot() {
       }
     }
 
-    // FIXED: Проверка времени окончания Rot
-    if (now >= player.rotEndTime) {
+    // FIXED: Rot работает как toggle - нет ограничения по времени
+    // Проверяем только если rotEndTime не Infinity
+    if (player.rotEndTime !== Infinity && now >= player.rotEndTime) {
       player.rotActive = false;
       continue;
     }
@@ -801,6 +812,25 @@ function handlePlayerDisconnect(player) {
 }
 
 // ============================================
+// РЕГЕНЕРАЦИЯ
+// ============================================
+function updateRegen() {
+  const now = Date.now();
+  
+  for (const player of players.values()) {
+    if (player.isDead) continue;
+    
+    // Реген маны (1% от макс маны в секунду + от интеллекта)
+    const manaRegen = (player.maxMana * 0.01 + player.int * 0.05) / TICK_RATE;
+    player.mana = Math.min(player.maxMana, player.mana + manaRegen);
+    
+    // Реген здоровья (0.5% от макс здоровья в секунду + от силы)
+    const healthRegen = (player.maxHealth * 0.005 + player.str * 0.03) / TICK_RATE;
+    player.health = Math.min(player.maxHealth, player.health + healthRegen);
+  }
+}
+
+// ============================================
 // ИГРОВОЙ ЦИКЛ
 // ============================================
 const gameLoop = setInterval(() => {
@@ -816,6 +846,7 @@ const gameLoop = setInterval(() => {
     updateRot();
     updateDismember();
     updatePlayerSpeed();
+    updateRegen();
     checkRespawn();
     broadcastState();
   } catch (err) {

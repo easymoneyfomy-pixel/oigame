@@ -873,23 +873,29 @@ function showGameOver(victory, radiantKills, direKills) {
 // ============================================
 // КАМЕРА
 // ============================================
+const cameraState = { x: 0, y: 0, targetX: 0, targetY: 0 };
+
 function updateCamera() {
   const player = state.players.get(myId);
   if (!player) return { x: 0, y: 0 };
-  
-  // FIXED: Камера центрирована на игроке с ограничением границ арены
+
   const halfCanvasX = canvas.width / 2;
   const halfCanvasY = canvas.height / 2;
-  
-  // Ограничиваем камеру чтобы не показывала за пределы арены
-  let cameraX = player.x - halfCanvasX;
-  let cameraY = player.y - halfCanvasY;
-  
-  // FIXED: Не даём камере выходить за границы поля
-  cameraX = Math.max(0, Math.min(cameraX, CONFIG.FIELD_SIZE - canvas.width));
-  cameraY = Math.max(0, Math.min(cameraY, CONFIG.FIELD_SIZE - canvas.height));
-  
-  return { x: cameraX, y: cameraY };
+
+  // Целевая позиция камеры
+  cameraState.targetX = player.x - halfCanvasX;
+  cameraState.targetY = player.y - halfCanvasY;
+
+  // Ограничение границ
+  cameraState.targetX = Math.max(0, Math.min(cameraState.targetX, CONFIG.FIELD_SIZE - canvas.width));
+  cameraState.targetY = Math.max(0, Math.min(cameraState.targetY, CONFIG.FIELD_SIZE - canvas.height));
+
+  // Плавное движение (lerp)
+  const lerpFactor = 0.15;
+  cameraState.x += (cameraState.targetX - cameraState.x) * lerpFactor;
+  cameraState.y += (cameraState.targetY - cameraState.y) * lerpFactor;
+
+  return { x: cameraState.x, y: cameraState.y };
 }
 
 // ============================================
