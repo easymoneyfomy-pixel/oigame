@@ -626,9 +626,13 @@
     });
 
     document.getElementById('startBtn').addEventListener('click', () => {
+      if (!window.assetManager?.isReady) {
+        alert('⚠️ Textures still loading... Please wait a few seconds.');
+        return;
+      }
       const nameInput = document.getElementById('playerNameInput');
       const playerName = nameInput.value.trim() || `Pudge_${Math.floor(Math.random() * 1000)}`;
-      
+
       document.getElementById('startScreen').classList.add('hidden');
       gameRunning = true;
       initAudio();
