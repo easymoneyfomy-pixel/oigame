@@ -291,9 +291,15 @@ const server = http.createServer((req, res) => {
   }
 });
 
-const wss = new WebSocket.Server({ server, maxPayload: 1024, perMessageDeflate: false });
+const wss = new WebSocket.Server({ 
+  server, 
+  maxPayload: 1024, 
+  perMessageDeflate: false,
+  clientTracking: true
+});
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+  console.log(`[WS CONNECT] ${req.socket.remoteAddress}`);
   const player = createPlayer(ws);
   if (!player) { ws.close(); return; }
   players.set(player.id, player);
@@ -307,11 +313,12 @@ wss.on('connection', (ws) => {
     try {
       const msg = JSON.parse(data);
       if (!msg || typeof msg !== 'object') return;
+      console.log(`[MSG] Player ${player.id}: ${msg.type}`, msg.type === 'move' ? `x=${Math.round(msg.x)}, y=${Math.round(msg.y)}` : '');
       handlePlayerMessage(player, msg);
     } catch (e) { console.warn(`[PARSE ERROR] Player ${player.id}:`, e.message); }
   });
   ws.on('close', () => { console.log(`[LEAVE] Player ${player.id} disconnected`); players.delete(player.id); });
-  ws.on('error', () => players.delete(player.id));
+  ws.on('error', (err) => { console.log(`[ERROR] Player ${player.id}:`, err.message); players.delete(player.id); });
 });
 
 const gameLoop = setInterval(() => {
