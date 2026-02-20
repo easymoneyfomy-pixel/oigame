@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pudge Wars - AAA Edition</title>
+  <title>Pudge Wars - Dota 2 Original</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { overflow: hidden; background: #0a0a0a; font-family: 'Segoe UI', sans-serif; }
@@ -13,7 +13,7 @@
     #ui { position: fixed; top: 10px; left: 10px; color: #fff; z-index: 100; pointer-events: none; }
     #ui h1 { font-size: 28px; color: #e74c3c; text-shadow: 0 0 15px rgba(231,76,60,0.6); }
 
-    /* Stats Panel */
+    /* Stats */
     #stats { position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.85); border: 2px solid #e74c3c; border-radius: 8px; padding: 12px 16px; color: #fff; z-index: 100; min-width: 220px; }
     #stats h3 { color: #e74c3c; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; }
     .stat-row { display: flex; justify-content: space-between; margin: 4px 0; font-size: 12px; }
@@ -27,7 +27,7 @@
     .attr-value { color: #f39c12; font-weight: bold; font-size: 16px; }
     .attr-label { font-size: 10px; color: #888; text-transform: uppercase; }
 
-    /* Health & Mana */
+    /* Bars */
     #bars { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); width: 500px; z-index: 100; }
     .bar-container { background: rgba(0,0,0,0.8); border: 2px solid #333; border-radius: 4px; margin: 3px 0; overflow: hidden; position: relative; }
     .bar { height: 25px; transition: width 0.1s; }
@@ -52,6 +52,7 @@
     #ultimate .ability-icon { font-size: 40px; }
     #ultimate .ability-key { top: 4px; left: 8px; font-size: 12px; }
     #ultimate .ability-cd { bottom: 4px; font-size: 11px; }
+    #ultimate .ability-level { top: 4px; right: 8px; font-size: 10px; color: #f39c12; }
 
     /* Start Screen */
     #startScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
@@ -76,13 +77,6 @@
 
     /* Minimap */
     #minimap { position: fixed; bottom: 10px; right: 10px; width: 180px; height: 180px; background: rgba(0,0,0,0.8); border: 2px solid #444; border-radius: 8px; z-index: 100; }
-
-    /* Killstreak */
-    #killstreak { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); font-size: 32px; font-weight: bold; color: #f39c12; text-shadow: 0 0 30px rgba(243,156,18,0.6); z-index: 150; display: none; }
-
-    /* Last hit effect */
-    .lasthit { position: fixed; font-size: 24px; font-weight: bold; color: #f39c12; animation: floatUp 1s ease-out forwards; pointer-events: none; }
-    @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(1.2); opacity: 0; } }
   </style>
   <script src="js/map_renderer.js"></script>
 </head>
@@ -91,7 +85,7 @@
   <canvas id="minimap" width="180" height="180"></canvas>
 
   <div id="ui">
-    <h1>🥩 PUDGE WARS <span style="font-size:14px;color:#888;">AAA EDITION</span></h1>
+    <h1>🥩 PUDGE WARS <span style="font-size:14px;color:#888;">DOTA 2 ORIGINAL</span></h1>
     <p id="connectionStatus">Connecting...</p>
   </div>
 
@@ -110,19 +104,16 @@
     <div class="stat-row"><span class="stat-label">💀 Kills</span><span class="stat-value" id="kills">0</span></div>
     <div class="stat-row"><span class="stat-label">☠️ Deaths</span><span class="stat-value" id="deaths">0</span></div>
     <div class="stat-row"><span class="stat-label">🪝 Flesh</span><span class="stat-value" id="fleshStacks">0</span></div>
-    <hr style="border-color:#444;margin:8px 0;">
-    <div class="stat-row"><span class="stat-label">GPM</span><span class="stat-value" id="gpm">0</span></div>
-    <div class="stat-row"><span class="stat-label">XPM</span><span class="stat-value" id="xpm">0</span></div>
   </div>
 
   <div id="bars">
     <div class="bar-container">
       <div id="healthBar" class="bar"></div>
-      <span class="bar-text" id="healthText">625/625</span>
+      <span class="bar-text" id="healthText">700/700</span>
     </div>
     <div class="bar-container">
       <div id="manaBar" class="bar"></div>
-      <span class="bar-text" id="manaText">267/267</span>
+      <span class="bar-text" id="manaText">291/291</span>
     </div>
   </div>
 
@@ -145,44 +136,60 @@
     <span class="ability-key">R</span>
     <span class="ability-icon">💀</span>
     <span class="ability-cd" id="rCd"></span>
+    <span class="ability-level" id="rLvl">0</span>
   </div>
 
-  <div id="killstreak"></div>
-
   <div id="controls">
-    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;|&nbsp; <kbd>Q</kbd> Hook &nbsp;|&nbsp; <kbd>E</kbd> Rot &nbsp;|&nbsp; <kbd>R</kbd> Dismember
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;|&nbsp; <kbd>Q</kbd> Meat Hook &nbsp;|&nbsp; <kbd>E</kbd> Rot &nbsp;|&nbsp; <kbd>R</kbd> Dismember
   </div>
 
   <div id="startScreen">
     <h1>🥩 PUDGE WARS</h1>
-    <p>AAA Edition - Complete Pudge Experience</p>
+    <p>Dota 2 Original Mechanics</p>
+    <p style="font-size:14px;color:#888;margin-bottom:20px;">
+      Q: Hook (90/180/270/360 pure) • E: Rot (30/40/50/60 + slow) • R: Dismember (75/100/125 + 75% STR)
+    </p>
     <button id="startBtn">Start Battle</button>
   </div>
 
   <script>
 // ============================================
-// GAME CONFIGURATION
+// DOTA 2 ORIGINAL VALUES
 // ============================================
 const CONFIG = {
   FIELD_SIZE: 2000, RIVER_Y: 1000, RIVER_WIDTH: 180,
-  PLAYER_RADIUS: 22, PLAYER_SPEED: 3.8,
-  BASE_HEALTH: 625, BASE_MANA: 267, BASE_DAMAGE: 52, BASE_ARMOR: 1,
-  BASE_STR: 25, BASE_AGI: 14, BASE_INT: 14,
-  STR_PER_LEVEL: 3.2, AGI_PER_LEVEL: 1.6, INT_PER_LEVEL: 1.8,
+  PLAYER_RADIUS: 24, PLAYER_SPEED: 3.6,
+  BASE_HEALTH: 700, BASE_MANA: 291, BASE_DAMAGE: 52, BASE_ARMOR: 1,
+  BASE_STR: 25, BASE_AGI: 14, BASE_INT: 16,
   
   // Q - Meat Hook
-  HOOK_RANGE: 450, HOOK_SPEED: 18, HOOK_RADIUS: 10, HOOK_COOLDOWN: [4000, 3500, 3000, 2500], HOOK_DAMAGE: [90, 140, 190, 240], HOOK_MANA_COST: [110, 120, 130, 140],
+  HOOK_RANGE: [1000, 1100, 1200, 1300],
+  HOOK_SPEED: 25,
+  HOOK_RADIUS: 12,
+  HOOK_COOLDOWN: [14000, 13000, 12000, 11000],
+  HOOK_DAMAGE: [90, 180, 270, 360], // PURE DAMAGE
+  HOOK_MANA_COST: [110, 120, 130, 140],
+  HOOK_PULL_SPEED: 10,
   
   // E - Rot
-  ROT_DAMAGE: [30, 50, 70, 90], ROT_RADIUS: 220, ROT_COOLDOWN: [1500, 1500, 1500, 1500], ROT_MANA_COST: [0, 0, 0, 0], ROT_SLOW: 0.3,
+  ROT_DAMAGE: [30, 40, 50, 60], // PER SECOND
+  ROT_RADIUS: 250,
+  ROT_SLOW: [0.20, 0.25, 0.30, 0.35],
+  ROT_TICK_RATE: 100,
   
   // Passive - Flesh Heap
-  FLESH_HEAP_STR_PER_STACK: 1.0, FLESH_HEAP_RANGE: 450, FLESH_HEAP_MAGIC_RESIST: [8, 10, 12, 14],
+  FLESH_HEAP_STR_PER_STACK: [0.8, 1.0, 1.2, 1.4],
+  FLESH_HEAP_RANGE: 450,
+  FLESH_HEAP_MAGIC_RESIST: [0.08, 0.12, 0.16, 0.20],
   
-  // R - Dismember (Ultimate)
-  DISMEMBER_DAMAGE: 60, DISMEMBER_DURATION: 3000, DISMEMBER_COOLDOWN: [17000, 14000, 11000], DISMEMBER_MANA_COST: [175, 250, 325],
-  
-  HOOK_PULL_SPEED: 12, RESPAWN_TIME: 5000, GOLD_PER_KILL: 150, GOLD_PER_ASSIST: 50
+  // R - Dismember
+  DISMEMBER_DAMAGE: [75, 100, 125],
+  DISMEMBER_DURATION: 3000,
+  DISMEMBER_COOLDOWN: [30000, 25000, 20000],
+  DISMEMBER_MANA_COST: [175, 250, 325],
+  DISMEMBER_RANGE: 200,
+  DISMEMBER_HEAL: 0.75,
+  DISMEMBER_STR_FACTOR: 0.75
 };
 
 // ============================================
@@ -200,7 +207,7 @@ const state = {
   myPlayer: null,
   rotActive: false,
   dismemberActive: false,
-  dismemberTarget: null
+  matchStartTime: Date.now()
 };
 
 const input = { 
@@ -213,26 +220,31 @@ const input = {
 };
 
 const cooldowns = { hook: 0, rot: 0, dismember: 0 };
-const abilityLevels = { hook: 1, rot: 1, dismember: 1 };
+const abilityLevels = { hook: 1, rot: 1, dismember: 0 };
 const particles = [];
 const floatingTexts = [];
 
 // ============================================
-// ENTITY CLASSES
+// CLASSES
 // ============================================
 class Player {
   constructor(data) {
     this.id = data[0]; this.x = data[1]; this.y = data[2]; this.team = data[3];
     this.health = data[4]; this.maxHealth = data[5];
-    this.mana = data[6] || CONFIG.BASE_MANA; this.maxMana = data[7] || CONFIG.BASE_MANA;
-    this.level = data[8] || 1;
-    this.str = data[9] || CONFIG.BASE_STR; this.agi = data[10] || CONFIG.BASE_AGI; this.int = data[11] || CONFIG.BASE_INT;
-    this.damage = data[12] || CONFIG.BASE_DAMAGE; this.armor = data[13] || CONFIG.BASE_ARMOR;
-    this.kills = data[14] || 0; this.deaths = data[15] || 0;
-    this.fleshHeapStacks = data[16] || 0; this.rotActive = data[17] || false; this.gold = data[18] || 0;
+    this.mana = data[6]; this.maxMana = data[7];
+    this.level = data[8];
+    this.str = data[9]; this.agi = data[10]; this.int = data[11];
+    this.damage = data[12]; this.armor = data[13];
+    this.kills = data[14]; this.deaths = data[15];
+    this.fleshHeapStacks = data[16]; this.rotActive = data[17]; this.gold = data[18];
+    this.hookLevel = data[19] || 1;
+    this.rotLevel = data[20] || 1;
+    this.dismemberLevel = data[21] || 0;
+    this.hasAghanim = data[22] === 1;
+    this.magicResist = data[23] || 0;
     this.angle = 0; this.isDead = false;
     this.dismembered = false;
-    this.dismemberer = null;
+    this.name = data[24] || `Pudge_${this.id}`;
   }
 
   update() {
@@ -255,7 +267,7 @@ class Player {
       ctx.fill();
     }
 
-    // Rot aura - GREEN
+    // Rot aura - GREEN (Dota 2 original)
     if (this.rotActive) {
       const rg = ctx.createRadialGradient(sx, sy, 0, sx, sy, CONFIG.ROT_RADIUS);
       rg.addColorStop(0, 'rgba(46, 204, 113, 0.5)');
@@ -293,7 +305,7 @@ class Player {
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.fill();
 
-    // Direction indicator
+    // Direction
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.lineTo(sx + Math.cos(this.angle) * CONFIG.PLAYER_RADIUS * 1.8, sy + Math.sin(this.angle) * CONFIG.PLAYER_RADIUS * 1.8);
@@ -301,7 +313,7 @@ class Player {
     ctx.lineWidth = 4;
     ctx.stroke();
 
-    // "YOU" indicator
+    // YOU
     if (this.id === myId) {
       ctx.fillStyle = '#f1c40f';
       ctx.font = 'bold 14px Arial';
@@ -316,11 +328,11 @@ class Player {
     ctx.fillStyle = hpPercent > 0.5 ? '#2ecc71' : hpPercent > 0.25 ? '#f39c12' : '#e74c3c';
     ctx.fillRect(sx - 30, sy + CONFIG.PLAYER_RADIUS + 8, 60 * hpPercent, 6);
 
-    // Player name
+    // Name
     ctx.fillStyle = '#fff';
     ctx.font = '11px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(this.name || `Pudge_${this.id}`, sx, sy - CONFIG.PLAYER_RADIUS - 25);
+    ctx.fillText(this.name, sx, sy - CONFIG.PLAYER_RADIUS - 25);
   }
 }
 
@@ -328,7 +340,8 @@ class Hook {
   constructor(data) {
     this.id = data[0]; this.x = data[1]; this.y = data[2];
     this.targetX = data[3]; this.targetY = data[4]; this.ownerId = data[5];
-    this.state = 'flying'; this.targetId = null; this.trail = [];
+    this.state = data[6] || 'flying';
+    this.targetId = null; this.trail = [];
     const dx = this.targetX - this.x, dy = this.targetY - this.y;
     const dist = Math.hypot(dx, dy);
     this.vx = (dx / dist) * CONFIG.HOOK_SPEED;
@@ -341,7 +354,7 @@ class Hook {
       this.trail.push({ x: this.x, y: this.y, life: 15 });
       this.x += this.vx; this.y += this.vy;
       this.traveled += CONFIG.HOOK_SPEED;
-      if (this.traveled >= CONFIG.HOOK_RANGE) this.state = 'returning';
+      if (this.traveled >= CONFIG.HOOK_RANGE[abilityLevels.hook - 1]) this.state = 'returning';
     } else if (this.state === 'returning' || this.state === 'pulling') {
       const owner = state.players.get(this.ownerId);
       if (owner) {
@@ -414,7 +427,7 @@ class Hook {
 }
 
 // ============================================
-// PARTICLES & EFFECTS
+// PARTICLES
 // ============================================
 class Particle {
   constructor(x, y, color, speed, life) {
@@ -462,18 +475,12 @@ function createHookHitEffect(x, y) {
   }
 }
 
-function createRotEffect(x, y) {
-  for (let i = 0; i < 5; i++) {
-    particles.push(new Particle(x, y, 'rgba(46, 204, 113, 0.5)', 3, 20));
-  }
-}
-
 function showFloatingText(x, y, text, color) {
   floatingTexts.push({ x, y, text, color, life: 60 });
 }
 
 // ============================================
-// INITIALIZATION
+// INIT
 // ============================================
 function resize() {
   canvas.width = window.innerWidth;
@@ -483,7 +490,7 @@ window.addEventListener('resize', resize);
 resize();
 
 // ============================================
-// INPUT HANDLING
+// INPUT
 // ============================================
 document.addEventListener('keydown', (e) => {
   input.keys[e.code] = true;
@@ -535,6 +542,7 @@ function handleServerMessage(data) {
       myId = data.playerId;
       myTeam = data.team;
       state.myTeam = data.team;
+      state.matchStartTime = data.matchTime;
       for (const p of data.players) state.players.set(p[0], new Player(p));
       break;
 
@@ -547,7 +555,9 @@ function handleServerMessage(data) {
             x: p[1], y: p[2], team: p[3], health: p[4], maxHealth: p[5], 
             mana: p[6], maxMana: p[7], level: p[8], str: p[9], agi: p[10], 
             int: p[11], damage: p[12], armor: p[13], kills: p[14], deaths: p[15], 
-            fleshHeapStacks: p[16], rotActive: p[17], gold: p[18] 
+            fleshHeapStacks: p[16], rotActive: p[17], gold: p[18],
+            hookLevel: p[19], rotLevel: p[20], dismemberLevel: p[21],
+            hasAghanim: p[22], magicResist: p[23]
           });
           newPlayers.set(p[0], existing);
         } else {
@@ -556,7 +566,13 @@ function handleServerMessage(data) {
       }
       state.players = newPlayers;
       state.hooks = data.hooks.map(h => new Hook(h));
-      if (data.stats && myId) state.myPlayer = newPlayers.get(myId);
+      if (data.stats && myId) {
+        const myStats = data.stats.find(s => s[0] === myId);
+        if (myStats) {
+          state.myPlayer = newPlayers.get(myId);
+        }
+      }
+      if (data.matchStartTime) state.matchStartTime = data.matchStartTime;
       break;
 
     case 'event':
@@ -575,6 +591,7 @@ function handleEvent(evt) {
     const target = state.players.get(evt.targetId);
     if (target) {
       createHitEffect(target.x, target.y, '#e74c3c');
+      showFloatingText(target.x, target.y, `-${evt.damage || 90}`, '#e74c3c');
       if (target.id === myId) showNotification('HOOKED!', 'notify-hit');
     }
   }
@@ -600,6 +617,8 @@ function handleEvent(evt) {
   
   if (evt.type === 'allySaved') showNotification('SAVE!', 'notify-save');
   if (evt.type === 'matchEnd') showGameOver(evt.winner === myTeam, evt.radiantKills, evt.direKills);
+  if (evt.type === 'levelUp') showNotification(`LEVEL ${evt.level}!`, 'notify-kill');
+  if (evt.type === 'abilityUpgrade') showNotification(`${evt.ability.toUpperCase()} LVL ${evt.level}!`, 'notify-save');
 }
 
 function sendInput() {
@@ -647,9 +666,15 @@ function sendInput() {
 // ============================================
 function startCooldown(ability) {
   const now = Date.now();
-  if (ability === 'hook') cooldowns.hook = now + CONFIG.HOOK_COOLDOWN[abilityLevels.hook - 1];
-  if (ability === 'rot') cooldowns.rot = now + CONFIG.ROT_COOLDOWN[abilityLevels.rot - 1];
-  if (ability === 'dismember') cooldowns.dismember = now + CONFIG.DISMEMBER_COOLDOWN[abilityLevels.dismember - 1];
+  if (ability === 'hook') {
+    cooldowns.hook = now + CONFIG.HOOK_COOLDOWN[abilityLevels.hook - 1];
+  }
+  if (ability === 'rot') {
+    cooldowns.rot = now + 100; // Rot has no cooldown, just toggle
+  }
+  if (ability === 'dismember') {
+    cooldowns.dismember = now + CONFIG.DISMEMBER_COOLDOWN[abilityLevels.dismember - 1];
+  }
 }
 
 function updateCooldowns() {
@@ -665,13 +690,8 @@ function updateCooldowns() {
   }
 
   const rotEl = document.getElementById('abilityE'), rotCdEl = document.getElementById('eCd');
-  if (cooldowns.rot > now) {
-    rotEl.classList.add('on-cooldown');
-    rotCdEl.textContent = ((cooldowns.rot - now) / 1000).toFixed(1);
-  } else {
-    rotEl.classList.remove('on-cooldown');
-    rotCdEl.textContent = '';
-  }
+  // Rot has no cooldown, just show level
+  rotCdEl.textContent = '';
 
   const ultiEl = document.getElementById('ultimate'), ultiCdEl = document.getElementById('rCd');
   if (cooldowns.dismember > now) {
@@ -702,18 +722,18 @@ function updateUI() {
   document.getElementById('fleshStacks').textContent = player.fleshHeapStacks || 0;
   document.getElementById('gold').textContent = Math.round(player.gold || 0);
 
-  // Attributes with Flesh Heap bonus
-  const fleshBonus = (player.fleshHeapStacks || 0) * CONFIG.FLESH_HEAP_STR_PER_STACK;
+  // Attributes
+  const fleshBonus = (player.fleshHeapStacks || 0) * CONFIG.FLESH_HEAP_STR_PER_STACK[Math.min(player.fleshHeapStacks > 0 ? 1 : 0, 3)];
   document.getElementById('str').textContent = Math.round(player.str + fleshBonus);
   document.getElementById('agi').textContent = Math.round(player.agi);
   document.getElementById('int').textContent = Math.round(player.int);
   document.getElementById('damageAttr').textContent = Math.round(player.damage);
-  document.getElementById('armorAttr').textContent = Math.round((player.armor || 5) * 100) / 100;
+  document.getElementById('armorAttr').textContent = Math.round((player.armor || 1) * 100) / 100;
 
-  // GPM / XPM
-  const matchTime = (Date.now() - state.matchStartTime) / 60000;
-  document.getElementById('gpm').textContent = Math.round((player.gold || 0) / matchTime) || 0;
-  document.getElementById('xpm').textContent = Math.round(player.level * 60 / matchTime) || 0;
+  // Ability levels
+  document.getElementById('qLvl').textContent = player.hookLevel || 1;
+  document.getElementById('eLvl').textContent = player.rotLevel || 1;
+  document.getElementById('rLvl').textContent = player.dismemberLevel || 0;
 
   updateCooldowns();
 }
